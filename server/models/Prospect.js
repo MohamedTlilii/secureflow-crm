@@ -29,7 +29,7 @@ const ProspectSchema = new mongoose.Schema({
   },
   produitInteresse: [{ type: String }],
   valeurEstimee: { type: Number, default: 0 },
-  notes: [NoteSchema],
+  notes: { type: String, default: "" },
   messageSent: { type: Boolean, default: false },
   rdvDate: { type: Date },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
