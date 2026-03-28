@@ -82,12 +82,17 @@ export default function Messages() {
   };
 
   return (
-    <div className="animate-fade">
-      <div className="page-header">
+    
+  <div className="animate-fade">
+      <div className="page-header flex-between">
+        <div>
         <h1>Générateur de messages</h1>
         <p>Créez des messages LinkedIn personnalisés pour votre prospection</p>
+        </div>
+        <div style={{fontSize:12,color:'var(--text-muted)',background:'var(--bg-card)',padding:'6px 12px',borderRadius:8,border:'1px solid var(--border)'}}>
+          {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+        </div>
       </div>
-
       <div className="grid-2">
         {/* Générateur */}
         <div>

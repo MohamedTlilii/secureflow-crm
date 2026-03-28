@@ -30,7 +30,7 @@ export default function Dashboard() {
       <div className="page-header flex-between">
         <div>
           <h1>Dashboard</h1>
-          <p>Vue d'ensemble de votre activité de prospection</p>
+          {/* <p>Vue d'ensemble de votre activité de prospection</p> */}
         </div>
         <div style={{fontSize:12,color:'var(--text-muted)',background:'var(--bg-card)',padding:'6px 12px',borderRadius:8,border:'1px solid var(--border)'}}>
           {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}

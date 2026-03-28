@@ -62,12 +62,21 @@ router.put('/:id', auth, async (req, res) => {
 // POST add note
 router.post('/:id/notes', auth, async (req, res) => {
   try {
-    const p = await Prospect.findById(req.params.id);
+    // Reset notes à [] si c'est une string (vieux document)
+    await Prospect.updateOne(
+      { _id: req.params.id, notes: { $type: 'string' } },
+      { $set: { notes: [] } }
+    );
+    const newNote = { text: req.body.text, author: req.user.name || req.user.email || 'User', date: new Date() };
+    const p = await Prospect.findByIdAndUpdate(
+      req.params.id,
+      { $push: { notes: newNote } },
+      { new: true }
+    );
     if (!p) return res.status(404).json({ message: 'Prospect introuvable' });
-    p.notes.push({ text: req.body.text, author: req.user.name });
-    await p.save();
     res.json(p);
   } catch (err) {
+    console.log('ERREUR NOTE:', err.message);
     res.status(400).json({ message: err.message });
   }
 });

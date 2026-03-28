@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
 require('dotenv').config();
 
 const app = express();
@@ -17,6 +19,19 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+
+// Rate limiting
+app.use('/api/auth', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: 'Trop de tentatives, réessayez dans 15 minutes' }
+}));
+
+app.use('/api/', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+}));
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))

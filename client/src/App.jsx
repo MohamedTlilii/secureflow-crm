@@ -8,6 +8,7 @@ import Pipeline from './pages/Pipeline';
 import Messages from './pages/Messages';
 import Database from './pages/Database'
 import Sidebar from './components/Sidebar';
+import GoogleAlerts from './pages/GoogleAlerts';
 
 import './index.css';
 
@@ -36,6 +37,8 @@ const AppRoutes = () => {
       <Route path="/prospects" element={<ProtectedLayout><Prospects /></ProtectedLayout>} />
       <Route path="/pipeline" element={<ProtectedLayout><Pipeline /></ProtectedLayout>} />
       <Route path="/messages" element={<ProtectedLayout><Messages /></ProtectedLayout>} />
+      <Route path="/google-alerts" element={<ProtectedLayout><GoogleAlerts /></ProtectedLayout>} />
+
 <Route path="/database" element={<ProtectedLayout><Database /></ProtectedLayout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

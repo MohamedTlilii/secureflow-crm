@@ -19,17 +19,22 @@ const ProspectSchema = new mongoose.Schema({
   priorite: { type: String, enum: ['P0', 'P1', 'P2', 'P3'], default: 'P1' },
   stage: {
     type: String,
-    enum: ['01_Inbox', '02_Qualifying', '03_Proposal', '04_Closed', '99_Dead'],
-    default: '01_Inbox'
+enum: ['01_Inbox', '02_Qualifying', '03_Proposal', '04_Closed', '99_Dead', 'saved'],
   },
   signal: {
     type: String,
     enum: ['ouverture', 'recrutement', 'nouveau-poste', 'expansion', 'commentaire', 'incident', 'manuel'],
     default: 'manuel'
   },
+  // ← AJOUTE ICI
+source: {
+  type: String,
+  enum: ['google_alert', 'linkedin', 'manuel'],
+  default: 'manuel'
+},
   produitInteresse: [{ type: String }],
   valeurEstimee: { type: Number, default: 0 },
-  notes: { type: String, default: "" },
+notes: [NoteSchema],
   messageSent: { type: Boolean, default: false },
   rdvDate: { type: Date },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

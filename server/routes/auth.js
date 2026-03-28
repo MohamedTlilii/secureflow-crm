@@ -4,15 +4,25 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 
-const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const DEFAULT_AVATAR = "https://img.freepik.com/vecteurs-libre/illustration-garde-du-corps-dessinee-main_23-2150308174.jpg?semt=ais_hybrid&w=740&q=80";
+
+const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '5h' });
 
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, avatar } = req.body;
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ message: 'Email déjà utilisé' });
-    const user = await User.create({ name, email, password, role: role || 'agent' });
+
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: role || 'agent',
+      avatar: (avatar && avatar.trim() !== '') ? avatar : DEFAULT_AVATAR
+    });
+
     const token = signToken(user._id);
     res.status(201).json({ token, user });
   } catch (err) {
@@ -35,6 +45,12 @@ router.post('/login', async (req, res) => {
 });
 
 // Me
-router.get('/me', auth, (req, res) => res.json({ user: req.user }));
+router.get('/me', auth, (req, res) => {
+  const user = req.user.toJSON();
+  if (!user.avatar || user.avatar === 'https://freepik.com' || !user.avatar.startsWith('https://img')) {
+    user.avatar = DEFAULT_AVATAR;
+  }
+  res.json({ user });
+});
 
 module.exports = router;
