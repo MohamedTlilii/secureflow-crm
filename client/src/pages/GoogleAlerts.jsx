@@ -285,19 +285,22 @@ export default function GoogleAlerts() {
               {selected.urgencyScore > 0 && <span style={{fontSize:11,padding:'2px 8px',borderRadius:20,background:'rgba(240,68,56,0.1)',color:'var(--danger)'}}>Urgence {selected.urgencyScore}/10</span>}
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
-              {[['Téléphone',selected.telephone||'—'],['Email',selected.email||'—'],['Ville',selected.ville||'—'],['Mot-clé',selected.keyword||'—'],['Adresse',selected.adresse||'—'],['Ajouté le',new Date(selected.createdAt).toLocaleDateString('fr-CA')]].map(([label,val])=>(
+{[['Prénom',selected.prenom||'—'],['Nom',selected.nom||'—'],['Entreprise',selected.entreprise||'—'],['Téléphone',selected.telephone||'—'],['Email',selected.email||'—'],['Ville',selected.ville||'—'],['Mot-clé',selected.keyword||'—'],['Adresse',selected.adresse||'—'],['Ajouté le',new Date(selected.createdAt).toLocaleDateString('fr-CA')]].map(([label,val])=>(
                 <div key={label} style={{background:'var(--bg-secondary)',borderRadius:8,padding:'10px 12px'}}>
                   <div style={{fontSize:10,color:'var(--text-muted)',fontWeight:600,textTransform:'uppercase',marginBottom:3}}>{label}</div>
                   <div style={{fontSize:13,color:'var(--text-primary)'}}>{val}</div>
                 </div>
               ))}
             </div>
-            {selected.aiSummary && (
-              <div style={{marginBottom:12}}>
-                <div style={{fontSize:11,color:'var(--text-muted)',fontWeight:600,textTransform:'uppercase',marginBottom:6,display:'flex',alignItems:'center',gap:6}}><Sparkles size={11} color="#ea4335"/>Résumé Gemini</div>
-                <div style={{background:'rgba(234,67,53,0.06)',border:'1px solid rgba(234,67,53,0.15)',borderRadius:8,padding:'10px 12px',fontSize:13,color:'var(--text-primary)',lineHeight:1.6}}>{selected.aiSummary}</div>
-              </div>
-            )}
+           
+          {selected.alertText && (
+  <div style={{marginBottom:12}}>
+    <div style={{fontSize:11,color:'var(--text-muted)',fontWeight:600,textTransform:'uppercase',marginBottom:6}}> <Sparkles size={11} color="#ea4335"/>Résumé Gemini</div>
+    <div style={{background:'var(--bg-secondary)',borderRadius:8,padding:'10px 12px',fontSize:12,color:'var(--text-secondary)',lineHeight:1.6,maxHeight:120,overflowY:'auto'}}>
+      {selected.alertText}
+    </div>
+  </div>
+)}
             <div className="modal-footer">
               <button className="btn btn-danger" onClick={e=>handleDelete(selected,e)}>Supprimer</button>
               <button className="btn" onClick={e=>openNotes(selected,e)}><MessageSquare size={13}/> Notes</button>

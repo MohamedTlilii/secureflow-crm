@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const GoogleAlertSchema = new mongoose.Schema({
-  alertText:    { type: String, required: true },
+alertText: { type: String, default: '' },
   keyword:      { type: String, default: '' },
   sourceUrl:    { type: String, default: '' },
   entreprise:   { type: String, default: '' },
