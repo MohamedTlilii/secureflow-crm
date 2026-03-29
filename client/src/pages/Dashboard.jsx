@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios'; 
-import { Users, TrendingUp, Target, CheckCircle, AlertCircle, Clock, MapPin, Zap } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import axios from 'axios';
+import { Users, TrendingUp, CheckCircle, AlertCircle, Clock, MapPin, Zap } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const COLORS = ['#3b6cf8','#00d4aa','#f79009','#f04438','#a764f8','#ec4899','#10b981','#6366f1'];
 
@@ -13,7 +13,11 @@ export default function Dashboard() {
     axios.get('/api/stats').then(r => setStats(r.data)).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'60vh'}}><div style={{width:32,height:32,border:'2px solid var(--border)',borderTopColor:'var(--accent)',borderRadius:'50%',animation:'spin 0.8s linear infinite'}} /></div>;
+  if (loading) return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'60vh'}}>
+      <div style={{width:32,height:32,border:'2px solid var(--border)',borderTopColor:'var(--accent)',borderRadius:'50%',animation:'spin 0.8s linear infinite'}} />
+    </div>
+  );
   if (!stats) return null;
 
   const pipelineData = [
@@ -23,15 +27,16 @@ export default function Dashboard() {
     { name: 'Gagné', value: stats.closed, color: '#12b76a' },
   ];
 
-  const signalLabels = { ouverture:'Nouveau local', recrutement:'Recrutement', 'nouveau-poste':'Nouveau poste', expansion:'Expansion', commentaire:'Commentaire', incident:'Incident', manuel:'Manuel' };
+  const signalLabels = {
+    google_alert: '🔔 Google Alerts',
+    linkedin: '💼 LinkedIn',
+    google_map: '🗺️ Google Maps',
+  };
 
   return (
     <div className="animate-fade">
       <div className="page-header flex-between">
-        <div>
-          <h1>Dashboard</h1>
-          {/* <p>Vue d'ensemble de votre activité de prospection</p> */}
-        </div>
+        <div><h1>Dashboard</h1></div>
         <div style={{fontSize:12,color:'var(--text-muted)',background:'var(--bg-card)',padding:'6px 12px',borderRadius:8,border:'1px solid var(--border)'}}>
           {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
         </div>
@@ -40,10 +45,10 @@ export default function Dashboard() {
       {/* Stats principales */}
       <div className="grid-4 mb-6">
         {[
-          { label:'Total prospects', value: stats.total, icon: Users, sub:`${stats.b2b} B2B · ${stats.b2c} B2C`, color:'var(--accent)' },
+          { label:'Total leads', value: stats.total, icon: Users, sub:`${stats.b2b} B2B · ${stats.b2c} B2C`, color:'var(--accent)' },
           { label:'Urgents P0', value: stats.p0, icon: AlertCircle, sub:'Action immédiate', color:'var(--danger)' },
           { label:'En cours', value: stats.qualifying + stats.proposal, icon: Clock, sub:`${stats.qualifying} qualif · ${stats.proposal} proposi.`, color:'var(--warning)' },
-          { label:'Deals closés', value: stats.closed, icon: CheckCircle, sub:`Taux ${stats.conversionRate}%`, color:'var(--success)' },
+          { label:'Contactés', value: stats.closed, icon: CheckCircle, sub:`Taux ${stats.conversionRate}%`, color:'var(--success)' },
         ].map((s,i) => (
           <div key={i} className="stat-card animate-fade" style={{animationDelay:`${i*0.05}s`}}>
             <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
@@ -60,12 +65,35 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* SOURCES DE LEADS — automatique */}
+      <div style={{marginBottom:24}}>
+        <div style={{fontSize:13,fontWeight:600,color:'var(--text-secondary)',marginBottom:12,textTransform:'uppercase',letterSpacing:'0.05em'}}>Sources de leads</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
+          {[
+            { label:'Google Alerts', value: stats.breakdown?.googleAlert || 0, emoji:'🔔', color:'#ea4335' },
+            { label:'LinkedIn', value: stats.breakdown?.linkedin || 0, emoji:'💼', color:'#0077b5' },
+            { label:'Google Maps', value: stats.breakdown?.googleMap || 0, emoji:'🗺️', color:'#34a853' },
+          ].map((s,i) => (
+            <div key={i} className="stat-card animate-fade" style={{animationDelay:`${i*0.05}s`,borderTop:`3px solid ${s.color}`}}>
+              <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div>
+                  <div className="stat-label">{s.label}</div>
+                  <div className="stat-value">{s.value}</div>
+                  <div className="stat-sub">leads total</div>
+                </div>
+                <div style={{fontSize:28}}>{s.emoji}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="grid-2 mb-6">
         {/* Pipeline chart */}
         <div className="card">
           <div className="flex-between mb-4">
             <h3 style={{fontSize:15}}>Pipeline de vente</h3>
-            <span style={{fontSize:12,color:'var(--text-muted)'}}>{stats.total} prospects</span>
+            <span style={{fontSize:12,color:'var(--text-muted)'}}>{stats.total} leads</span>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={pipelineData} barSize={32}>
@@ -122,20 +150,17 @@ export default function Dashboard() {
           ) : <div style={{color:'var(--text-muted)',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucune donnée</div>}
         </div>
 
-        {/* Prospects récents */}
+        {/* Leads récents */}
         <div className="card">
           <div className="flex-between mb-4">
-            <h3 style={{fontSize:15}}>Prospects récents</h3>
+            <h3 style={{fontSize:15}}>Leads récents</h3>
             <TrendingUp size={14} color="var(--text-muted)" />
           </div>
           <div style={{display:'flex',flexDirection:'column',gap:10}}>
             {stats.recentProspects.length ? stats.recentProspects.map((p,i) => {
               const avs = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
               const ini = ((p.prenom||'?')[0]+(p.nom||'?')[0]).toUpperCase();
-              const stageLabel = {
-                '01_Inbox':'Inbox','02_Qualifying':'Qualification',
-                '03_Proposal':'Proposition','04_Closed':'Gagné','99_Dead':'Perdu'
-              }[p.stage] || p.stage;
+              const sourceLabel = { google_alert:'🔔', linkedin:'💼', google_map:'🗺️' }[p.source] || '👤';
               return (
                 <div key={i} style={{display:'flex',alignItems:'center',gap:10}}>
                   <div className={`avatar ${avs[i%avs.length]}`}>{ini}</div>
@@ -143,10 +168,10 @@ export default function Dashboard() {
                     <div style={{fontSize:13,fontWeight:500,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.prenom} {p.nom}</div>
                     <div style={{fontSize:11,color:'var(--text-muted)'}}>{p.entreprise || 'Particulier'} · {p.ville}</div>
                   </div>
-                  <span style={{fontSize:11,color:'var(--text-muted)',background:'var(--bg-hover)',padding:'2px 8px',borderRadius:20}}>{stageLabel}</span>
+                  <span style={{fontSize:11,color:'var(--text-muted)',background:'var(--bg-hover)',padding:'2px 8px',borderRadius:20}}>{sourceLabel} {p.source || ''}</span>
                 </div>
               );
-            }) : <div style={{color:'var(--text-muted)',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun prospect encore</div>}
+            }) : <div style={{color:'var(--text-muted)',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucun lead encore</div>}
           </div>
         </div>
       </div>
