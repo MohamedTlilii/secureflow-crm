@@ -66,72 +66,23 @@ export default function GoogleAlerts() {
 
   // Analyse avec Gemini (gratuit) puis sauvegarde dans MongoDB
   const handleAnalyze = async () => {
-    if (!alertInput.trim()) return toast.error("Colle le texte de l'alerte Google");
-    setAiLoading(true);
-    try {
-      const apiKey = import.meta.env.VITE_GEMINI_KEY;
-      const prompt = `Tu es un assistant CRM pour une entreprise de securite (alarmes incendie, systemes de securite) au Quebec.
-
-Analyse ce texte d'alerte Google et extrait les informations pour creer une fiche prospect.
-
-Retourne UNIQUEMENT un JSON avec ces champs:
-{
-  "entreprise": "nom de l'entreprise si detectable",
-  "prenom": "prenom du contact si detectable",
-  "nom": "nom du contact si detectable",
-  "telephone": "telephone si detectable",
-  "adresse": "adresse si detectable",
-  "ville": "ville detectee (Montreal par defaut)",
-  "alertType": "incendie|vol|nouvelle_entreprise|ouverture|incident|autre",
-  "aiSummary": "resume en 2 phrases de pourquoi c'est une opportunite",
-  "urgencyScore": "score de 0 a 10 (10 = tres urgent)",
-  "keyword": "mot-cle principal detecte"
-}
-
-Texte:
-${alertInput}`;
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 500 }
-          })
-        }
-      );
-
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-      let analysis = {};
-      try {
-        analysis = JSON.parse(text.replace(/```json|```/g, '').trim());
-      } catch {
-        toast.error('Erreur parsing Gemini');
-        setAiLoading(false);
-        return;
-      }
-
-      // Sauvegarde dans MongoDB via backend
-      await axios.post('/api/google-alerts', {
-        alertText: alertInput,
-        ...analysis,
-        urgencyScore: Number(analysis.urgencyScore) || 0,
-        status: 'analyzed'
-      });
-
-      toast.success('Alerte analysée et sauvegardée !');
-      setModal(null);
-      fetchAlerts();
-    } catch (err) {
-      console.error(err);
-      toast.error('Erreur — vérifie ta clé Gemini');
-    } finally {
-      setAiLoading(false);
+  if (!alertInput.trim()) return toast.error("Colle le texte de l'alerte Google");
+  setAiLoading(true);
+  try {
+    await axios.post('/api/google-alerts/analyze-gemini', { alertText: alertInput });
+    toast.success('Alerte analysée et sauvegardée !');
+    setModal(null);
+    fetchAlerts();
+  } catch (err) {
+    if (err.response?.status === 429) {
+      toast.error('Limite Gemini — réessaie dans 1 minute', { duration: 5000 });
+    } else {
+      toast.error('Erreur — ' + (err.response?.data?.message || 'vérfie le backend'));
     }
-  };
+  } finally {
+    setAiLoading(false);
+  }
+};
 
   const handleSubmit = async () => {
     try {
