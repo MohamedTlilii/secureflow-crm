@@ -17,7 +17,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api';
 import {
   Plus, MapPin, Phone, X, Edit2, Trash2, MessageSquare,
   AlertTriangle, Mail, Calendar, Clock, Tag, Search,
@@ -230,7 +230,7 @@ export default function SolutionExpress() {
   // ── FETCH ─────────────────────────────────────────────────────────────────
   const fetchFiches = useCallback(async () => {
     try {
-      const r = await axios.get('/api/solution-express');
+      const r = await api.get('/api/solution-express');
       setFiches(r.data);
     } catch { toast.error('Erreur chargement'); }
     finally { setLoading(false); }
@@ -299,8 +299,8 @@ export default function SolutionExpress() {
   // ── CRUD ──────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     try {
-      if (modal === 'add') { await axios.post('/api/solution-express', form); toast.success('Fiche ajoutée !'); }
-      else { await axios.put(`/api/solution-express/${selected._id}`, form); toast.success('Mis à jour !'); }
+      if (modal === 'add') { await api.post('/api/solution-express', form); toast.success('Fiche ajoutée !'); }
+      else { await api.put(`/api/solution-express/${selected._id}`, form); toast.success('Mis à jour !'); }
       setModal(null); fetchFiches();
     } catch (err) { toast.error(err.response?.data?.message || 'Erreur'); }
   };
@@ -308,7 +308,7 @@ export default function SolutionExpress() {
   const handleDelete = async (p, e) => {
     if(e) e.stopPropagation();
     if (!confirm('Supprimer cette fiche ?')) return;
-    try { await axios.delete(`/api/solution-express/${p._id}`); toast.success('Supprimé'); setModal(null); fetchFiches(); }
+    try { await api.delete(`/api/solution-express/${p._id}`); toast.success('Supprimé'); setModal(null); fetchFiches(); }
     catch { toast.error('Erreur suppression'); }
   };
 
@@ -316,7 +316,7 @@ export default function SolutionExpress() {
     if (!noteText.trim()) return;
     try {
       const updatedNotes = [...(p.notes || []), noteText.trim()];
-      await axios.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
+      await api.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
       toast.success('Note ajoutée ✓');
       setNoteText('');
       setSelected(prev => ({ ...prev, notes: updatedNotes }));
@@ -328,7 +328,7 @@ export default function SolutionExpress() {
     if (!confirm('Supprimer cette note ?')) return;
     try {
       const updatedNotes = (p.notes || []).filter((_, i) => i !== idx);
-      await axios.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
+      await api.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
       toast.success('Note supprimée');
       setSelected(prev => ({ ...prev, notes: updatedNotes }));
       fetchFiches();
@@ -337,7 +337,7 @@ export default function SolutionExpress() {
 
   const changeStatus = async (p, newStatus) => {
     try {
-      await axios.put(`/api/solution-express/${p._id}`, { ...p, status: newStatus });
+      await api.put(`/api/solution-express/${p._id}`, { ...p, status: newStatus });
       setSelected(prev => ({ ...prev, status: newStatus }));
       fetchFiches(); toast.success('Statut mis à jour');
     } catch { toast.error('Erreur statut'); }

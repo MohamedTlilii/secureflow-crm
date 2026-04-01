@@ -5,6 +5,8 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import api from '../api';
+
 import {
   Users, TrendingUp, CheckCircle, AlertCircle, Clock,
   MapPin, Zap, Bell, Building2, Shield, Wifi, Smartphone, Video
@@ -68,7 +70,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get('/api/stats')
+api.get('/api/stats')
       .then(r => setStats(r.data))
       .catch(err => console.error('Dashboard stats error:', err))
       .finally(() => setLoading(false));

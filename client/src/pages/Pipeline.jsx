@@ -19,7 +19,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { ArrowRight, X, MapPin, Phone, Mail, Building2, Calendar, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -201,8 +201,8 @@ export default function Pipeline() {
   const fetchAll = useCallback(async () => {
     try {
       const [ga, se] = await Promise.all([
-        axios.get('/api/google-alerts').catch(() => ({ data: [] })),
-        axios.get('/api/solution-express').catch(() => ({ data: [] })),
+        api.get('/api/google-alerts').catch(() => ({ data: [] })),
+        api.get('/api/solution-express').catch(() => ({ data: [] })),
       ]);
 
       const all = [
@@ -245,12 +245,12 @@ export default function Pipeline() {
       if (item.source === 'solution_express') {
         // Nettoie les champs frontend avant d'envoyer au backend
         const { stage, source, displayName, ...cleanItem } = item;
-        await axios.put(`/api/solution-express/${item._id}`, {
+        await api.put(`/api/solution-express/${item._id}`, {
           ...cleanItem,
           status: newStatus
         });
       } else {
-        await axios.put(`${getRoute(item.source)}/${item._id}`, { status: newStatus });
+        await api.put(`${getRoute(item.source)}/${item._id}`, { status: newStatus });
       }
       toast.success(`→ ${STAGES.find(s => s.key === targetStage)?.label}`);
       fetchAll();
