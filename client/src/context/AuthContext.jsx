@@ -17,8 +17,8 @@ export function AuthProvider({ children }) {
     if (!token) { setLoading(false); return; }
 
     // Vérifie que le token est encore valide
-    axios.get('/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` }
+axios.get('https://secureflow-crm.onrender.com/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setUser(res.data.user))
       .catch(() => {
@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
 
   // ── Login ─────────────────────────────────────────────────────────────────
   const login = async (email, password) => {
-    const res = await axios.post('/api/auth/login', { email, password });
+const res = await axios.post('https://secureflow-crm.onrender.com/api/auth/login', { email, password });
     localStorage.setItem('sf_token', res.data.token);
     setUser(res.data.user);
     return res.data;
