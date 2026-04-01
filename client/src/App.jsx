@@ -3,13 +3,11 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import LinkedIn from './pages/LinkedIn';
 import GoogleAlerts from './pages/GoogleAlerts';
-import GoogleMaps from './pages/GoogleMaps';
 import Pipeline from './pages/Pipeline';
-import Messages from './pages/Messages';
 import Database from './pages/Database'
 import Sidebar from './components/Sidebar';
+import SolutionExpress from './pages/SolutionExpress';
 
 import './index.css';
 
@@ -35,11 +33,10 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
-      <Route path="/linkedin" element={<ProtectedLayout><LinkedIn /></ProtectedLayout>} />
       <Route path="/google-alerts" element={<ProtectedLayout><GoogleAlerts /></ProtectedLayout>} />
-      <Route path="/google-maps" element={<ProtectedLayout><GoogleMaps /></ProtectedLayout>} />
+      <Route path="/solution-express" element={<ProtectedLayout><SolutionExpress /></ProtectedLayout>} />
+
       <Route path="/pipeline" element={<ProtectedLayout><Pipeline /></ProtectedLayout>} />
-      <Route path="/messages" element={<ProtectedLayout><Messages /></ProtectedLayout>} />
       <Route path="/database" element={<ProtectedLayout><Database /></ProtectedLayout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

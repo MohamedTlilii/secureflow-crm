@@ -11,9 +11,10 @@ alertText: { type: String, default: '' },
   adresse:      { type: String, default: '' },
   ville:        { type: String, default: '' },
   region:       { type: String, default: '' },
+   email:       { type: String, default: '' },
   alertType: {
     type: String,
-    enum: ['incendie', 'vol', 'nouvelle_entreprise', 'ouverture', 'incident', 'autre'],
+    enum: ['incendie', 'vol', 'nouvelle_entreprise', 'ouverture', 'demenagement', 'reouverture', 'incident', 'autre'],
     default: 'autre'
   },
   aiSummary:    { type: String, default: '' },

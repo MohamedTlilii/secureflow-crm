@@ -1,55 +1,53 @@
+// ════════════════════════════════════════════════════════════════════════════
+// client/src/context/AuthContext.jsx
+// ════════════════════════════════════════════════════════════════════════════
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-// AJOUTE CETTE LIGNE ICI :
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+export function AuthProvider({ children }) {
+  const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // ── Au démarrage — vérifie si un token existe déjà ───────────────────────
   useEffect(() => {
     const token = localStorage.getItem('sf_token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      axios.get('/api/auth/me')
-        .then(res => setUser(res.data.user))
-        .catch(() => { localStorage.removeItem('sf_token'); delete axios.defaults.headers.common['Authorization']; })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    if (!token) { setLoading(false); return; }
+
+    // Vérifie que le token est encore valide
+    axios.get('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => setUser(res.data.user))
+      .catch(() => {
+        // Token invalide ou expiré → nettoie
+        localStorage.removeItem('sf_token');
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
+  // ── Login ─────────────────────────────────────────────────────────────────
   const login = async (email, password) => {
     const res = await axios.post('/api/auth/login', { email, password });
     localStorage.setItem('sf_token', res.data.token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
     setUser(res.data.user);
     return res.data;
   };
 
-  const register = async (name, email, password) => {
-    const res = await axios.post('/api/auth/register', { name, email, password });
-    localStorage.setItem('sf_token', res.data.token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-    setUser(res.data.user);
-    return res.data;
-  };
-
+  // ── Logout ────────────────────────────────────────────────────────────────
   const logout = () => {
     localStorage.removeItem('sf_token');
-    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
 export const useAuth = () => useContext(AuthContext);

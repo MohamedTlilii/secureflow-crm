@@ -1,0 +1,936 @@
+// ════════════════════════════════════════════════════════════════════════════
+// client/src/pages/SolutionExpress.jsx
+//
+// LOGIQUE DES CLICS :
+//   • Clic dans le vide de la card  → mini-modal centré (détails + modifier + supprimer + notes)
+//   • Clic sur nom ou avatar        → ultra-fiche plein écran
+//
+// ROUTES BACKEND :
+//   GET    /api/solution-express
+//   POST   /api/solution-express
+//   PUT    /api/solution-express/:id
+//   DELETE /api/solution-express/:id
+// ════════════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════════════
+// client/src/pages/SolutionExpress.jsx
+// ════════════════════════════════════════════════════════════════════════════
+
+import { useEffect, useState, useCallback } from 'react';
+import axios from 'axios';
+import {
+  Plus, MapPin, Phone, X, Edit2, Trash2, MessageSquare,
+  AlertTriangle, Mail, Calendar, Clock, Tag, Search,
+  User, Building2, Shield, Wifi, Video, Smartphone,
+  ChevronDown, ChevronUp, FileText, Lock
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+
+axios.interceptors.request.use(config => {
+  const token = localStorage.getItem('sf_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// CONSTANTES — identiques à ton code
+// ════════════════════════════════════════════════════════════════════════════
+
+const AV_COLORS = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
+
+const VILLES = [
+  '','Montreal','Laval','Longueuil','Boucherville','Repentigny',
+  'Vaudreuil-Dorion','Terrebonne','Saint-Jean-sur-Richelieu',
+  'Saint-Jerome','Saint-Sauveur','Salaberry-de-Valleyfield',
+  'Sorel-Tracy','Granby','Trois-Rivieres','Shawinigan',
+  'Louiseville','Drummondville','Victoriaville',
+  'Ottawa','Gatineau','Ville de Quebec'
+];
+
+const TYPE_COMMERCE_LABELS = {
+  restaurant:'Restaurant', pizzeria:'Pizzeria', boulangerie:'Boulangerie',
+  traiteur:'Traiteur', cafe:'Café', bar_resto:'Bar / Resto',
+  salon_coiffure:'Salon coiffure', esthetique:'Esthétique', spa:'Spa',
+  massotherapie:'Massothérapie', barbier:'Barbier',
+  garage_auto:'Garage auto', carrosserie:'Carrosserie', esthetique_auto:'Esthétique auto',
+  lave_auto:'Lave-auto', pneus:'Pneus', concessionnaire:'Concessionnaire',
+  clinique_dentaire:'Clinique dentaire', clinique_privee:'Clinique privée',
+  pharmacie:'Pharmacie', optometrie:'Optométrie', cabinet_infirmier:'Cabinet infirmier',
+  boutique:'Boutique', epicerie:'Épicerie', boucherie:'Boucherie',
+  librairie:'Librairie', quincaillerie:'Quincaillerie',
+  bureau:'Bureau', cabinet_comptable:'Cabinet comptable', agence:'Agence',
+  assurance:'Assurance', immobilier:'Immobilier',
+  garderie:'Garderie', ecole_privee:'École privée', centre_formation:'Centre formation',
+  gym:'Gym', centre_sportif:'Centre sportif', studio_yoga:'Studio yoga',
+  entrepot:'Entrepôt', transport:'Transport', manufacture:'Manufacture', construction:'Construction',
+  veterinaire:'Vétérinaire', animalerie:'Animalerie', autre:'Autre'
+};
+
+const STATUS_LABELS = {
+  new:'Nouveau', contacted:'Contacté', interested:'Intéressé',
+  proposal:'Soumission', won:'Gagné', lost:'Perdu', ignored:'Ignoré'
+};
+const STATUS_CLASS = {
+  new:'badge-p0', contacted:'badge-p1', interested:'badge-p2',
+  proposal:'badge-p3', won:'badge-won', lost:'badge-dead', ignored:'badge-dead'
+};
+const STATUS_COLORS = {
+  new:'#3b6cf8', contacted:'#f79009', interested:'#12b76a',
+  proposal:'#a764f8', won:'#12b76a', lost:'#f04438', ignored:'#8b8b9e'
+};
+
+const LEAD_TYPES = {
+  nouvelle_entreprise:'Nouvelle entreprise', demenagement:'Déménagement',
+  reouverture:'Réouverture', commerce_existant:'Commerce existant', autre:'Autre'
+};
+const LEAD_COLORS = {
+  nouvelle_entreprise:'#12b76a', demenagement:'#0077b5',
+  reouverture:'#f79009', commerce_existant:'#a764f8', autre:'#8b8b9e'
+};
+
+const QUALIF_LABELS = {
+  pas_de_systeme:                       'Pas de système',
+  systeme_plus_10_ans:                  'Système +10 ans',
+  systeme_non_connecte_nouveau_proprio: 'Non connecté (nouveau proprio)',
+  systeme_non_connecte_insatisfait:     'Non connecté (insatisfait)',
+  systeme_non_connecte_diy:             'Non connecté (DIY)',
+  systeme_moins_5_ans_avec_contrat:     '-5 ans avec contrat',
+  systeme_moins_5_ans_sans_contrat:     '-5 ans sans contrat',
+  systeme_5_10_ans_panneau_tactile:     '5-10 ans panneau tactile',
+  systeme_5_10_ans_panneau_boutons:     '5-10 ans panneau boutons',
+  inconnu:                              'Inconnu'
+};
+
+const PRODUIT_LABELS = { alarme:'Alarme', cameras:'Caméras', internet:'Internet', mobile:'Mobile', controle_acces:'Contrôle accès', autre:'Autre' };
+const PRODUIT_COLORS = { alarme:'#f04438', cameras:'#a764f8', internet:'#3b6cf8', mobile:'#12b76a', controle_acces:'#f79009', autre:'#8b8b9e' };
+const PRODUIT_ICONS  = { alarme:Shield, cameras:Video, internet:Wifi, mobile:Smartphone, controle_acces:Shield, autre:Tag };
+
+const FOURN_ALARME = {
+  adt:'ADT', bell_alarme:'Bell Alarme', telus_alarme:'Telus Alarme',
+  gardaworld:'GardaWorld', api_alarm:'API Alarm', securitas:'Securitas',
+  alarme_mirabel:'Alarme Mirabel', alarme_signal_teck:'Signal Teck', allo_alarme:'AlloAlarme',
+  protection_incendie_laval:'Protection Incendie Laval', multialarme:'MultiAlarme', alarme_expert:'Alarme Expert',
+  autre:'Autre', inconnu:'Inconnu', aucun:'Aucun'
+};
+const FOURN_INTERNET = {
+  videotron:'Vidéotron', bell_internet:'Bell Internet', cogeco:'Cogeco',
+  distributel:'Distributel', teksavvy:'TekSavvy', ebox:'EBox',
+  autre:'Autre', inconnu:'Inconnu', aucun:'Aucun'
+};
+const FOURN_MOBILE = {
+  bell_mobile:'Bell Mobile', telus_mobile:'Telus Mobile', rogers:'Rogers',
+  fizz:'Fizz', koodo:'Koodo', public_mobile:'Public Mobile',
+  fido:'Fido', chatr:'Chatr', virgin_plus:'Virgin Plus',
+  autre:'Autre', inconnu:'Inconnu', aucun:'Aucun'
+};
+
+const EMPTY_FORM = {
+  sourceText:'', sourceUrl:'',
+  entreprise:'', typeCommerce:'autre', typeClient:'b2b',
+  ancienneAdresse:'',
+  prenom:'', nom:'', sexe:'inconnu', telephone:'', email:'',
+  adresse:'', ville:'Montreal', region:'',
+  leadType:'nouvelle_entreprise',
+  qualificationSysteme:'inconnu',
+  produits:[],
+  fournisseurAlarme:'inconnu', fournisseurInternet:'inconnu', fournisseurMobile:'inconnu',
+  fournisseurProposeAlarme:'aucun', fournisseurProposeInternet:'aucun', fournisseurProposeMobile:'aucun',
+  status:'new', urgencyScore:0, summary:''
+};
+
+const EMPTY_FILTERS = {
+  status:'', typeClient:'', typeCommerce:'', ville:'',
+  produit:'', qualificationSysteme:'', leadType:'',
+  fournisseurAlarme:'', fournisseurInternet:'', fournisseurMobile:''
+};
+
+const iSt = {
+  width:'100%', padding:'7px 10px', borderRadius:8,
+  border:'1px solid var(--border)', background:'var(--bg-secondary)',
+  color:'var(--text-primary)', fontSize:13,
+  fontFamily:'var(--font-body)', outline:'none', boxSizing:'border-box'
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// SOUS-COMPOSANTS
+// ════════════════════════════════════════════════════════════════════════════
+
+function FicheSection({ title, children }) {
+  return (
+    <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px' }}>
+      <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>{title}</div>
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>{children}</div>
+    </div>
+  );
+}
+
+function InfoRow({ icon, label, val }) {
+  if (!val || val === 'inconnu' || val === 'aucun') return null;
+  return (
+    <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
+      <span style={{ color:'var(--text-muted)', marginTop:2, flexShrink:0 }}>{icon}</span>
+      <div>
+        <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase' }}>{label}</div>
+        <div style={{ fontSize:13, color:'var(--text-primary)', wordBreak:'break-word' }}>{val}</div>
+      </div>
+    </div>
+  );
+}
+
+function ProduitBadge({ code }) {
+  const Icon  = PRODUIT_ICONS[code]  || Tag;
+  const color = PRODUIT_COLORS[code] || '#8b8b9e';
+  return (
+    <span style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:`${color}18`, color, display:'inline-flex', alignItems:'center', gap:4 }}>
+      <Icon size={9}/> {PRODUIT_LABELS[code]}
+    </span>
+  );
+}
+
+function getFournLabel(field, val) {
+  if (!val || val === 'inconnu' || val === 'aucun') return null;
+  if (field === 'alarme')   return FOURN_ALARME[val]   || val;
+  if (field === 'internet') return FOURN_INTERNET[val] || val;
+  if (field === 'mobile')   return FOURN_MOBILE[val]   || val;
+  return val;
+}
+
+function FournisseurRow({ icon, color, label, actuel, propose }) {
+  const hasActuel  = !!actuel;
+  const hasPropose = !!propose;
+  if (!hasActuel && !hasPropose) return null;
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+      <span style={{ flexShrink:0 }}>{icon}</span>
+      <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', minWidth:52 }}>{label}</span>
+      {hasActuel && <span style={{ fontSize:12, color:'var(--text-primary)', background:'var(--bg-secondary)', padding:'2px 8px', borderRadius:6 }}>{actuel}</span>}
+      {hasActuel && hasPropose && <span style={{ fontSize:12, color:'var(--text-muted)' }}>→</span>}
+      {hasPropose && <span style={{ fontSize:12, color, background:`${color}15`, padding:'2px 8px', borderRadius:6, fontWeight:600 }}>{propose}</span>}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// COMPOSANT PRINCIPAL
+// ════════════════════════════════════════════════════════════════════════════
+export default function SolutionExpress() {
+
+  const [fiches, setFiches]           = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState('');
+  const [filters, setFilters]         = useState(EMPTY_FILTERS);
+  const [sortBy, setSortBy]           = useState('date_desc');
+  const [showFilters, setShowFilters] = useState(true);
+  const [modal, setModal]             = useState(null);
+  const [selected, setSelected]       = useState(null);
+  const [form, setForm]               = useState(EMPTY_FORM);
+  const [noteText, setNoteText]       = useState('');
+  const [activeTab, setActiveTab]     = useState(0); // onglet actif dans le modal add/edit
+
+  // ── FETCH ─────────────────────────────────────────────────────────────────
+  const fetchFiches = useCallback(async () => {
+    try {
+      const r = await axios.get('/api/solution-express');
+      setFiches(r.data);
+    } catch { toast.error('Erreur chargement'); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchFiches(); }, [fetchFiches]);
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  const setF    = (k, v) => setFilters(f => ({ ...f, [k]: v }));
+  const setFld  = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const ini     = p => ((p.prenom?.[0] || p.entreprise?.[0] || 'S')).toUpperCase();
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('fr-CA', { year:'numeric', month:'short', day:'numeric' }) : '—';
+  const hasFilters = Object.values(filters).some(v => v !== '');
+  const dernNote   = p => p.notes?.length > 0 ? p.notes[p.notes.length - 1] : null;
+
+  const toggleProduit = (code) => {
+    const list = form.produits || [];
+    setFld('produits', list.includes(code) ? list.filter(x => x !== code) : [...list, code]);
+  };
+
+  // ── FILTRAGE ──────────────────────────────────────────────────────────────
+  const afterSearch = fiches.filter(p => {
+    if (!search.trim()) return true;
+    const s = search.toLowerCase();
+    return (
+      (p.entreprise || '').toLowerCase().includes(s) ||
+      (p.prenom     || '').toLowerCase().includes(s) ||
+      (p.nom        || '').toLowerCase().includes(s) ||
+      (p.telephone  || '').toLowerCase().includes(s) ||
+      (p.email      || '').toLowerCase().includes(s) ||
+      (p.ville      || '').toLowerCase().includes(s) ||
+      (p.adresse    || '').toLowerCase().includes(s)
+    );
+  });
+
+  const filtered = afterSearch.filter(p => {
+    if (filters.status               && p.status               !== filters.status)               return false;
+    if (filters.typeClient           && p.typeClient            !== filters.typeClient)           return false;
+    if (filters.typeCommerce         && p.typeCommerce          !== filters.typeCommerce)         return false;
+    if (filters.ville                && p.ville                 !== filters.ville)               return false;
+    if (filters.leadType             && p.leadType              !== filters.leadType)             return false;
+    if (filters.qualificationSysteme && p.qualificationSysteme !== filters.qualificationSysteme) return false;
+    if (filters.produit              && !(p.produits||[]).includes(filters.produit))              return false;
+    if (filters.fournisseurAlarme    && p.fournisseurAlarme    !== filters.fournisseurAlarme)    return false;
+    if (filters.fournisseurInternet  && p.fournisseurInternet  !== filters.fournisseurInternet)  return false;
+    if (filters.fournisseurMobile    && p.fournisseurMobile    !== filters.fournisseurMobile)    return false;
+    return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case 'date_desc':    return new Date(b.createdAt) - new Date(a.createdAt);
+      case 'date_asc':     return new Date(a.createdAt) - new Date(b.createdAt);
+      case 'urgency_desc': return b.urgencyScore - a.urgencyScore;
+      case 'entreprise':   return (a.entreprise||'').localeCompare(b.entreprise||'');
+      case 'status':       return (a.status||'').localeCompare(b.status||'');
+      default:             return 0;
+    }
+  });
+
+  // ── MODAUX ────────────────────────────────────────────────────────────────
+  const openAdd   = ()     => { setForm(EMPTY_FORM); setActiveTab(0); setModal('add'); };
+  const openEdit  = (p, e) => { if(e) e.stopPropagation(); setForm({...p}); setSelected(p); setActiveTab(0); setModal('edit'); };
+  const openFiche = (p, e) => { if(e) e.stopPropagation(); setSelected(p); setModal('fiche'); };
+
+  // ── CRUD ──────────────────────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    try {
+      if (modal === 'add') { await axios.post('/api/solution-express', form); toast.success('Fiche ajoutée !'); }
+      else { await axios.put(`/api/solution-express/${selected._id}`, form); toast.success('Mis à jour !'); }
+      setModal(null); fetchFiches();
+    } catch (err) { toast.error(err.response?.data?.message || 'Erreur'); }
+  };
+
+  const handleDelete = async (p, e) => {
+    if(e) e.stopPropagation();
+    if (!confirm('Supprimer cette fiche ?')) return;
+    try { await axios.delete(`/api/solution-express/${p._id}`); toast.success('Supprimé'); setModal(null); fetchFiches(); }
+    catch { toast.error('Erreur suppression'); }
+  };
+
+  const addNote = async (p) => {
+    if (!noteText.trim()) return;
+    try {
+      const updatedNotes = [...(p.notes || []), noteText.trim()];
+      await axios.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
+      toast.success('Note ajoutée ✓');
+      setNoteText('');
+      setSelected(prev => ({ ...prev, notes: updatedNotes }));
+      fetchFiches();
+    } catch { toast.error('Erreur note'); }
+  };
+
+  const deleteNote = async (p, idx) => {
+    if (!confirm('Supprimer cette note ?')) return;
+    try {
+      const updatedNotes = (p.notes || []).filter((_, i) => i !== idx);
+      await axios.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
+      toast.success('Note supprimée');
+      setSelected(prev => ({ ...prev, notes: updatedNotes }));
+      fetchFiches();
+    } catch { toast.error('Erreur suppression note'); }
+  };
+
+  const changeStatus = async (p, newStatus) => {
+    try {
+      await axios.put(`/api/solution-express/${p._id}`, { ...p, status: newStatus });
+      setSelected(prev => ({ ...prev, status: newStatus }));
+      fetchFiches(); toast.success('Statut mis à jour');
+    } catch { toast.error('Erreur statut'); }
+  };
+
+  // ── ONGLETS du modal add/edit ─────────────────────────────────────────────
+  const TABS = [
+    { label:'👤 Contact',    icon: User     },
+    { label:'🏢 Entreprise', icon: Building2 },
+    { label:'🔒 Système',   icon: Lock      },
+    { label:'📝 Résumé',    icon: FileText  },
+  ];
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // RENDER
+  // ════════════════════════════════════════════════════════════════════════════
+  return (
+    <div className="animate-fade">
+
+      {/* HEADER */}
+      <div className="page-header flex-between">
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ width:40, height:40, borderRadius:10, background:'linear-gradient(135deg,#12b76a,#0e9558)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Building2 size={22} color="#fff"/>
+          </div>
+          <div>
+            <h1>Solution Express</h1>
+            <p style={{ color:'var(--text-muted)', fontSize:13 }}>CRM personnel — Sécurité B2B/B2C Québec</p>
+          </div>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8 }}>
+          <div style={{ fontSize:12, color:'var(--text-muted)', background:'var(--bg-card)', padding:'6px 12px', borderRadius:8, border:'1px solid var(--border)' }}>
+            {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+          </div>
+        </div>
+      </div>
+
+      {/* FILTRES */}
+      <div className="card" style={{ padding:14, marginBottom:20 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: showFilters ? 12 : 0 }}>
+          <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Filtres</span>
+          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+            {hasFilters && <button onClick={() => setFilters(EMPTY_FILTERS)} style={{ fontSize:11, color:'var(--danger)', background:'none', border:'none', cursor:'pointer' }}>✕ Effacer</button>}
+            <button onClick={() => setShowFilters(s => !s)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)' }}>
+              {showFilters ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
+            </button>
+          </div>
+        </div>
+        {showFilters && (
+          <>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,minmax(0,1fr))', gap:10, marginBottom:10 }}>
+              {[
+                ['status',    'Statut',      STATUS_LABELS],
+                ['typeClient','Type client', {'b2b':'🏢 B2B','b2c':'🏠 B2C'}],
+                ['leadType',  'Type lead',   LEAD_TYPES],
+                ['ville',     'Ville',       Object.fromEntries(VILLES.filter(v=>v).map(v=>[v,v]))],
+              ].map(([k, l, opts]) => (
+                <div key={k}>
+                  <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>{l}</div>
+                  <select style={iSt} value={filters[k]} onChange={e => setF(k, e.target.value)}>
+                    <option value="">Tous</option>
+                    {Object.entries(opts).map(([ov,ol]) => <option key={ov} value={ov}>{ol}</option>)}
+                  </select>
+                </div>
+              ))}
+              <div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Trier par</div>
+                <select style={iSt} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                  <option value="date_desc">Date ↓ récent</option>
+                  <option value="date_asc">Date ↑ ancien</option>
+                  <option value="urgency_desc">Urgence ↓</option>
+                  <option value="entreprise">Entreprise A-Z</option>
+                  <option value="status">Statut</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:10, marginBottom:10 }}>
+              <div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Type commerce</div>
+                <select style={iSt} value={filters.typeCommerce} onChange={e => setF('typeCommerce', e.target.value)}>
+                  <option value="">Tous</option>
+                  {Object.entries(TYPE_COMMERCE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Produit</div>
+                <select style={iSt} value={filters.produit} onChange={e => setF('produit', e.target.value)}>
+                  <option value="">Tous</option>
+                  {Object.entries(PRODUIT_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Qualification système</div>
+                <select style={iSt} value={filters.qualificationSysteme} onChange={e => setF('qualificationSysteme', e.target.value)}>
+                  <option value="">Toutes</option>
+                  {Object.entries(QUALIF_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:10 }}>
+              {[
+                ['fournisseurAlarme',  <Shield size={10} color="#f04438"/>,    'Fournisseur alarme',   FOURN_ALARME  ],
+                ['fournisseurInternet',<Wifi size={10} color="#3b6cf8"/>,      'Fournisseur internet', FOURN_INTERNET],
+                ['fournisseurMobile',  <Smartphone size={10} color="#12b76a"/>,'Fournisseur mobile',   FOURN_MOBILE  ],
+              ].map(([k, icon, label, opts]) => (
+                <div key={k}>
+                  <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase', display:'flex', alignItems:'center', gap:5 }}>
+                    {icon} {label}
+                  </div>
+                  <select style={iSt} value={filters[k]} onChange={e => setF(k, e.target.value)}>
+                    <option value="">Tous</option>
+                    {Object.entries(opts).map(([ov,ol]) => <option key={ov} value={ov}>{ol}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* BARRE DE RECHERCHE */}
+      <div style={{ position:'relative', marginBottom:16 }}>
+        <Search size={15} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }}/>
+        <input
+          style={{ ...iSt, paddingLeft:36, paddingRight:search?36:12, fontSize:14, height:44, borderRadius:10 }}
+          placeholder="Rechercher — entreprise, nom, téléphone, email, ville..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {search && (
+          <button onClick={() => setSearch('')} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)' }}>
+            <X size={14}/>
+          </button>
+        )}
+      </div>
+
+      {/* COMPTEUR + BOUTON NOUVELLE FICHE sur la même ligne */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+        <div style={{ fontSize:12, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontWeight:600, color:'var(--text-primary)' }}>{sorted.length}</span>
+          fiche{sorted.length !== 1 ? 's' : ''}{(search||hasFilters) ? ' trouvée' : ' au total'}
+          {(search||hasFilters) && <span style={{ fontSize:11, background:'rgba(18,183,106,0.1)', color:'#12b76a', padding:'2px 8px', borderRadius:20 }}>Filtres actifs</span>}
+        </div>
+        <button className="btn btn-primary" onClick={openAdd}>
+          <Plus size={15}/> Nouvelle fiche
+        </button>
+      </div>
+
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* GRID CARDS                                                           */}
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {loading ? (
+        <div style={{ textAlign:'center', padding:60, color:'var(--text-muted)' }}>Chargement...</div>
+      ) : sorted.length === 0 ? (
+        <div className="empty-state">
+          <Building2 size={40}/>
+          <p>{search||hasFilters ? 'Aucun résultat' : 'Aucune fiche'}</p>
+          <button className="btn btn-primary" onClick={openAdd} style={{ marginTop:16 }}><Plus size={14}/> Ajouter</button>
+        </div>
+      ) : (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:16 }}>
+          {sorted.map((p, i) => {
+            const statusColor = STATUS_COLORS[p.status] || '#8b8b9e';
+            const leadColor   = LEAD_COLORS[p.leadType] || '#8b8b9e';
+            const lastNote    = dernNote(p);
+            return (
+              <div key={p._id} className="card"
+                onClick={() => openFiche(p)}
+                style={{ padding:20, cursor:'pointer', transition:'transform 0.15s,box-shadow 0.15s', borderTop:`3px solid ${statusColor}` }}
+                onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}
+              >
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
+                  <div className={`avatar ${AV_COLORS[i%AV_COLORS.length]}`} style={{ width:44, height:44, fontSize:15, flexShrink:0 }}>{ini(p)}</div>
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ fontWeight:600, fontSize:15, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      {p.entreprise || `${p.prenom} ${p.nom}`.trim() || 'Sans nom'}
+                    </div>
+                    <div style={{ fontSize:11, color:'var(--text-muted)' }}>
+                      {p.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'}{p.typeCommerce && p.typeCommerce!=='autre' ? ` · ${TYPE_COMMERCE_LABELS[p.typeCommerce]||p.typeCommerce}` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
+                  <span className={`badge ${STATUS_CLASS[p.status]||'badge-p0'}`}>{STATUS_LABELS[p.status]}</span>
+                  <span style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:`${leadColor}18`, color:leadColor }}>
+                    {LEAD_TYPES[p.leadType]||p.leadType}
+                  </span>
+                  {p.urgencyScore > 0 && (
+                    <span style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:p.urgencyScore>=7?'rgba(240,68,56,0.1)':'rgba(247,144,9,0.1)', color:p.urgencyScore>=7?'var(--danger)':'var(--warning)', display:'flex', alignItems:'center', gap:3 }}>
+                      <AlertTriangle size={9}/>{p.urgencyScore}/10
+                    </span>
+                  )}
+                </div>
+                {(p.produits||[]).length > 0 && (
+                  <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
+                    {p.produits.map(code => <ProduitBadge key={code} code={code}/>)}
+                  </div>
+                )}
+                <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:8 }}>
+                  {p.fournisseurAlarme && p.fournisseurAlarme!=='inconnu' && p.fournisseurAlarme!=='aucun' && (
+                    <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:5 }}>
+                      <Shield size={10} color="#f04438"/> {FOURN_ALARME[p.fournisseurAlarme]}
+                      {p.fournisseurProposeAlarme && p.fournisseurProposeAlarme!=='aucun' && <span style={{ color:'#f04438', fontWeight:600 }}>→ {FOURN_ALARME[p.fournisseurProposeAlarme]}</span>}
+                    </span>
+                  )}
+                  {p.fournisseurInternet && p.fournisseurInternet!=='inconnu' && p.fournisseurInternet!=='aucun' && (
+                    <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:5 }}>
+                      <Wifi size={10} color="#3b6cf8"/> {FOURN_INTERNET[p.fournisseurInternet]}
+                      {p.fournisseurProposeInternet && p.fournisseurProposeInternet!=='aucun' && <span style={{ color:'#3b6cf8', fontWeight:600 }}>→ {FOURN_INTERNET[p.fournisseurProposeInternet]}</span>}
+                    </span>
+                  )}
+                  {p.fournisseurMobile && p.fournisseurMobile!=='inconnu' && p.fournisseurMobile!=='aucun' && (
+                    <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:5 }}>
+                      <Smartphone size={10} color="#12b76a"/> {FOURN_MOBILE[p.fournisseurMobile]}
+                      {p.fournisseurProposeMobile && p.fournisseurProposeMobile!=='aucun' && <span style={{ color:'#12b76a', fontWeight:600 }}>→ {FOURN_MOBILE[p.fournisseurProposeMobile]}</span>}
+                    </span>
+                  )}
+                </div>
+                {p.qualificationSysteme && p.qualificationSysteme!=='inconnu' && (
+                  <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8, background:'var(--bg-secondary)', padding:'4px 8px', borderRadius:6, display:'inline-block' }}>
+                    🔒 {QUALIF_LABELS[p.qualificationSysteme]}
+                  </div>
+                )}
+                {p.summary && (
+                  <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:8, lineHeight:1.5, background:'var(--bg-secondary)', padding:'8px 10px', borderRadius:8, borderLeft:`3px solid ${leadColor}`, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                    {p.summary}
+                  </div>
+                )}
+                {lastNote && (
+                  <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8, background:'var(--bg-secondary)', padding:'6px 10px', borderRadius:8, borderLeft:'3px solid #12b76a', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', fontStyle:'italic' }}>
+                    💬 {lastNote}
+                  </div>
+                )}
+                <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                  {p.telephone && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}><Phone size={11}/>{p.telephone}</span>}
+                  {p.email     && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Mail size={11}/>{p.email}</span>}
+                  {p.ville     && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}><MapPin size={11}/>{p.ville}</span>}
+                  {(p.prenom||p.nom) && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}><User size={11}/>{p.prenom} {p.nom}</span>}
+                  <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:6 }}><Clock size={10}/>{fmtDate(p.createdAt)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* ULTRA-FICHE — identique à ton code                                  */}
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {modal === 'fiche' && selected && (
+        <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) setModal(null); }} style={{ alignItems:'flex-start', padding:'20px', overflowY:'auto' }}>
+          <div style={{ background:'var(--bg-card)', borderRadius:16, width:'100%', maxWidth:940, margin:'0 auto', overflow:'hidden', boxShadow:'0 25px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ background:`linear-gradient(135deg,${STATUS_COLORS[selected.status]||'#12b76a'}20,transparent)`, borderBottom:`3px solid ${STATUS_COLORS[selected.status]||'#12b76a'}`, padding:'28px 28px 20px' }}>
+              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+                  <div className={`avatar ${AV_COLORS[0]}`} style={{ width:64, height:64, fontSize:22, flexShrink:0 }}>{ini(selected)}</div>
+                  <div>
+                    <h2 style={{ margin:'0 0 4px', fontSize:22 }}>{selected.entreprise || `${selected.prenom} ${selected.nom}`.trim() || 'Sans nom'}</h2>
+                    <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:8 }}>
+                      {selected.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'} · {TYPE_COMMERCE_LABELS[selected.typeCommerce]||''} {selected.ville?`· ${selected.ville}`:''}
+                    </div>
+                    <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                      <span className={`badge ${STATUS_CLASS[selected.status]||'badge-p0'}`}>{STATUS_LABELS[selected.status]}</span>
+                      <span style={{ fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:20, background:`${LEAD_COLORS[selected.leadType]||'#8b8b9e'}20`, color:LEAD_COLORS[selected.leadType]||'#8b8b9e' }}>{LEAD_TYPES[selected.leadType]}</span>
+                      {(selected.produits||[]).map(c => <ProduitBadge key={c} code={c}/>)}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display:'flex', gap:8, flexShrink:0 }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setModal(null)}><X size={16}/></button>
+                </div>
+              </div>
+            </div>
+            <div style={{ padding:28 }}>
+              <div style={{ marginBottom:24 }}>
+                <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Pipeline</div>
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                  {Object.entries(STATUS_LABELS).map(([k,v]) => (
+                    <button key={k} onClick={() => changeStatus(selected,k)}
+                      style={{ padding:'6px 14px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', border:`2px solid ${selected.status===k?STATUS_COLORS[k]:'var(--border)'}`, background:selected.status===k?STATUS_COLORS[k]:'var(--bg-secondary)', color:selected.status===k?'#fff':'var(--text-secondary)', transition:'all 0.15s' }}>
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:20 }}>
+                <FicheSection title="Contact">
+                  <InfoRow icon={<User size={12}/>}  label="Prénom"    val={selected.prenom}    />
+                  <InfoRow icon={<User size={12}/>}  label="Nom"       val={selected.nom}       />
+                  <InfoRow icon={<Tag size={12}/>}   label="Sexe"      val={selected.sexe==='homme'?'Homme':selected.sexe==='femme'?'Femme':null} />
+                  <InfoRow icon={<Phone size={12}/>} label="Téléphone" val={selected.telephone} />
+                  <InfoRow icon={<Mail size={12}/>}  label="Email"     val={selected.email}     />
+                </FicheSection>
+                <FicheSection title="Localisation">
+                  <InfoRow icon={<MapPin size={12}/>} label="Adresse"          val={selected.adresse}         />
+                  <InfoRow icon={<MapPin size={12}/>} label="Ancienne adresse" val={selected.ancienneAdresse} />
+                  <InfoRow icon={<MapPin size={12}/>} label="Ville"            val={selected.ville}           />
+                  <InfoRow icon={<Tag size={12}/>}    label="Région"           val={selected.region}          />
+                </FicheSection>
+                <FicheSection title="Système">
+                  <InfoRow icon={<Shield size={12}/>}   label="Qualification" val={QUALIF_LABELS[selected.qualificationSysteme]} />
+                  <InfoRow icon={<Calendar size={12}/>} label="Ajouté le"     val={fmtDate(selected.createdAt)} />
+                </FicheSection>
+              </div>
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Fournisseurs — Actuel → Proposé</div>
+                <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'16px', display:'flex', flexDirection:'column', gap:12 }}>
+                  <FournisseurRow icon={<Shield size={13} color="#f04438"/>}    color="#f04438" label="Alarme"   actuel={getFournLabel('alarme',   selected.fournisseurAlarme)}   propose={getFournLabel('alarme',   selected.fournisseurProposeAlarme)}/>
+                  <FournisseurRow icon={<Wifi size={13} color="#3b6cf8"/>}      color="#3b6cf8" label="Internet" actuel={getFournLabel('internet', selected.fournisseurInternet)} propose={getFournLabel('internet', selected.fournisseurProposeInternet)}/>
+                  <FournisseurRow icon={<Smartphone size={13} color="#12b76a"/>}color="#12b76a" label="Mobile"  actuel={getFournLabel('mobile',   selected.fournisseurMobile)}   propose={getFournLabel('mobile',   selected.fournisseurProposeMobile)}/>
+                </div>
+              </div>
+              {selected.summary && (
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Résumé</div>
+                  <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.7, borderLeft:'3px solid #12b76a', whiteSpace:'pre-wrap' }}>{selected.summary}</div>
+                </div>
+              )}
+              {selected.sourceText && (
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Texte source</div>
+                  <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px', fontSize:12, color:'var(--text-secondary)', lineHeight:1.6, borderLeft:'3px solid var(--border)', whiteSpace:'pre-wrap', maxHeight:160, overflowY:'auto' }}>{selected.sourceText}</div>
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:12 }}>
+                  Notes ({selected.notes?.length||0})
+                </div>
+                {selected.notes?.length > 0 ? (
+                  <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
+                    {[...selected.notes].reverse().map((n, idx) => {
+                      const realIdx = (selected.notes.length - 1) - idx;
+                      return (
+                        <div key={idx} style={{ background:'var(--bg-secondary)', borderRadius:8, padding:'10px 14px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.5, borderLeft:'3px solid #12b76a', display:'flex', alignItems:'flex-start', gap:10 }}>
+                          <span style={{ flex:1 }}>{n}</span>
+                          <button onClick={() => deleteNote(selected, realIdx)}
+                            style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', flexShrink:0, padding:'2px', borderRadius:4, transition:'color 0.15s' }}
+                            onMouseEnter={e => e.currentTarget.style.color='var(--danger)'}
+                            onMouseLeave={e => e.currentTarget.style.color='var(--text-muted)'}
+                            title="Supprimer cette note">
+                            <Trash2 size={13}/>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ color:'var(--text-muted)', fontSize:13, padding:'12px 0', marginBottom:12 }}>Aucune note pour l'instant</div>
+                )}
+                <textarea className="input" style={{ resize:'vertical', minHeight:80, marginBottom:8 }} placeholder="Ajouter une note..." value={noteText} onChange={e => setNoteText(e.target.value)}/>
+                <button className="btn btn-primary" onClick={() => addNote(selected)} style={{ width:'100%' }}>
+                  <Plus size={13}/> Ajouter la note
+                </button>
+              </div>
+            </div>
+            <div style={{ padding:'16px 28px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between' }}>
+              <button className="btn btn-danger btn-sm" onClick={e => handleDelete(selected,e)}><Trash2 size={13}/> Supprimer</button>
+              <button className="btn btn-primary btn-sm" onClick={e => openEdit(selected,e)}><Edit2 size={13}/> Modifier</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* MODAL ADD / EDIT — DESIGN MODERNE PAR ONGLETS                       */}
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {(modal==='add'||modal==='edit') && (
+        <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) setModal(null); }}>
+          <div style={{ background:'var(--bg-card)', borderRadius:16, width:'100%', maxWidth:680, margin:'auto', overflow:'hidden', boxShadow:'0 25px 60px rgba(0,0,0,0.3)', maxHeight:'90vh', display:'flex', flexDirection:'column' }}>
+
+            {/* ── Header coloré ── */}
+            <div style={{ background:'linear-gradient(135deg,#12b76a20,#12b76a08)', borderBottom:'3px solid #12b76a', padding:'20px 24px 0' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div className={`avatar ${AV_COLORS[0]}`} style={{ width:44, height:44, fontSize:16, flexShrink:0 }}>
+                    {form.prenom?.[0] || form.entreprise?.[0] || (modal==='add'?'+':'E')}
+                  </div>
+                  <div>
+                    <h2 style={{ margin:0, fontSize:17 }}>
+                      {modal==='add' ? 'Nouvelle fiche' : (form.entreprise || `${form.prenom} ${form.nom}`.trim() || 'Modifier')}
+                    </h2>
+                    <div style={{ fontSize:12, color:'var(--text-muted)' }}>
+                      {modal==='add' ? 'Remplis les informations ci-dessous' : 'Modification de la fiche'}
+                    </div>
+                  </div>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={() => setModal(null)}><X size={16}/></button>
+              </div>
+
+              {/* Onglets */}
+              <div style={{ display:'flex', gap:0 }}>
+                {TABS.map((tab, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveTab(idx)}
+                    style={{ padding:'10px 18px', fontSize:12, fontWeight:600, cursor:'pointer', border:'none', borderBottom: activeTab===idx ? '2px solid #12b76a' : '2px solid transparent', background:'transparent', color: activeTab===idx ? '#12b76a' : 'var(--text-muted)', transition:'all 0.15s', whiteSpace:'nowrap' }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Contenu onglets ── */}
+            <div style={{ overflowY:'auto', flex:1, padding:'20px 24px' }}>
+
+              {/* ONGLET 0 — Contact */}
+              {activeTab === 0 && (
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                    {[['prenom','Prénom','Marc'],['nom','Nom','Tremblay'],['telephone','Téléphone','514-555-0101'],['email','Email','contact@exemple.com']].map(([k,l,ph]) => (
+                      <div key={k} className="form-group">
+                        <label className="form-label">{l}</label>
+                        <input className="input" placeholder={ph} value={form[k]||''} onChange={e => setFld(k,e.target.value)}/>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                    <div className="form-group">
+                      <label className="form-label">Sexe</label>
+                      <select className="select" value={form.sexe} onChange={e => setFld('sexe',e.target.value)}>
+                        <option value="inconnu">Inconnu</option>
+                        <option value="homme">Homme</option>
+                        <option value="femme">Femme</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Statut</label>
+                      <select className="select" value={form.status} onChange={e => setFld('status',e.target.value)}>
+                        {Object.entries(STATUS_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                    <div className="form-group">
+                      <label className="form-label">Adresse</label>
+                      <input className="input" placeholder="123 rue..." value={form.adresse||''} onChange={e => setFld('adresse',e.target.value)}/>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Ancienne adresse (déménagement)</label>
+                      <input className="input" placeholder="Ancienne adresse..." value={form.ancienneAdresse||''} onChange={e => setFld('ancienneAdresse',e.target.value)}/>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Ville</label>
+                      <select className="select" value={form.ville} onChange={e => setFld('ville',e.target.value)}>
+                        {VILLES.filter(v=>v).map(v => <option key={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Urgence (0-10)</label>
+                      <input type="number" min="0" max="10" className="input" value={form.urgencyScore} onChange={e => setFld('urgencyScore',Number(e.target.value))}/>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ONGLET 1 — Entreprise */}
+              {activeTab === 1 && (
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                    <div className="form-group">
+                      <label className="form-label">Nom de l'entreprise</label>
+                      <input className="input" placeholder="Restaurant Belle Vue..." value={form.entreprise||''} onChange={e => setFld('entreprise',e.target.value)}/>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Type client</label>
+                      <select className="select" value={form.typeClient} onChange={e => setFld('typeClient',e.target.value)}>
+                        <option value="b2b">🏢 B2B — Commerce</option>
+                        <option value="b2c">🏠 B2C — Résidentiel</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Type de commerce</label>
+                      <select className="select" value={form.typeCommerce} onChange={e => setFld('typeCommerce',e.target.value)}>
+                        {Object.entries(TYPE_COMMERCE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Type de lead</label>
+                      <select className="select" value={form.leadType} onChange={e => setFld('leadType',e.target.value)}>
+                        {Object.entries(LEAD_TYPES).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">URL source</label>
+                      <input className="input" placeholder="https://..." value={form.sourceUrl||''} onChange={e => setFld('sourceUrl',e.target.value)}/>
+                    </div>
+                  </div>
+
+                  {/* Produits — boutons toggle */}
+                  <div>
+                    <label className="form-label" style={{ marginBottom:8, display:'block' }}>Produits d'intérêt</label>
+                    <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                      {Object.entries(PRODUIT_LABELS).map(([k,v]) => {
+                        const sel   = (form.produits||[]).includes(k);
+                        const color = PRODUIT_COLORS[k]||'#8b8b9e';
+                        const Icon  = PRODUIT_ICONS[k]||Tag;
+                        return (
+                          <button key={k} type="button" onClick={() => toggleProduit(k)}
+                            style={{ padding:'8px 14px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', border:`2px solid ${sel?color:'var(--border)'}`, background:sel?`${color}18`:'var(--bg-secondary)', color:sel?color:'var(--text-muted)', display:'flex', alignItems:'center', gap:6, transition:'all 0.15s' }}>
+                            <Icon size={13}/> {v}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ONGLET 2 — Système & Fournisseurs */}
+              {activeTab === 2 && (
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                  <div className="form-group">
+                    <label className="form-label">Qualification du système existant</label>
+                    <select className="select" value={form.qualificationSysteme} onChange={e => setFld('qualificationSysteme',e.target.value)}>
+                      {Object.entries(QUALIF_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Fournisseurs Actuel → Proposé */}
+                  {[
+                    { label:'Alarme / Sécurité', icon:<Shield size={14} color="#f04438"/>, color:'#f04438', aKey:'fournisseurAlarme',   pKey:'fournisseurProposeAlarme',   list:FOURN_ALARME   },
+                    { label:'Internet',           icon:<Wifi size={14} color="#3b6cf8"/>,   color:'#3b6cf8', aKey:'fournisseurInternet', pKey:'fournisseurProposeInternet', list:FOURN_INTERNET },
+                    { label:'Mobile',             icon:<Smartphone size={14} color="#12b76a"/>, color:'#12b76a', aKey:'fournisseurMobile', pKey:'fournisseurProposeMobile', list:FOURN_MOBILE },
+                  ].map(({ label, icon, color, aKey, pKey, list }) => (
+                    <div key={label} style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+                        {icon}
+                        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{label}</span>
+                      </div>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr', gap:10, alignItems:'center' }}>
+                        <div>
+                          <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Actuel</div>
+                          <select className="select" value={form[aKey]} onChange={e => setFld(aKey,e.target.value)}>
+                            {Object.entries(list).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div style={{ textAlign:'center', color:'var(--text-muted)', fontSize:20, paddingTop:16 }}>→</div>
+                        <div>
+                          <div style={{ fontSize:10, color, fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Proposé</div>
+                          <select className="select" value={form[pKey]} onChange={e => setFld(pKey,e.target.value)} style={{ borderColor:`${color}40` }}>
+                            {Object.entries(list).filter(([k]) => k!=='inconnu').map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ONGLET 3 — Résumé & Source */}
+              {activeTab === 3 && (
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                  <div className="form-group">
+                    <label className="form-label">Résumé de l'opportunité</label>
+                    <textarea className="input" style={{ resize:'vertical', minHeight:100 }} placeholder="Pourquoi ce lead est pertinent..." value={form.summary||''} onChange={e => setFld('summary',e.target.value)}/>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Texte source (copié de Solution Express)</label>
+                    <textarea className="input" style={{ resize:'vertical', minHeight:100 }} placeholder="Colle ici le texte..." value={form.sourceText||''} onChange={e => setFld('sourceText',e.target.value)}/>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Footer — navigation + sauvegarder ── */}
+            <div style={{ padding:'14px 24px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', background:'var(--bg-card)' }}>
+              <div style={{ display:'flex', gap:6 }}>
+                {TABS.map((tab, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveTab(idx)}
+                    style={{ width:8, height:8, borderRadius:'50%', border:'none', cursor:'pointer', background: activeTab===idx ? '#12b76a' : 'var(--border)', padding:0, transition:'background 0.15s' }}
+                  />
+                ))}
+              </div>
+              <div style={{ display:'flex', gap:8 }}>
+                <button className="btn" onClick={() => setModal(null)}>Annuler</button>
+                {activeTab < TABS.length - 1 ? (
+                  <button className="btn btn-primary" onClick={() => setActiveTab(t => t + 1)}>
+                    Suivant →
+                  </button>
+                ) : (
+                  <button className="btn btn-primary" onClick={handleSubmit}>
+                    {modal==='add' ? '✓ Ajouter' : '✓ Sauvegarder'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

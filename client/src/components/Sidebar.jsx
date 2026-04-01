@@ -1,16 +1,15 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Kanban, MessageSquare, Shield, LogOut, Database, Linkedin, Bell, Map } from 'lucide-react';
+import { LayoutDashboard, Kanban, Building, Shield, LogOut, Database, Bell,  } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const NAV = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/linkedin', icon: Linkedin, label: 'LinkedIn', color: '#0077b5' },
   { to: '/google-alerts', icon: Bell, label: 'Google Alerts', color: '#ea4335' },
-  { to: '/google-maps', icon: Map, label: 'Google Maps', color: '#4285f4' },
+    { to: '/solution-express', icon: Building, label: 'Solution Express','color':'#11418f' },
   { to: '/pipeline', icon: Kanban, label: 'Pipeline' },
-  { to: '/messages', icon: MessageSquare, label: 'Messages' },
+
   { to: '/database', icon: Database, label: 'Base de données' },
 ];
 

@@ -3,34 +3,49 @@ import axios from 'axios';
 import { Plus, MapPin, Phone, User, X, Edit2, Trash2, MessageSquare, Bell, Sparkles, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+// ─── INTERCEPTEUR AXIOS ───────────────────────────────
+// Ajoute automatiquement le token JWT à chaque requête
 axios.interceptors.request.use(config => {
   const token = localStorage.getItem('sf_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
+// ─── CONSTANTES ───────────────────────────────────────
 const AV = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
+
+// Liste des villes disponibles dans le formulaire
 const VILLES = ['','Montreal','Laval','Longueuil','Boucherville','Repentigny','Vaudreuil-Dorion','Terrebonne','Saint-Jean-sur-Richelieu','Saint-Jerome','Saint-Sauveur','Salaberry-de-Valleyfield','Sorel-Tracy','Granby','Trois-Rivieres','Shawinigan','Louiseville','Drummondville','Victoriaville','Ottawa','Gatineau','Ville de Quebec'];
 
-const ALERT_TYPES = { incendie:'Incendie', vol:'Vol', nouvelle_entreprise:'Nouvelle entreprise', ouverture:'Ouverture', incident:'Incident', autre:'Autre' };
+// Types d'alertes possibles (vient du modèle GoogleAlert.js)
+const ALERT_TYPES = { incendie:'Incendie', vol:'Vol', nouvelle_entreprise:'Nouvelle entreprise', ouverture:'Ouverture', demenagement:'Déménagement', reouverture:'Réouverture', incident:'Incident', autre:'Autre' };
+// Labels et classes CSS pour les statuts (vient du modèle GoogleAlert.js)
 const STATUS_LABELS = { new:'Nouveau', analyzed:'Analysé', contacted:'Contacté', saved:'Sauvegardé', ignored:'Ignoré' };
 const STATUS_CLASS = { new:'badge-p0', analyzed:'badge-p1', contacted:'badge-p2', saved:'badge-won', ignored:'badge-dead' };
-const ALERT_COLORS = { incendie:'#f04438', vol:'#f79009', nouvelle_entreprise:'#12b76a', ouverture:'#3b6cf8', incident:'#a764f8', autre:'#8b8b9e' };
 
+// Couleurs visuelles par type d'alerte
+const ALERT_COLORS = { incendie:'#f04438', vol:'#f79009', nouvelle_entreprise:'#12b76a', ouverture:'#3b6cf8', demenagement:'#0077b5', reouverture:'#f79009', incident:'#a764f8', autre:'#8b8b9e' };
+// Formulaire vide par défaut — utilisé pour "add" et "reset"
 const EMPTY = { alertText:'', keyword:'', sourceUrl:'', entreprise:'', prenom:'', nom:'', email:'', telephone:'', adresse:'', ville:'Montreal', alertType:'autre', aiSummary:'', urgencyScore:0, status:'new' };
+
+// Style réutilisable pour les inputs
 const inputSt = { width:'100%', padding:'7px 10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', color:'var(--text-primary)', fontSize:13, fontFamily:'var(--font-body)', outline:'none' };
 
 export default function GoogleAlerts() {
-  const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ prenom:'',nom:'',entreprise:'',telephone:'',email:'',ville:'',alertType:'',status:'' });
-  const [modal, setModal] = useState(null);
-  const [form, setForm] = useState(EMPTY);
-  const [alertInput, setAlertInput] = useState('');
-  const [noteText, setNoteText] = useState('');
-  const [selected, setSelected] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  // ─── ÉTATS ────────────────────────────────────────────
+  const [alerts, setAlerts] = useState([]);       // liste des alertes depuis MongoDB
+  const [loading, setLoading] = useState(true);   // chargement initial
+  const [filters, setFilters] = useState({ prenom:'',nom:'',entreprise:'',telephone:'',email:'',ville:'',alertType:'',status:'' }); // filtres actifs
+  const [modal, setModal] = useState(null);        // 'add' | 'edit' | 'detail' | 'notes' | 'analyze' | null
+  const [form, setForm] = useState(EMPTY);         // données du formulaire add/edit
+  const [alertInput, setAlertInput] = useState(''); // texte brut de l'alerte Google à analyser
+  const [noteText, setNoteText] = useState('');    // texte de la note en cours
+  const [selected, setSelected] = useState(null);  // alerte sélectionnée (pour detail/edit/notes)
+  const [aiLoading, setAiLoading] = useState(false); // spinner pendant l'analyse Groq
+  const [alertUrl, setAlertUrl] = useState('');    // URL optionnelle de l'article
 
+  // ─── FETCH ────────────────────────────────────────────
+  // Charge toutes les alertes depuis GET /api/google-alerts
   const fetchAlerts = useCallback(async () => {
     try {
       const r = await axios.get('/api/google-alerts');
@@ -41,9 +56,11 @@ export default function GoogleAlerts() {
 
   useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
 
-  const setF = (k, v) => setFilters(f => ({ ...f, [k]: v }));
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  // ─── HELPERS ──────────────────────────────────────────
+  const setF = (k, v) => setFilters(f => ({ ...f, [k]: v })); // met à jour un filtre
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));     // met à jour le formulaire
 
+  // Filtre côté client (pas de requête serveur)
   const filtered = alerts.filter(p =>
     (p.prenom||'').toLowerCase().startsWith(filters.prenom.toLowerCase()) &&
     (p.nom||'').toLowerCase().startsWith(filters.nom.toLowerCase()) &&
@@ -55,35 +72,50 @@ export default function GoogleAlerts() {
     (!filters.status || p.status === filters.status)
   );
 
-  const hasFilters = Object.values(filters).some(v => v);
-  const ini = p => ((p.prenom?.[0]||p.entreprise?.[0]||'G')).toUpperCase();
+  const hasFilters = Object.values(filters).some(v => v); // true si au moins un filtre actif
+  const ini = p => ((p.prenom?.[0]||p.entreprise?.[0]||'G')).toUpperCase(); // initiale avatar
 
+  // ─── OUVERTURE MODALS ─────────────────────────────────
   const openAdd = () => { setForm(EMPTY); setModal('add'); };
   const openEdit = (p, e) => { if(e) e.stopPropagation(); setForm({...p}); setSelected(p); setModal('edit'); };
   const openNotes = (p, e) => { if(e) e.stopPropagation(); setSelected(p); setNoteText(''); setModal('notes'); };
   const openDetail = (p) => { setSelected(p); setModal('detail'); };
   const openAnalyze = () => { setAlertInput(''); setModal('analyze'); };
 
-  // Analyse avec Gemini (gratuit) puis sauvegarde dans MongoDB
+  // ─── ANALYSE GROQ ─────────────────────────────────────
+  // Envoie le texte brut à POST /api/google-alerts/analyze-gemini
+  // Le backend (claudeService.js) analyse avec Groq et sauvegarde dans MongoDB
+  // Pour changer l'IA : modifier claudeService.js côté serveur
   const handleAnalyze = async () => {
-  if (!alertInput.trim()) return toast.error("Colle le texte de l'alerte Google");
-  setAiLoading(true);
-  try {
-    await axios.post('/api/google-alerts/analyze-gemini', { alertText: alertInput });
-    toast.success('Alerte analysée et sauvegardée !');
-    setModal(null);
-    fetchAlerts();
-  } catch (err) {
-    if (err.response?.status === 429) {
-      toast.error('Limite Gemini — réessaie dans 1 minute', { duration: 5000 });
-    } else {
-      toast.error('Erreur — ' + (err.response?.data?.message || 'vérfie le backend'));
+if (!alertInput.trim() && !alertUrl.trim()) return toast.error("Colle le texte ou un lien URL");    setAiLoading(true);
+    try {
+     const res = await axios.post('/api/google-alerts/analyze-gemini', {
+  alertText: alertInput,
+  sourceUrl: alertUrl
+});
+if (res.data.exclure) {
+  toast('🚫 Exclu — ' + res.data.raison, { duration: 4000 });
+} else {
+  toast.success('Alerte analysée et sauvegardée !');
+  fetchAlerts();
+}
+      setModal(null);
+      setAlertUrl('');    // ← vide l'URL
+setAlertInput('');  // ← vide le texte aussi
+      fetchAlerts();
+    } catch (err) {
+      if (err.response?.status === 429) {
+        toast.error('Limite Groq — réessaie dans 1 minute', { duration: 5000 });
+      } else {
+        toast.error('Erreur — ' + (err.response?.data?.message || 'vérfie le backend'));
+      }
+    } finally {
+      setAiLoading(false);
     }
-  } finally {
-    setAiLoading(false);
-  }
-};
+  };
 
+  // ─── CRUD ─────────────────────────────────────────────
+  // Ajoute (POST) ou modifie (PUT) une alerte manuellement
   const handleSubmit = async () => {
     try {
       if (modal === 'add') { await axios.post('/api/google-alerts', form); toast.success('Alerte ajoutée !'); }
@@ -92,6 +124,7 @@ export default function GoogleAlerts() {
     } catch(err) { toast.error(err.response?.data?.message || 'Erreur'); }
   };
 
+  // Supprime une alerte via DELETE /api/google-alerts/:id
   const handleDelete = async (p, e) => {
     if(e) e.stopPropagation();
     if (!confirm('Supprimer cette alerte ?')) return;
@@ -99,6 +132,8 @@ export default function GoogleAlerts() {
     toast.success('Supprimé'); setModal(null); fetchAlerts();
   };
 
+  // Ajoute une note — fait un PUT avec les notes existantes + la nouvelle
+  // Pour améliorer : créer une route POST /api/google-alerts/:id/notes côté backend
   const addNote = async (p) => {
     if (!noteText.trim()) return;
     try {
@@ -110,6 +145,7 @@ export default function GoogleAlerts() {
 
   return (
     <div className="animate-fade">
+      {/* ─── HEADER ─────────────────────────────────────── */}
       <div className="page-header flex-between">
         <div style={{display:'flex',alignItems:'center',gap:12}}>
           <div style={{width:40,height:40,borderRadius:10,background:'#ea4335',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -117,7 +153,7 @@ export default function GoogleAlerts() {
           </div>
           <div>
             <h1>Google Alerts</h1>
-            <p style={{color:'var(--text-muted)',fontSize:13}}>Alertes analysées par Gemini AI — gratuit</p>
+            <p style={{color:'var(--text-muted)',fontSize:13}}>Alertes analysées par Groq AI </p>
           </div>
         </div>
         <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:8}}>
@@ -125,16 +161,19 @@ export default function GoogleAlerts() {
             {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
           </div>
           <div style={{display:'flex',gap:8}}>
+            {/* Bouton principal — ouvre le modal d'analyse Groq */}
             <button className="btn" onClick={openAnalyze} style={{background:'rgba(234,67,53,0.1)',borderColor:'rgba(234,67,53,0.2)',color:'#ea4335'}}>
-              <Sparkles size={15}/> Analyser avec Gemini
+              <Sparkles size={15}/> Analyser avec Groq
             </button>
-            <button className="btn btn-primary" onClick={openAdd}><Plus size={15}/>Manuel</button>
+            {/* Bouton secondaire — ajoute manuellement sans IA */}
+            <button className="btn btn-primary" onClick={openAdd}><Plus size={15}/></button>
           </div>
         </div>
       </div>
 
-      {/* FILTRES */}
+      {/* ─── FILTRES ─────────────────────────────────────── */}
       <div className="card" style={{ padding:16, marginBottom:20 }}>
+        {/* Filtres texte — filtre côté client en temps réel */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(5, minmax(0,1fr))', gap:10, marginBottom:10 }}>
           {[['prenom','Prénom'],['nom','Nom'],['entreprise','Entreprise'],['telephone','Téléphone'],['email','Email']].map(([k,l])=>(
             <div key={k}>
@@ -143,6 +182,7 @@ export default function GoogleAlerts() {
             </div>
           ))}
         </div>
+        {/* Filtres dropdown */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3, minmax(0,1fr))', gap:10 }}>
           <div>
             <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Ville</div>
@@ -173,11 +213,12 @@ export default function GoogleAlerts() {
         )}
       </div>
 
+      {/* Compteur de résultats */}
       <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>
         {filtered.length} alerte{filtered.length!==1?'s':''} {hasFilters?'trouvée':'au total'}
       </div>
 
-      {/* GRID CARDS */}
+      {/* ─── GRID CARDS ──────────────────────────────────── */}
       {loading ? (
         <div style={{textAlign:'center',padding:60,color:'var(--text-muted)'}}>Chargement...</div>
       ) : filtered.length === 0 ? (
@@ -185,18 +226,20 @@ export default function GoogleAlerts() {
           <Bell size={40}/>
           <p>{hasFilters?'Aucun résultat':'Aucune alerte Google'}</p>
           <button className="btn" onClick={openAnalyze} style={{marginTop:16,background:'rgba(234,67,53,0.1)',borderColor:'rgba(234,67,53,0.2)',color:'#ea4335'}}>
-            <Sparkles size={14}/> Analyser une alerte avec Gemini
+            <Sparkles size={14}/> Analyser une alerte avec Groq
           </button>
         </div>
       ) : (
         <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:16}}>
           {filtered.map((p,i) => {
-            const alertColor = ALERT_COLORS[p.alertType] || '#8b8b9e';
+            const alertColor = ALERT_COLORS[p.alertType] || '#8b8b9e'; // couleur selon le type
             return (
               <div key={p._id} className="card" onClick={()=>openDetail(p)}
                 style={{padding:20,cursor:'pointer',transition:'transform 0.15s, box-shadow 0.15s',borderTop:`3px solid ${alertColor}`}}
                 onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'}}
                 onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow=''}}>
+
+                {/* Avatar + Nom/Entreprise */}
                 <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
                   <div className={`avatar ${AV[i%AV.length]}`} style={{width:44,height:44,fontSize:15,flexShrink:0}}>{ini(p)}</div>
                   <div style={{minWidth:0}}>
@@ -204,24 +247,33 @@ export default function GoogleAlerts() {
                     {p.keyword && <div style={{fontSize:12,color:'var(--text-muted)'}}>Mot-clé: {p.keyword}</div>}
                   </div>
                 </div>
+
+                {/* Badges statut + type + urgence */}
                 <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
                   <span className={`badge ${STATUS_CLASS[p.status]||'badge-p2'}`}>{STATUS_LABELS[p.status]}</span>
                   <span style={{fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:20,background:`${alertColor}18`,color:alertColor}}>{ALERT_TYPES[p.alertType]||p.alertType}</span>
+                  {/* Score d'urgence — généré par Groq lors de l'analyse */}
                   {p.urgencyScore > 0 && (
                     <span style={{fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:20,background:p.urgencyScore>=7?'rgba(240,68,56,0.1)':'rgba(247,144,9,0.1)',color:p.urgencyScore>=7?'var(--danger)':'var(--warning)',display:'flex',alignItems:'center',gap:3}}>
                       <AlertTriangle size={9}/>{p.urgencyScore}/10
                     </span>
                   )}
                 </div>
+
+                {/* Résumé IA — généré par Groq (champ aiSummary dans MongoDB) */}
                 {p.aiSummary && (
                   <div style={{fontSize:12,color:'var(--text-secondary)',marginBottom:12,lineHeight:1.5,background:'var(--bg-secondary)',padding:'8px 10px',borderRadius:8,borderLeft:'3px solid var(--accent)',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>
                     {p.aiSummary}
                   </div>
                 )}
+
+                {/* Infos contact */}
                 <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:14}}>
                   {p.ville && <span style={{fontSize:12,color:'var(--text-secondary)',display:'flex',alignItems:'center',gap:6}}><MapPin size={11}/>{p.ville}</span>}
                   {p.telephone && <span style={{fontSize:12,color:'var(--text-secondary)',display:'flex',alignItems:'center',gap:6}}><Phone size={11}/>{p.telephone}</span>}
                 </div>
+
+                {/* Actions rapides — stopPropagation pour ne pas ouvrir le detail */}
                 <div style={{display:'flex',gap:6,borderTop:'1px solid var(--border)',paddingTop:12}} onClick={e=>e.stopPropagation()}>
                   <button className="btn btn-sm" onClick={e=>openNotes(p,e)} title="Notes" style={{flex:1}}><MessageSquare size={12}/></button>
                   <button className="btn btn-sm" onClick={e=>openEdit(p,e)} title="Modifier" style={{flex:1}}><Edit2 size={12}/></button>
@@ -233,17 +285,27 @@ export default function GoogleAlerts() {
         </div>
       )}
 
-      {/* MODAL ANALYSER */}
+      {/* ─── MODAL ANALYSER ──────────────────────────────── */}
+      {/* Envoie à POST /api/google-alerts/analyze-gemini → claudeService.js → Groq API */}
       {modal==='analyze' && (
         <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)setModal(null)}}>
           <div className="modal">
             <div className="modal-header">
-              <h2 style={{display:'flex',alignItems:'center',gap:8}}><Sparkles size={18} color="#ea4335"/>Analyser avec Gemini AI</h2>
+              <h2 style={{display:'flex',alignItems:'center',gap:8}}><Sparkles size={18} color="#ea4335"/>Analyser avec Groq AI</h2>
               <button className="btn btn-ghost btn-sm" onClick={()=>setModal(null)}><X size={16}/></button>
             </div>
-            <p style={{fontSize:13,color:'var(--text-muted)',marginBottom:16}}>
-              Colle le texte de ton email Google Alert — Gemini extrait les infos et crée la fiche automatiquement.
+            <p style={{fontSize:13,color:'var(--text-muted)',marginBottom:10}}>
+              Colle le texte et/ou le lien de l'article.
             </p>
+            {/* URL optionnelle de l'article */}
+            <input
+              className="input"
+              style={{marginBottom:10}}
+              placeholder="Lien URL optionnel — https://..."
+              value={alertUrl}
+              onChange={e=>setAlertUrl(e.target.value)}
+            />
+            {/* Texte brut de l'alerte Google — copié depuis Gmail */}
             <textarea
               className="input"
               style={{resize:'vertical',minHeight:180}}
@@ -265,7 +327,7 @@ export default function GoogleAlerts() {
         </div>
       )}
 
-      {/* MODAL DETAIL */}
+      {/* ─── MODAL DETAIL ────────────────────────────────── */}
       {modal==='detail' && selected && (
         <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)setModal(null)}}>
           <div className="modal">
@@ -279,28 +341,34 @@ export default function GoogleAlerts() {
               </div>
               <button className="btn btn-ghost btn-sm" onClick={()=>setModal(null)}><X size={16}/></button>
             </div>
+
+            {/* Badges */}
             <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
               <span className={`badge ${STATUS_CLASS[selected.status]||'badge-p2'}`}>{STATUS_LABELS[selected.status]}</span>
               <span style={{fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:20,background:`${ALERT_COLORS[selected.alertType]||'#8b8b9e'}18`,color:ALERT_COLORS[selected.alertType]||'#8b8b9e'}}>{ALERT_TYPES[selected.alertType]}</span>
               {selected.urgencyScore > 0 && <span style={{fontSize:11,padding:'2px 8px',borderRadius:20,background:'rgba(240,68,56,0.1)',color:'var(--danger)'}}>Urgence {selected.urgencyScore}/10</span>}
             </div>
+
+            {/* Grille infos — tous les champs du modèle GoogleAlert */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
-{[['Prénom',selected.prenom||'—'],['Nom',selected.nom||'—'],['Entreprise',selected.entreprise||'—'],['Téléphone',selected.telephone||'—'],['Email',selected.email||'—'],['Ville',selected.ville||'—'],['Mot-clé',selected.keyword||'—'],['Adresse',selected.adresse||'—'],['Ajouté le',new Date(selected.createdAt).toLocaleDateString('fr-CA')]].map(([label,val])=>(
+              {[['Prénom',selected.prenom||'—'],['Nom',selected.nom||'—'],['Entreprise',selected.entreprise||'—'],['Téléphone',selected.telephone||'—'],['Email',selected.email||'—'],['Ville',selected.ville||'—'],['Mot-clé',selected.keyword||'—'],['Adresse',selected.adresse||'—'],['Ajouté le',new Date(selected.createdAt).toLocaleDateString('fr-CA')]].map(([label,val])=>(
                 <div key={label} style={{background:'var(--bg-secondary)',borderRadius:8,padding:'10px 12px'}}>
                   <div style={{fontSize:10,color:'var(--text-muted)',fontWeight:600,textTransform:'uppercase',marginBottom:3}}>{label}</div>
                   <div style={{fontSize:13,color:'var(--text-primary)'}}>{val}</div>
                 </div>
               ))}
             </div>
-           
-          {selected.alertText && (
-  <div style={{marginBottom:12}}>
-    <div style={{fontSize:11,color:'var(--text-muted)',fontWeight:600,textTransform:'uppercase',marginBottom:6}}> <Sparkles size={11} color="#ea4335"/>Résumé Gemini</div>
-    <div style={{background:'var(--bg-secondary)',borderRadius:8,padding:'10px 12px',fontSize:12,color:'var(--text-secondary)',lineHeight:1.6,maxHeight:120,overflowY:'auto'}}>
-      {selected.alertText}
-    </div>
-  </div>
-)}
+
+            {/* Texte brut de l'alerte — affiché comme résumé Groq */}
+            {selected.alertText && (
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:11,color:'var(--text-muted)',fontWeight:600,textTransform:'uppercase',marginBottom:6}}><Sparkles size={11} color="#ea4335"/>Résumé Groq</div>
+                <div style={{background:'var(--bg-secondary)',borderRadius:8,padding:'10px 12px',fontSize:12,color:'var(--text-secondary)',lineHeight:1.6,maxHeight:120,overflowY:'auto'}}>
+                  {selected.alertText}
+                </div>
+              </div>
+            )}
+
             <div className="modal-footer">
               <button className="btn btn-danger" onClick={e=>handleDelete(selected,e)}>Supprimer</button>
               <button className="btn" onClick={e=>openNotes(selected,e)}><MessageSquare size={13}/> Notes</button>
@@ -310,7 +378,8 @@ export default function GoogleAlerts() {
         </div>
       )}
 
-      {/* MODAL ADD/EDIT */}
+      {/* ─── MODAL ADD/EDIT ───────────────────────────────── */}
+      {/* Formulaire manuel — sans IA */}
       {(modal==='add'||modal==='edit') && (
         <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)setModal(null)}}>
           <div className="modal">
@@ -319,11 +388,19 @@ export default function GoogleAlerts() {
               <button className="btn btn-ghost btn-sm" onClick={()=>setModal(null)}><X size={16}/></button>
             </div>
             <div className="form-grid">
-              {[['prenom','Prénom','Marc'],['nom','Nom','Tremblay'],['entreprise','Entreprise','Restaurant...'],['telephone','Téléphone','514-555-0101'],['adresse','Adresse','123 rue...'],['keyword','Mot-clé','incendie Montréal']].map(([k,l,ph])=>(
+             {[
+  ['prenom','Prénom','Marc'],
+  ['nom','Nom','Tremblay'],
+  ['entreprise','Entreprise','Restaurant...'],
+  ['email','Email','contact@exemple.com'], // <-- LIGNE AJOUTÉE
+  ['telephone','Téléphone','514-555-0101'],
+  ['adresse','Adresse','123 rue...'],
+  ['keyword','Mot-clé','incendie Montréal']].map(([k,l,ph])=>(
                 <div key={k} className="form-group"><label className="form-label">{l}</label><input className="input" placeholder={ph} value={form[k]||''} onChange={e=>set(k,e.target.value)} /></div>
               ))}
               <div className="form-group"><label className="form-label">Ville</label><select className="select" value={form.ville} onChange={e=>set('ville',e.target.value)}>{VILLES.filter(v=>v).map(v=><option key={v}>{v}</option>)}</select></div>
               <div className="form-group"><label className="form-label">Type</label><select className="select" value={form.alertType} onChange={e=>set('alertType',e.target.value)}>{Object.entries(ALERT_TYPES).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
+              {/* Statut — pour changer manuellement le workflow */}
               <div className="form-group"><label className="form-label">Statut</label><select className="select" value={form.status} onChange={e=>set('status',e.target.value)}>{Object.entries(STATUS_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
             </div>
             <div className="modal-footer">
@@ -334,7 +411,7 @@ export default function GoogleAlerts() {
         </div>
       )}
 
-      {/* MODAL NOTES */}
+      {/* ─── MODAL NOTES ──────────────────────────────────── */}
       {modal==='notes' && selected && (
         <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)setModal(null)}}>
           <div className="modal">

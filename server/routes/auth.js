@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 
 const DEFAULT_AVATAR = "https://img.freepik.com/vecteurs-libre/illustration-garde-du-corps-dessinee-main_23-2150308174.jpg?semt=ais_hybrid&w=740&q=80";
 
-const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '5h' });
+const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
 // Register
 router.post('/register', async (req, res) => {
