@@ -23,7 +23,7 @@ import api from '../api';
 import { ArrowRight, X, MapPin, Phone, Mail, Building2, Calendar, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-axios.interceptors.request.use(config => {
+api.interceptors.request.use(config => {
   const token = localStorage.getItem('sf_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
