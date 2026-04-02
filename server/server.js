@@ -42,7 +42,6 @@ mongoose.connect(process.env.MONGO_URI)
 
 // ── ROUTES ────────────────────────────────────────────────────────────────
 app.use('/api/auth',            require('./routes/auth'));
-app.use('/api/google-alerts',   require('./routes/googleAlert'));
 app.use('/api/database',        require('./routes/database'));
 app.use('/api/solution-express',require('./routes/Solutionexpress'));
 app.use('/api/stats', require('./routes/stats'));
