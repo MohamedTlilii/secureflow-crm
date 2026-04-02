@@ -1,11 +1,10 @@
 // ════════════════════════════════════════════════════════════════════════════
 // server/routes/stats.js
-// Stats pour Google Alerts + Solution Express uniquement
+// Stats pour Solution Express uniquement
 // ════════════════════════════════════════════════════════════════════════════
 
 const express = require('express');
 const router  = express.Router();
-const GoogleAlert     = require('../models/GoogleAlert');
 const SolutionExpress = require('../models/Solutionexpress');
 const auth = require('../middleware/auth');
 
@@ -14,20 +13,12 @@ router.get('/', auth, async (req, res) => {
 
     // ── COMPTEURS DE BASE ──────────────────────────────────────────────────
     const [
-      totalGA, totalSE,
-      gaNew, gaAnalyzed, gaContacted, gaSaved, gaIgnored,
+      totalSE,
       seNew, seContacted, seInterested, seProposal, seWon, seLost, seIgnored,
-      urgent_ga, urgent_se,
+      urgent_se,
       b2b, b2c,
     ] = await Promise.all([
-      GoogleAlert.countDocuments(),
       SolutionExpress.countDocuments(),
-      // Google Alerts statuts
-      GoogleAlert.countDocuments({ status: 'new'       }),
-      GoogleAlert.countDocuments({ status: 'analyzed'  }),
-      GoogleAlert.countDocuments({ status: 'contacted' }),
-      GoogleAlert.countDocuments({ status: 'saved'     }),
-      GoogleAlert.countDocuments({ status: 'ignored'   }),
       // Solution Express statuts
       SolutionExpress.countDocuments({ status: 'new'       }),
       SolutionExpress.countDocuments({ status: 'contacted' }),
@@ -37,39 +28,24 @@ router.get('/', auth, async (req, res) => {
       SolutionExpress.countDocuments({ status: 'lost'      }),
       SolutionExpress.countDocuments({ status: 'ignored'   }),
       // Urgents
-      GoogleAlert.countDocuments({ urgencyScore: { $gte: 7 } }),
       SolutionExpress.countDocuments({ urgencyScore: { $gte: 7 } }),
       // B2B / B2C
       SolutionExpress.countDocuments({ typeClient: 'b2b' }),
       SolutionExpress.countDocuments({ typeClient: 'b2c' }),
     ]);
 
-    const total   = totalGA + totalSE;
+    const total   = totalSE;
     const won     = seWon;
-    const urgent  = urgent_ga + urgent_se;
+    const urgent  = urgent_se;
     const conversionRate = total > 0 ? Math.round((won / total) * 100) : 0;
 
     // ── URGENCE MOYENNE ────────────────────────────────────────────────────
-    const [avgGA, avgSE] = await Promise.all([
-      GoogleAlert.aggregate([{ $group: { _id: null, avg: { $avg: '$urgencyScore' } } }]),
-      SolutionExpress.aggregate([{ $group: { _id: null, avg: { $avg: '$urgencyScore' } } }]),
-    ]);
-    const avgUrgence = Math.round(
-      (((avgGA[0]?.avg||0) + (avgSE[0]?.avg||0)) / 2) * 10
-    ) / 10;
+    const avgSE = await SolutionExpress.aggregate([{ $group: { _id: null, avg: { $avg: '$urgencyScore' } } }]);
+    const avgUrgence = Math.round((avgSE[0]?.avg||0) * 10) / 10;
 
     // ── TOP VILLES ─────────────────────────────────────────────────────────
-    const [cityGA, citySE] = await Promise.all([
-      GoogleAlert.aggregate([{ $group: { _id: '$ville', count: { $sum: 1 } } }]),
-      SolutionExpress.aggregate([{ $group: { _id: '$ville', count: { $sum: 1 } } }]),
-    ]);
-    const cityMap = {};
-    [...cityGA, ...citySE].forEach(c => {
-      if (c._id) cityMap[c._id] = (cityMap[c._id]||0) + c.count;
-    });
-    const byCity = Object.entries(cityMap)
-      .map(([_id, count]) => ({ _id, count }))
-      .sort((a,b) => b.count - a.count).slice(0, 8);
+    const citySE = await SolutionExpress.aggregate([{ $group: { _id: '$ville', count: { $sum: 1 } } }]);
+    const byCity = citySE.filter(c => c._id).sort((a,b) => b.count - a.count).slice(0, 8);
 
     // ── PRODUITS ───────────────────────────────────────────────────────────
     const seProduits = await SolutionExpress.find({}, 'produits');
@@ -110,29 +86,17 @@ router.get('/', auth, async (req, res) => {
       { $sort: { count: -1 } }
     ]);
 
-    // ── TYPES D'ALERTE Google ──────────────────────────────────────────────
-    const byAlertType = await GoogleAlert.aggregate([
-      { $group: { _id: '$alertType', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]);
+    const byAlertType = [];
 
     // ── LEADS RÉCENTS ──────────────────────────────────────────────────────
-    const [recentGA, recentSE] = await Promise.all([
-      GoogleAlert.find().sort({ createdAt: -1 }).limit(4)
-        .select('prenom nom entreprise ville status createdAt urgencyScore alertType'),
-      SolutionExpress.find().sort({ createdAt: -1 }).limit(4)
-        .select('prenom nom entreprise ville status createdAt urgencyScore typeClient produits'),
-    ]);
-    const recentProspects = [
-      ...recentGA.map(a => ({ ...a.toObject(), source: 'google_alert'     })),
-      ...recentSE.map(s => ({ ...s.toObject(), source: 'solution_express' })),
-    ].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
+    const recentSE = await SolutionExpress.find().sort({ createdAt: -1 }).limit(6)
+      .select('prenom nom entreprise ville status createdAt urgencyScore typeClient produits');
+    const recentProspects = recentSE.map(s => ({ ...s.toObject(), source: 'solution_express' }));
 
-    // ── RÉPONSE ────────────────────────────────────────────────────────────
-    // ── Commissions ───────────────────────────────────────────────────
+    // ── COMMISSIONS ───────────────────────────────────────────────────
     const periode = req.query.periode || 'mois';
     const now = new Date();
-    const debut = new Date(0); // par défaut tout
+    const debut = new Date(0);
     if (periode === 'jour')    { const d = new Date(); d.setHours(0,0,0,0); debut.setTime(d.getTime()); }
     if (periode === 'semaine') debut.setTime(now.getTime() - 7*24*60*60*1000);
     if (periode === 'mois')    { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); debut.setTime(d.getTime()); }
@@ -157,28 +121,19 @@ router.get('/', auth, async (req, res) => {
     } : null;
 
     res.json({
-      // Totaux
       total, won, urgent, avgUrgence, b2b, b2c, conversionRate,
-      totalGA, totalSE,
-
-      // Statuts Google Alerts
-      gaStatuts: { new: gaNew, analyzed: gaAnalyzed, contacted: gaContacted, saved: gaSaved, ignored: gaIgnored },
-
-      // Statuts Solution Express
+      totalGA: 0, totalSE,
+      gaStatuts: { new: 0, analyzed: 0, contacted: 0, saved: 0, ignored: 0 },
       seStatuts: { new: seNew, contacted: seContacted, interested: seInterested, proposal: seProposal, won: seWon, lost: seLost, ignored: seIgnored },
-
-      // Détails
       byCity, byProduit, byQualif, byFourn, byLeadType, byAlertType,
       recentProspects, commissions,
-
-      // Pipeline (données pour graphique)
       pipelineData: [
-        { name: 'Nouveau',    value: gaNew + gaAnalyzed + seNew,          color: '#3b6cf8' },
-        { name: 'Contacté',   value: gaContacted + seContacted,           color: '#f79009' },
-        { name: 'Intéressé',  value: seInterested,                        color: '#12b76a' },
-        { name: 'Soumission', value: seProposal,                          color: '#a764f8' },
-        { name: 'Gagné',      value: seWon,                               color: '#12b76a' },
-        { name: 'Perdu',      value: seLost,                              color: '#f04438' },
+        { name: 'Nouveau',    value: seNew,        color: '#3b6cf8' },
+        { name: 'Contacté',   value: seContacted,  color: '#f79009' },
+        { name: 'Intéressé',  value: seInterested, color: '#12b76a' },
+        { name: 'Soumission', value: seProposal,   color: '#a764f8' },
+        { name: 'Gagné',      value: seWon,        color: '#12b76a' },
+        { name: 'Perdu',      value: seLost,       color: '#f04438' },
       ].filter(x => x.value > 0),
     });
 
