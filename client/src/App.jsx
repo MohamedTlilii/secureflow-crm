@@ -8,6 +8,7 @@ import Pipeline from './pages/Pipeline';
 import Database from './pages/Database'
 import Sidebar from './components/Sidebar';
 import SolutionExpress from './pages/SolutionExpress';
+import Commissions from './pages/Commissions';
 
 import './index.css';
 
@@ -33,6 +34,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
+<Route path="/commissions" element={<ProtectedLayout><Commissions /></ProtectedLayout>} />
       <Route path="/google-alerts" element={<ProtectedLayout><GoogleAlerts /></ProtectedLayout>} />
       <Route path="/solution-express" element={<ProtectedLayout><SolutionExpress /></ProtectedLayout>} />
 

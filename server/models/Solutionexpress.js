@@ -11,9 +11,11 @@
 const mongoose = require('mongoose');
 
 const SolutionExpressSchema = new mongoose.Schema({
+  // ── Source ────────────────────────────────────────────────────────────────
 
   sourceText: { type: String, default: '' },
   sourceUrl:  { type: String, default: '' },
+  // ── Entreprise ────────────────────────────────────────────────────────────
 
   entreprise: { type: String, default: '' },
 
@@ -37,22 +39,26 @@ const SolutionExpressSchema = new mongoose.Schema({
   ancienneAdresse: { type: String, default: '' },
 
   typeClient: { type: String, enum: ['b2b','b2c'], default: 'b2b' },
+  // ── Contact ───────────────────────────────────────────────────────────────
 
   prenom:    { type: String, default: '' },
   nom:       { type: String, default: '' },
   telephone: { type: String, default: '' },
   email:     { type: String, default: '' },
   sexe:      { type: String, enum: ['homme','femme','inconnu'], default: 'inconnu' },
+  // ── Localisation ─────────────────────────────────────────────────────────
 
   adresse: { type: String, default: '' },
   ville:   { type: String, default: '' },
   region:  { type: String, default: '' },
+  // ── Lead ─────────────────────────────────────────────────────────────────
 
   leadType: {
     type: String,
     enum: ['nouvelle_entreprise','demenagement','reouverture','commerce_existant','autre'],
     default: 'autre'
   },
+  // ── Système ───────────────────────────────────────────────────────────────
 
   qualificationSysteme: {
     type: String,
@@ -65,6 +71,7 @@ const SolutionExpressSchema = new mongoose.Schema({
     ],
     default: 'inconnu'
   },
+  // ── Produits ──────────────────────────────────────────────────────────────
 
   produits: [{ type: String, enum: ['alarme','cameras','internet','mobile','controle_acces','autre'] }],
 
@@ -115,6 +122,7 @@ const SolutionExpressSchema = new mongoose.Schema({
     enum: ['bell_mobile','telus_mobile','rogers','fizz','koodo','public_mobile','fido','chatr','virgin_plus','autre','aucun'],
     default: 'aucun'
   },
+  // ── Statut & priorité ────────────────────────────────────────────────────
 
   status: {
     type: String,
@@ -123,9 +131,34 @@ const SolutionExpressSchema = new mongoose.Schema({
   },
 
   urgencyScore: { type: Number, default: 0, min: 0, max: 10 },
+
+
+    // ── Contenu ───────────────────────────────────────────────────────────────
+
   summary:      { type: String, default: '' },
 
   notes: [{ type: String }],
+
+
+
+
+
+
+ // ════════════════════════════════════════════════════════════════════
+  // COMMISSION — champs ajoutés
+  // ════════════════════════════════════════════════════════════════════
+  montantContrat:         { type: Number, default: 0 },
+  commissionFixe:         { type: Number, default: 0 },
+  commissionPourcentage:  { type: Number, default: 0 },
+  commissionTotale:       { type: Number, default: 0 },
+  commissionPayee:        { type: Boolean, default: false },
+  dateVente:              { type: Date },
+  datePaiementCommission: { type: Date },
+  // ════════════════════════════════════════════════════════════════════
+
+
+
+
 
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now },

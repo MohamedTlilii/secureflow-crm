@@ -129,6 +129,33 @@ router.get('/', auth, async (req, res) => {
     ].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
 
     // ── RÉPONSE ────────────────────────────────────────────────────────────
+    // ── Commissions ───────────────────────────────────────────────────
+    const periode = req.query.periode || 'mois';
+    const now = new Date();
+    const debut = new Date(0); // par défaut tout
+    if (periode === 'jour')    { const d = new Date(); d.setHours(0,0,0,0); debut.setTime(d.getTime()); }
+    if (periode === 'semaine') debut.setTime(now.getTime() - 7*24*60*60*1000);
+    if (periode === 'mois')    { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); debut.setTime(d.getTime()); }
+    if (periode === 'annee')   { const d = new Date(); d.setMonth(0,1); d.setHours(0,0,0,0); debut.setTime(d.getTime()); }
+
+    const avecComm = await SolutionExpress.find({ $or: [{ commissionTotale: { $gt: 0 } }, { commissionFixe: { $gt: 0 } }] })
+      .select('entreprise prenom nom ville commissionTotale commissionFixe commissionExtra commissionPayee dateVente datePaiementCommission createdAt')
+      .sort({ dateVente: -1, createdAt: -1 });
+
+    const periodeComm = periode === 'tout'
+      ? avecComm
+      : avecComm.filter(x => new Date(x.dateVente || x.createdAt) >= debut);
+
+    const totalGagne = avecComm.reduce((s,x) => s + (x.commissionTotale||0), 0);
+    const totalPaye  = avecComm.filter(x => x.commissionPayee).reduce((s,x) => s + (x.commissionTotale||0), 0);
+    const commissions = avecComm.length > 0 ? {
+      totalGagne: Math.round(totalGagne * 100) / 100,
+      totalPaye:  Math.round(totalPaye  * 100) / 100,
+      enAttente:  Math.round((totalGagne - totalPaye) * 100) / 100,
+      moyenne:    Math.round((avecComm.length > 0 ? totalGagne / avecComm.length : 0) * 100) / 100,
+      historique: periodeComm,
+    } : null;
+
     res.json({
       // Totaux
       total, won, urgent, avgUrgence, b2b, b2c, conversionRate,
@@ -142,7 +169,7 @@ router.get('/', auth, async (req, res) => {
 
       // Détails
       byCity, byProduit, byQualif, byFourn, byLeadType, byAlertType,
-      recentProspects,
+      recentProspects, commissions,
 
       // Pipeline (données pour graphique)
       pipelineData: [

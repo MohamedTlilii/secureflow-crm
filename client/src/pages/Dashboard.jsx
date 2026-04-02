@@ -5,15 +5,13 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import api from '../api';
-
 import {
   Users, TrendingUp, CheckCircle, AlertCircle, Clock,
-  MapPin, Zap, Bell, Building2, Shield, Wifi, Smartphone, Video
+  MapPin, Zap, Bell, Building2, Shield, Wifi, Smartphone, Video, DollarSign
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-api.interceptors.request.use(config => {
+axios.interceptors.request.use(config => {
   const token = localStorage.getItem('sf_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
@@ -68,9 +66,11 @@ function ProgressBar({ value, max, color }) {
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [commPeriode, setCommPeriode] = useState('tout');
+  const [commFiltre, setCommFiltre] = useState('tout');
 
   useEffect(() => {
-api.get('/api/stats')
+    axios.get('/api/stats?periode=tout')
       .then(r => setStats(r.data))
       .catch(err => console.error('Dashboard stats error:', err))
       .finally(() => setLoading(false));
@@ -178,6 +178,160 @@ api.get('/api/stats')
           </div>
         </div>
       </div>
+
+      {/* ── COMMISSIONS ─────────────────────────────────────────────────────── */}
+      {stats.commissions && (
+        <div style={{ marginBottom:24 }}>
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ width:36, height:36, borderRadius:9, background:'rgba(18,183,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <DollarSign size={18} color="#12b76a"/>
+              </div>
+              <div>
+                <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>Mes commissions</div>
+                <div style={{ fontSize:11, color:'var(--text-muted)' }}>Solution Express · historique complet</div>
+              </div>
+            </div>
+            {/* Filtre par année */}
+            <select
+              value={commPeriode}
+              onChange={e => setCommPeriode(e.target.value)}
+              style={{ fontSize:12, padding:'6px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', color:'var(--text-primary)', cursor:'pointer', outline:'none' }}>
+              <option value="tout">Toutes les années</option>
+              {[new Date().getFullYear(), new Date().getFullYear()-1, new Date().getFullYear()-2].map(y => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Stats commissions — 2 lignes */}
+          {/* Ligne 1 — Total + Payé + En attente */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:10 }}>
+            <div style={{ background:'rgba(18,183,106,0.06)', borderRadius:12, padding:'16px 18px', border:'1px solid rgba(18,183,106,0.15)' }}>
+              <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Total gagné</div>
+              <div style={{ fontSize:26, fontWeight:700, color:'#12b76a', lineHeight:1 }}>{(stats.commissions.totalGagne||0).toFixed(2)} $</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>toutes commissions</div>
+            </div>
+            <div style={{ background:'rgba(59,108,248,0.06)', borderRadius:12, padding:'16px 18px', border:'1px solid rgba(59,108,248,0.15)' }}>
+              <div style={{ fontSize:10, color:'#3b6cf8', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>✓ Payé</div>
+              <div style={{ fontSize:26, fontWeight:700, color:'#3b6cf8', lineHeight:1 }}>{(stats.commissions.totalPaye||0).toFixed(2)} $</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>commissions reçues</div>
+            </div>
+            <div style={{ background:'rgba(247,144,9,0.06)', borderRadius:12, padding:'16px 18px', border:'1px solid rgba(247,144,9,0.15)' }}>
+              <div style={{ fontSize:10, color:'#f79009', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>⏳ En attente</div>
+              <div style={{ fontSize:26, fontWeight:700, color:'#f79009', lineHeight:1 }}>{(stats.commissions.enAttente||0).toFixed(2)} $</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>à recevoir</div>
+            </div>
+          </div>
+          {/* Ligne 2 — Max + Min + Ventes */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:14 }}>
+            <div style={{ background:'rgba(167,100,248,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(167,100,248,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div>
+                <div style={{ fontSize:10, color:'#a764f8', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Maximum</div>
+                <div style={{ fontSize:22, fontWeight:700, color:'#a764f8' }}>
+                  {Math.max(0, ...(stats.commissions.historique||[]).map(c=>c.commissionTotale||0)).toFixed(2)} $
+                </div>
+              </div>
+              <div style={{ fontSize:28, opacity:0.15 }}>↑</div>
+            </div>
+            <div style={{ background:'rgba(139,139,158,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(139,139,158,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div>
+                <div style={{ fontSize:10, color:'#8b8b9e', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Minimum</div>
+                <div style={{ fontSize:22, fontWeight:700, color:'#8b8b9e' }}>
+                  {(() => { const vals = (stats.commissions.historique||[]).filter(c=>c.commissionTotale>0).map(c=>c.commissionTotale); return vals.length > 0 ? Math.min(...vals).toFixed(2) : '0.00'; })()} $
+                </div>
+              </div>
+              <div style={{ fontSize:28, opacity:0.15 }}>↓</div>
+            </div>
+            <div style={{ background:'rgba(18,183,106,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(18,183,106,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div>
+                <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Ventes gagnées</div>
+                <div style={{ fontSize:22, fontWeight:700, color:'#12b76a' }}>
+                  {(stats.commissions.historique||[]).length}
+                </div>
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Solution Express</div>
+              </div>
+              <div style={{ fontSize:24, opacity:0.2 }}>🏆</div>
+            </div>
+          </div>
+          {/* Historique + filtre payée/non payée */}
+          <div className="card" style={{ padding:0, overflow:'hidden' }}>
+            {/* Sous-filtres */}
+            <div style={{ display:'flex', borderBottom:'1px solid var(--border)', padding:'10px 16px', gap:8 }}>
+              {[['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳ En attente']].map(([k,l]) => (
+                <button key={k} onClick={() => setCommFiltre(k)}
+                  style={{ padding:'4px 14px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer',
+                    border:`1px solid ${commFiltre===k ? (k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)') : 'var(--border)'}`,
+                    background: commFiltre===k ? (k==='payee'?'rgba(18,183,106,0.1)':k==='non_payee'?'rgba(247,144,9,0.1)':'rgba(59,108,248,0.1)') : 'transparent',
+                    color: commFiltre===k ? (k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)') : 'var(--text-muted)',
+                    transition:'all 0.15s' }}>
+                  {l}
+                </button>
+              ))}
+              <div style={{ marginLeft:'auto', fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center' }}>
+                {(stats.commissions.historique||[]).filter(c => {
+                  const yr = new Date(c.dateVente||c.createdAt).getFullYear();
+                  const yearOk = commPeriode === 'tout' || String(yr) === commPeriode;
+                  const statutOk = commFiltre==='tout'?true:commFiltre==='payee'?c.commissionPayee:!c.commissionPayee;
+                  return yearOk && statutOk;
+                }).length} entrée(s)
+              </div>
+            </div>
+
+            {/* Liste */}
+            <div style={{ padding:'8px 0' }}>
+              {(() => {
+                const filteredComm = (stats.commissions.historique||[]).filter(c => {
+                  const yr = new Date(c.dateVente||c.createdAt).getFullYear();
+                  const yearOk = commPeriode === 'tout' || String(yr) === commPeriode;
+                  const statutOk = commFiltre==='tout' ? true : commFiltre==='payee' ? c.commissionPayee : !c.commissionPayee;
+                  return yearOk && statutOk;
+                });
+                return filteredComm.length > 0 ? (
+                  filteredComm.map((c, i, arr) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', borderBottom: i < arr.length-1 ? '1px solid var(--border)' : 'none', transition:'background 0.1s' }}
+                    onMouseEnter={e => e.currentTarget.style.background='var(--bg-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                    <div style={{ width:38, height:38, borderRadius:9, background: c.commissionPayee ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <DollarSign size={15} color={c.commissionPayee ? '#12b76a' : '#f79009'}/>
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {c.entreprise || `${c.prenom||''} ${c.nom||''}`.trim() || 'Sans nom'}
+                      </div>
+                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>
+                        {c.ville||'—'} · {c.dateVente ? new Date(c.dateVente).toLocaleDateString('fr-CA') : new Date(c.createdAt).toLocaleDateString('fr-CA')}
+                      </div>
+                    </div>
+                    {c.commissionFixe > 0 && (
+                      <div style={{ textAlign:'right', flexShrink:0 }}>
+                        <div style={{ fontSize:11, color:'var(--text-muted)' }}>Fixe : {(c.commissionFixe||0).toFixed(2)} $</div>
+                        {c.commissionExtra > 0 && <div style={{ fontSize:11, color:'var(--text-muted)' }}>Extra : {(c.commissionExtra||0).toFixed(2)} $</div>}
+                      </div>
+                    )}
+                    <div style={{ textAlign:'right', flexShrink:0, minWidth:90 }}>
+                      <div style={{ fontSize:16, fontWeight:700, color: c.commissionPayee ? '#12b76a' : '#f79009' }}>
+                        {(c.commissionTotale||0).toFixed(2)} $
+                      </div>
+                      <div style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, display:'inline-block', marginTop:2,
+                        background: c.commissionPayee ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.1)',
+                        color: c.commissionPayee ? '#12b76a' : '#f79009' }}>
+                        {c.commissionPayee ? '✓ Payée' : '⏳ En attente'}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text-muted)', fontSize:13 }}>
+                  Aucune commission pour cette période
+                </div>
+              );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── PIPELINE + PRODUITS ──────────────────────────────────────────── */}
       <div className="grid-2 mb-6">

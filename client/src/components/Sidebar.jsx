@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Kanban, Building, Shield, LogOut, Database, Bell,  } from 'lucide-react';
+import { LayoutDashboard, Kanban, Shield, LogOut, Database, Bell, Building2, DollarSign } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const NAV = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/google-alerts', icon: Bell, label: 'Google Alerts', color: '#ea4335' },
-    { to: '/solution-express', icon: Building, label: 'Solution Express','color':'#11418f' },
-  { to: '/pipeline', icon: Kanban, label: 'Pipeline' },
+  { to: '/',                  icon: LayoutDashboard, label: 'Dashboard' ,       color: '#a6e21b'       },
 
-  { to: '/database', icon: Database, label: 'Base de données' },
+  { to: '/commissions',       icon: DollarSign,      label: 'Commissions',       color: '#12b76a' },
+  { to: '/solution-express',  icon: Building2,       label: 'Solution Express', color: '#2215d4' },
+    { to: '/google-alerts',     icon: Bell,            label: 'Google Alerts',    color: '#ea4335' },
+  { to: '/pipeline',          icon: Kanban,          label: 'Pipeline'   ,       color: '#ad19b3'       },
+  { to: '/database',          icon: Database,        label: 'Base de données',       color: '#e2287f'   },
 ];
 
 export default function Sidebar() {
@@ -19,7 +20,7 @@ export default function Sidebar() {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleLogout = () => { logout(); toast.success('Déconnecté'); navigate('/login'); };
-  const initials = user ? (user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)) : 'AS';
+  const initials = user ? (user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)) : 'AS';
   const width = isHovered ? '240px' : '70px';
   document.documentElement.style.setProperty('--sidebar-w', width);
 
@@ -32,7 +33,8 @@ export default function Sidebar() {
         position: 'fixed', top: 0, left: 0, bottom: 0,
         display: 'flex', flexDirection: 'column',
         zIndex: 100, transition: 'width 0.3s ease', overflow: 'hidden'
-      }}>
+      }}
+    >
       {/* Logo */}
       <div style={{ padding: '24px 17px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ minWidth: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, var(--accent), #6b46fa)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px var(--accent-glow)', flexShrink: 0 }}>
@@ -68,7 +70,7 @@ export default function Sidebar() {
       <div style={{ padding: '16px 12px', borderTop: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px', borderRadius: 8, background: 'var(--bg-card)', border: '1px solid var(--border)', marginBottom: 8 }}>
           {user?.avatar && user.avatar.includes('http') ? (
-            <img src={user.avatar} alt="Avatar" onError={e => e.target.style.display='none'} style={{ minWidth: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+            <img src={user.avatar} alt="Avatar" onError={e => e.target.style.display = 'none'} style={{ minWidth: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
           ) : (
             <div className="avatar av-blue" style={{ minWidth: 32, height: 32, fontSize: 12 }}>{initials}</div>
           )}

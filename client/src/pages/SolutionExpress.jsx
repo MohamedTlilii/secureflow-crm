@@ -1,41 +1,106 @@
 // ════════════════════════════════════════════════════════════════════════════
 // client/src/pages/SolutionExpress.jsx
-//
-// LOGIQUE DES CLICS :
-//   • Clic dans le vide de la card  → mini-modal centré (détails + modifier + supprimer + notes)
-//   • Clic sur nom ou avatar        → ultra-fiche plein écran
-//
-// ROUTES BACKEND :
-//   GET    /api/solution-express
-//   POST   /api/solution-express
-//   PUT    /api/solution-express/:id
-//   DELETE /api/solution-express/:id
-// ════════════════════════════════════════════════════════════════════════════
-
-// ════════════════════════════════════════════════════════════════════════════
-// client/src/pages/SolutionExpress.jsx
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState, useCallback } from 'react';
-import api from '../api';
+import axios from 'axios';
 import {
-  Plus, MapPin, Phone, X, Edit2, Trash2, MessageSquare,
+  Plus, MapPin, Phone, X, Edit2, Trash2,
   AlertTriangle, Mail, Calendar, Clock, Tag, Search,
   User, Building2, Shield, Wifi, Video, Smartphone,
-  ChevronDown, ChevronUp, FileText, Lock
+  ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, Lock,
+  DollarSign, CheckCircle, XCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-api.interceptors.request.use(config => {
+// ════════════════════════════════════════════════════════════════════════════
+// DATE PICKER MODERNE
+// ════════════════════════════════════════════════════════════════════════════
+function DatePicker({ value, onChange, placeholder = 'Sélectionner une date' }) {
+  const [open, setOpen] = useState(false);
+  const today = new Date();
+  const initDate = value ? new Date(value + 'T12:00:00') : today;
+  const [current, setCurrent] = useState({ year: initDate.getFullYear(), month: initDate.getMonth() });
+
+  const daysInMonth = new Date(current.year, current.month + 1, 0).getDate();
+  const firstDay    = new Date(current.year, current.month, 1).getDay();
+  const offset      = firstDay === 0 ? 6 : firstDay - 1;
+  const monthName   = new Date(current.year, current.month).toLocaleDateString('fr-CA', { month:'long', year:'numeric' });
+  const days        = ['L','M','M','J','V','S','D'];
+
+  const prevM = () => setCurrent(c => ({ year: c.month===0?c.year-1:c.year, month: c.month===0?11:c.month-1 }));
+  const nextM = () => setCurrent(c => ({ year: c.month===11?c.year+1:c.year, month: c.month===11?0:c.month+1 }));
+
+  const selectDay = (day) => {
+    const y = current.year, m = String(current.month+1).padStart(2,'0'), d = String(day).padStart(2,'0');
+    onChange(`${y}-${m}-${d}`);
+    setOpen(false);
+  };
+
+  const displayValue = value ? new Date(value + 'T12:00:00').toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' }) : '';
+
+  return (
+    <div style={{ position:'relative' }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width:'100%', padding:'8px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', color: value ? 'var(--text-primary)' : 'var(--text-muted)', fontSize:13, textAlign:'left', cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
+        <Calendar size={14} color={value ? '#12b76a' : 'var(--text-muted)'}/>
+        {displayValue || placeholder}
+        {value && <button type="button" onClick={e => { e.stopPropagation(); onChange(''); }} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:0, fontSize:14, lineHeight:1 }}>×</button>}
+      </button>
+
+      {open && (
+        <div style={{ position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:1000, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', padding:14, minWidth:260 }}>
+          {/* Nav mois */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+            <button type="button" onClick={prevM} style={{ width:28, height:28, borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)' }}>
+              <ChevronLeft size={14}/>
+            </button>
+            <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', textTransform:'capitalize' }}>{monthName}</span>
+            <button type="button" onClick={nextM} style={{ width:28, height:28, borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)' }}>
+              <ChevronRight size={14}/>
+            </button>
+          </div>
+          {/* Jours semaine */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
+            {days.map((d,i) => <div key={i} style={{ textAlign:'center', fontSize:9, color:'var(--text-muted)', fontWeight:700, padding:'3px 0' }}>{d}</div>)}
+          </div>
+          {/* Jours */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
+            {Array(offset).fill(null).map((_,i) => <div key={`e${i}`}/>)}
+            {Array(daysInMonth).fill(null).map((_,i) => {
+              const day = i + 1;
+              const y = current.year, m = String(current.month+1).padStart(2,'0'), d = String(day).padStart(2,'0');
+              const dateStr = `${y}-${m}-${d}`;
+              const isSelected = value === dateStr;
+              const isToday = new Date(current.year, current.month, day).toDateString() === today.toDateString();
+              return (
+                <button key={day} type="button" onClick={() => selectDay(day)}
+                  style={{ padding:'5px 2px', borderRadius:6, border:'none', cursor:'pointer', textAlign:'center', fontSize:12, fontWeight: isSelected||isToday ? 700 : 400, transition:'all 0.1s',
+                    background: isSelected ? '#12b76a' : isToday ? 'rgba(59,108,248,0.1)' : 'transparent',
+                    color: isSelected ? '#fff' : isToday ? '#3b6cf8' : 'var(--text-primary)' }}
+                  onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background='var(--bg-secondary)'; }}
+                  onMouseLeave={e => { if(!isSelected) e.currentTarget.style.background=isToday?'rgba(59,108,248,0.1)':'transparent'; }}>
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+axios.interceptors.request.use(config => {
   const token = localStorage.getItem('sf_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// CONSTANTES — identiques à ton code
+// CONSTANTES
 // ════════════════════════════════════════════════════════════════════════════
-
 const AV_COLORS = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
 
 const VILLES = [
@@ -89,16 +154,15 @@ const LEAD_COLORS = {
 };
 
 const QUALIF_LABELS = {
-  pas_de_systeme:                       'Pas de système',
-  systeme_plus_10_ans:                  'Système +10 ans',
-  systeme_non_connecte_nouveau_proprio: 'Non connecté (nouveau proprio)',
-  systeme_non_connecte_insatisfait:     'Non connecté (insatisfait)',
-  systeme_non_connecte_diy:             'Non connecté (DIY)',
-  systeme_moins_5_ans_avec_contrat:     '-5 ans avec contrat',
-  systeme_moins_5_ans_sans_contrat:     '-5 ans sans contrat',
-  systeme_5_10_ans_panneau_tactile:     '5-10 ans panneau tactile',
-  systeme_5_10_ans_panneau_boutons:     '5-10 ans panneau boutons',
-  inconnu:                              'Inconnu'
+  pas_de_systeme:'Pas de système', systeme_plus_10_ans:'Système +10 ans',
+  systeme_non_connecte_nouveau_proprio:'Non connecté (nouveau proprio)',
+  systeme_non_connecte_insatisfait:'Non connecté (insatisfait)',
+  systeme_non_connecte_diy:'Non connecté (DIY)',
+  systeme_moins_5_ans_avec_contrat:'-5 ans avec contrat',
+  systeme_moins_5_ans_sans_contrat:'-5 ans sans contrat',
+  systeme_5_10_ans_panneau_tactile:'5-10 ans panneau tactile',
+  systeme_5_10_ans_panneau_boutons:'5-10 ans panneau boutons',
+  inconnu:'Inconnu'
 };
 
 const PRODUIT_LABELS = { alarme:'Alarme', cameras:'Caméras', internet:'Internet', mobile:'Mobile', controle_acces:'Contrôle accès', autre:'Autre' };
@@ -135,13 +199,18 @@ const EMPTY_FORM = {
   produits:[],
   fournisseurAlarme:'inconnu', fournisseurInternet:'inconnu', fournisseurMobile:'inconnu',
   fournisseurProposeAlarme:'aucun', fournisseurProposeInternet:'aucun', fournisseurProposeMobile:'aucun',
-  status:'new', urgencyScore:0, summary:''
+  status:'new', urgencyScore:0, summary:'',
+  // Commission
+  commissionFixe:0, commissionExtra:0,
+  commissionTotale:0, commissionPayee:false,
+  dateVente:'', datePaiementCommission:'',
 };
 
 const EMPTY_FILTERS = {
   status:'', typeClient:'', typeCommerce:'', ville:'',
   produit:'', qualificationSysteme:'', leadType:'',
-  fournisseurAlarme:'', fournisseurInternet:'', fournisseurMobile:''
+  fournisseurAlarme:'', fournisseurInternet:'', fournisseurMobile:'',
+  commissionPayee:''
 };
 
 const iSt = {
@@ -149,6 +218,14 @@ const iSt = {
   border:'1px solid var(--border)', background:'var(--bg-secondary)',
   color:'var(--text-primary)', fontSize:13,
   fontFamily:'var(--font-body)', outline:'none', boxSizing:'border-box'
+};
+
+// ── Calcul automatique commission ─────────────────────────────────────────
+const calcCommission = (fixe, pct, contrat) => {
+  const f = parseFloat(fixe)   || 0;
+  const p = parseFloat(pct)    || 0;
+  const c = parseFloat(contrat)|| 0;
+  return Math.round((f + (c * p / 100)) * 100) / 100;
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -196,16 +273,42 @@ function getFournLabel(field, val) {
 }
 
 function FournisseurRow({ icon, color, label, actuel, propose }) {
-  const hasActuel  = !!actuel;
-  const hasPropose = !!propose;
-  if (!hasActuel && !hasPropose) return null;
+  if (!actuel && !propose) return null;
   return (
     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
       <span style={{ flexShrink:0 }}>{icon}</span>
       <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', minWidth:52 }}>{label}</span>
-      {hasActuel && <span style={{ fontSize:12, color:'var(--text-primary)', background:'var(--bg-secondary)', padding:'2px 8px', borderRadius:6 }}>{actuel}</span>}
-      {hasActuel && hasPropose && <span style={{ fontSize:12, color:'var(--text-muted)' }}>→</span>}
-      {hasPropose && <span style={{ fontSize:12, color, background:`${color}15`, padding:'2px 8px', borderRadius:6, fontWeight:600 }}>{propose}</span>}
+      {actuel  && <span style={{ fontSize:12, color:'var(--text-primary)', background:'var(--bg-secondary)', padding:'2px 8px', borderRadius:6 }}>{actuel}</span>}
+      {actuel && propose && <span style={{ fontSize:12, color:'var(--text-muted)' }}>→</span>}
+      {propose && <span style={{ fontSize:12, color, background:`${color}15`, padding:'2px 8px', borderRadius:6, fontWeight:600 }}>{propose}</span>}
+    </div>
+  );
+}
+
+// ── Badge commission sur la card ──────────────────────────────────────────
+function CommissionBadge({ fiche, onToggle }) {
+  if (!fiche.commissionTotale && !fiche.commissionFixe && !fiche.commissionExtra) return null;
+  const montant = fiche.commissionTotale || 0;
+  const payee   = fiche.commissionPayee;
+  return (
+    <div
+      onClick={e => { e.stopPropagation(); onToggle(fiche); }}
+      style={{
+        display:'flex', alignItems:'center', gap:6,
+        background: payee ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.1)',
+        border: `1px solid ${payee ? '#12b76a' : '#f79009'}40`,
+        borderRadius:8, padding:'6px 10px', cursor:'pointer',
+        transition:'all 0.15s', marginTop:8
+      }}
+      title={payee ? 'Cliquer pour marquer Non payée' : 'Cliquer pour marquer Payée'}
+    >
+      <DollarSign size={13} color={payee ? '#12b76a' : '#f79009'}/>
+      <span style={{ fontSize:12, fontWeight:700, color: payee ? '#12b76a' : '#f79009' }}>
+        {montant.toFixed(2)} TND
+      </span>
+      <span style={{ fontSize:10, fontWeight:600, color: payee ? '#12b76a' : '#f79009', marginLeft:2 }}>
+        {payee ? '✓ Payée' : '⏳ En attente'}
+      </span>
     </div>
   );
 }
@@ -225,12 +328,11 @@ export default function SolutionExpress() {
   const [selected, setSelected]       = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
   const [noteText, setNoteText]       = useState('');
-  const [activeTab, setActiveTab]     = useState(0); // onglet actif dans le modal add/edit
+  const [activeTab, setActiveTab]     = useState(0);
 
-  // ── FETCH ─────────────────────────────────────────────────────────────────
   const fetchFiches = useCallback(async () => {
     try {
-      const r = await api.get('/api/solution-express');
+      const r = await axios.get('/api/solution-express');
       setFiches(r.data);
     } catch { toast.error('Erreur chargement'); }
     finally { setLoading(false); }
@@ -238,7 +340,6 @@ export default function SolutionExpress() {
 
   useEffect(() => { fetchFiches(); }, [fetchFiches]);
 
-  // ── HELPERS ───────────────────────────────────────────────────────────────
   const setF    = (k, v) => setFilters(f => ({ ...f, [k]: v }));
   const setFld  = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const ini     = p => ((p.prenom?.[0] || p.entreprise?.[0] || 'S')).toUpperCase();
@@ -246,9 +347,35 @@ export default function SolutionExpress() {
   const hasFilters = Object.values(filters).some(v => v !== '');
   const dernNote   = p => p.notes?.length > 0 ? p.notes[p.notes.length - 1] : null;
 
+  const calcCommission = (fixe, pct, contrat) => {
+    const f = parseFloat(fixe)||0, p2 = parseFloat(pct)||0, c = parseFloat(contrat)||0;
+    return Math.round((f + (c * p2 / 100)) * 100) / 100;
+  };
+
+  // ── Recalcule commission auto quand les champs changent ───────────────────
+
   const toggleProduit = (code) => {
     const list = form.produits || [];
     setFld('produits', list.includes(code) ? list.filter(x => x !== code) : [...list, code]);
+  };
+
+  // ── Toggle payé/non payé directement depuis la card ───────────────────────
+  const togglePaiement = async (p) => {
+    try {
+      const updated = {
+        ...p,
+        commissionPayee: !p.commissionPayee,
+        datePaiementCommission: !p.commissionPayee ? new Date().toISOString() : null,
+        // Nettoie les champs frontend
+        stage: undefined, source: undefined, displayName: undefined
+      };
+      await axios.put(`/api/solution-express/${p._id}`, updated);
+      toast.success(!p.commissionPayee ? '✓ Commission marquée payée !' : 'Commission marquée non payée');
+      fetchFiches();
+      if (selected?._id === p._id) {
+        setSelected(prev => ({ ...prev, commissionPayee: !p.commissionPayee, datePaiementCommission: updated.datePaiementCommission }));
+      }
+    } catch { toast.error('Erreur mise à jour commission'); }
   };
 
   // ── FILTRAGE ──────────────────────────────────────────────────────────────
@@ -256,13 +383,12 @@ export default function SolutionExpress() {
     if (!search.trim()) return true;
     const s = search.toLowerCase();
     return (
-      (p.entreprise || '').toLowerCase().includes(s) ||
-      (p.prenom     || '').toLowerCase().includes(s) ||
-      (p.nom        || '').toLowerCase().includes(s) ||
-      (p.telephone  || '').toLowerCase().includes(s) ||
-      (p.email      || '').toLowerCase().includes(s) ||
-      (p.ville      || '').toLowerCase().includes(s) ||
-      (p.adresse    || '').toLowerCase().includes(s)
+      (p.entreprise||'').toLowerCase().includes(s) ||
+      (p.prenom    ||'').toLowerCase().includes(s) ||
+      (p.nom       ||'').toLowerCase().includes(s) ||
+      (p.telephone ||'').toLowerCase().includes(s) ||
+      (p.email     ||'').toLowerCase().includes(s) ||
+      (p.ville     ||'').toLowerCase().includes(s)
     );
   });
 
@@ -277,6 +403,9 @@ export default function SolutionExpress() {
     if (filters.fournisseurAlarme    && p.fournisseurAlarme    !== filters.fournisseurAlarme)    return false;
     if (filters.fournisseurInternet  && p.fournisseurInternet  !== filters.fournisseurInternet)  return false;
     if (filters.fournisseurMobile    && p.fournisseurMobile    !== filters.fournisseurMobile)    return false;
+    if (filters.commissionPayee === 'payee'     && !p.commissionPayee)  return false;
+    if (filters.commissionPayee === 'non_payee' && p.commissionPayee)   return false;
+    if (filters.commissionPayee === 'avec'      && !p.commissionTotale) return false;
     return true;
   });
 
@@ -285,22 +414,25 @@ export default function SolutionExpress() {
       case 'date_desc':    return new Date(b.createdAt) - new Date(a.createdAt);
       case 'date_asc':     return new Date(a.createdAt) - new Date(b.createdAt);
       case 'urgency_desc': return b.urgencyScore - a.urgencyScore;
+      case 'commission_desc': return (b.commissionTotale||0) - (a.commissionTotale||0);
       case 'entreprise':   return (a.entreprise||'').localeCompare(b.entreprise||'');
       case 'status':       return (a.status||'').localeCompare(b.status||'');
       default:             return 0;
     }
   });
 
-  // ── MODAUX ────────────────────────────────────────────────────────────────
   const openAdd   = ()     => { setForm(EMPTY_FORM); setActiveTab(0); setModal('add'); };
   const openEdit  = (p, e) => { if(e) e.stopPropagation(); setForm({...p}); setSelected(p); setActiveTab(0); setModal('edit'); };
   const openFiche = (p, e) => { if(e) e.stopPropagation(); setSelected(p); setModal('fiche'); };
 
-  // ── CRUD ──────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     try {
-      if (modal === 'add') { await api.post('/api/solution-express', form); toast.success('Fiche ajoutée !'); }
-      else { await api.put(`/api/solution-express/${selected._id}`, form); toast.success('Mis à jour !'); }
+      const payload = {
+        ...form,
+        commissionTotale: (parseFloat(form.commissionFixe)||0) + (parseFloat(form.commissionExtra)||0)
+      };
+      if (modal === 'add') { await axios.post('/api/solution-express', payload); toast.success('Fiche ajoutée !'); }
+      else { await axios.put(`/api/solution-express/${selected._id}`, payload); toast.success('Mis à jour !'); }
       setModal(null); fetchFiches();
     } catch (err) { toast.error(err.response?.data?.message || 'Erreur'); }
   };
@@ -308,15 +440,15 @@ export default function SolutionExpress() {
   const handleDelete = async (p, e) => {
     if(e) e.stopPropagation();
     if (!confirm('Supprimer cette fiche ?')) return;
-    try { await api.delete(`/api/solution-express/${p._id}`); toast.success('Supprimé'); setModal(null); fetchFiches(); }
+    try { await axios.delete(`/api/solution-express/${p._id}`); toast.success('Supprimé'); setModal(null); fetchFiches(); }
     catch { toast.error('Erreur suppression'); }
   };
 
   const addNote = async (p) => {
     if (!noteText.trim()) return;
     try {
-      const updatedNotes = [...(p.notes || []), noteText.trim()];
-      await api.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
+      const updatedNotes = [...(p.notes||[]), noteText.trim()];
+      await axios.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
       toast.success('Note ajoutée ✓');
       setNoteText('');
       setSelected(prev => ({ ...prev, notes: updatedNotes }));
@@ -327,8 +459,8 @@ export default function SolutionExpress() {
   const deleteNote = async (p, idx) => {
     if (!confirm('Supprimer cette note ?')) return;
     try {
-      const updatedNotes = (p.notes || []).filter((_, i) => i !== idx);
-      await api.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
+      const updatedNotes = (p.notes||[]).filter((_,i) => i !== idx);
+      await axios.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
       toast.success('Note supprimée');
       setSelected(prev => ({ ...prev, notes: updatedNotes }));
       fetchFiches();
@@ -337,23 +469,23 @@ export default function SolutionExpress() {
 
   const changeStatus = async (p, newStatus) => {
     try {
-      await api.put(`/api/solution-express/${p._id}`, { ...p, status: newStatus });
+      await axios.put(`/api/solution-express/${p._id}`, { ...p, status: newStatus });
       setSelected(prev => ({ ...prev, status: newStatus }));
       fetchFiches(); toast.success('Statut mis à jour');
     } catch { toast.error('Erreur statut'); }
   };
 
-  // ── ONGLETS du modal add/edit ─────────────────────────────────────────────
   const TABS = [
-    { label:'👤 Contact',    icon: User     },
+    { label:'👤 Contact',    icon: User      },
     { label:'🏢 Entreprise', icon: Building2 },
-    { label:'🔒 Système',   icon: Lock      },
-    { label:'📝 Résumé',    icon: FileText  },
+    { label:'🔒 Système',   icon: Lock       },
+    { label:'💰 Commission', icon: DollarSign },
+    { label:'📝 Résumé',    icon: FileText   },
   ];
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════
   // RENDER
-  // ════════════════════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════════
   return (
     <div className="animate-fade">
 
@@ -368,10 +500,8 @@ export default function SolutionExpress() {
             <p style={{ color:'var(--text-muted)', fontSize:13 }}>CRM personnel — Sécurité B2B/B2C Québec</p>
           </div>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8 }}>
-          <div style={{ fontSize:12, color:'var(--text-muted)', background:'var(--bg-card)', padding:'6px 12px', borderRadius:8, border:'1px solid var(--border)' }}>
-            {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
-          </div>
+        <div style={{ fontSize:12, color:'var(--text-muted)', background:'var(--bg-card)', padding:'6px 12px', borderRadius:8, border:'1px solid var(--border)' }}>
+          {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
         </div>
       </div>
 
@@ -409,12 +539,13 @@ export default function SolutionExpress() {
                   <option value="date_desc">Date ↓ récent</option>
                   <option value="date_asc">Date ↑ ancien</option>
                   <option value="urgency_desc">Urgence ↓</option>
+                  <option value="commission_desc">Commission ↓</option>
                   <option value="entreprise">Entreprise A-Z</option>
                   <option value="status">Statut</option>
                 </select>
               </div>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:10, marginBottom:10 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,minmax(0,1fr))', gap:10, marginBottom:10 }}>
               <div>
                 <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Type commerce</div>
                 <select style={iSt} value={filters.typeCommerce} onChange={e => setF('typeCommerce', e.target.value)}>
@@ -430,10 +561,21 @@ export default function SolutionExpress() {
                 </select>
               </div>
               <div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Qualification système</div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Qualification</div>
                 <select style={iSt} value={filters.qualificationSysteme} onChange={e => setF('qualificationSysteme', e.target.value)}>
                   <option value="">Toutes</option>
                   {Object.entries(QUALIF_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase', display:'flex', alignItems:'center', gap:4 }}>
+                  <DollarSign size={10}/> Commission
+                </div>
+                <select style={iSt} value={filters.commissionPayee} onChange={e => setF('commissionPayee', e.target.value)}>
+                  <option value="">Toutes</option>
+                  <option value="avec">Avec commission</option>
+                  <option value="payee">✓ Payées</option>
+                  <option value="non_payee">⏳ En attente</option>
                 </select>
               </div>
             </div>
@@ -464,31 +606,22 @@ export default function SolutionExpress() {
         <input
           style={{ ...iSt, paddingLeft:36, paddingRight:search?36:12, fontSize:14, height:44, borderRadius:10 }}
           placeholder="Rechercher — entreprise, nom, téléphone, email, ville..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+          value={search} onChange={e => setSearch(e.target.value)}
         />
-        {search && (
-          <button onClick={() => setSearch('')} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)' }}>
-            <X size={14}/>
-          </button>
-        )}
+        {search && <button onClick={() => setSearch('')} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)' }}><X size={14}/></button>}
       </div>
 
-      {/* COMPTEUR + BOUTON NOUVELLE FICHE sur la même ligne */}
+      {/* COMPTEUR + NOUVEAU */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
         <div style={{ fontSize:12, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontWeight:600, color:'var(--text-primary)' }}>{sorted.length}</span>
           fiche{sorted.length !== 1 ? 's' : ''}{(search||hasFilters) ? ' trouvée' : ' au total'}
           {(search||hasFilters) && <span style={{ fontSize:11, background:'rgba(18,183,106,0.1)', color:'#12b76a', padding:'2px 8px', borderRadius:20 }}>Filtres actifs</span>}
         </div>
-        <button className="btn btn-primary" onClick={openAdd}>
-          <Plus size={15}/> Nouvelle fiche
-        </button>
+        <button className="btn btn-primary" onClick={openAdd}><Plus size={15}/> Nouvelle fiche</button>
       </div>
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* GRID CARDS                                                           */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* ── GRID CARDS ────────────────────────────────────────────────────── */}
       {loading ? (
         <div style={{ textAlign:'center', padding:60, color:'var(--text-muted)' }}>Chargement...</div>
       ) : sorted.length === 0 ? (
@@ -510,6 +643,7 @@ export default function SolutionExpress() {
                 onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}
               >
+                {/* Avatar + Nom */}
                 <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
                   <div className={`avatar ${AV_COLORS[i%AV_COLORS.length]}`} style={{ width:44, height:44, fontSize:15, flexShrink:0 }}>{ini(p)}</div>
                   <div style={{ minWidth:0 }}>
@@ -521,6 +655,8 @@ export default function SolutionExpress() {
                     </div>
                   </div>
                 </div>
+
+                {/* Badges */}
                 <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
                   <span className={`badge ${STATUS_CLASS[p.status]||'badge-p0'}`}>{STATUS_LABELS[p.status]}</span>
                   <span style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:`${leadColor}18`, color:leadColor }}>
@@ -532,11 +668,15 @@ export default function SolutionExpress() {
                     </span>
                   )}
                 </div>
+
+                {/* Produits */}
                 {(p.produits||[]).length > 0 && (
                   <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
                     {p.produits.map(code => <ProduitBadge key={code} code={code}/>)}
                   </div>
                 )}
+
+                {/* Fournisseurs */}
                 <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:8 }}>
                   {p.fournisseurAlarme && p.fournisseurAlarme!=='inconnu' && p.fournisseurAlarme!=='aucun' && (
                     <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:5 }}>
@@ -557,27 +697,40 @@ export default function SolutionExpress() {
                     </span>
                   )}
                 </div>
+
+                {/* Qualification */}
                 {p.qualificationSysteme && p.qualificationSysteme!=='inconnu' && (
                   <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8, background:'var(--bg-secondary)', padding:'4px 8px', borderRadius:6, display:'inline-block' }}>
                     🔒 {QUALIF_LABELS[p.qualificationSysteme]}
                   </div>
                 )}
+
+                {/* Résumé */}
                 {p.summary && (
                   <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:8, lineHeight:1.5, background:'var(--bg-secondary)', padding:'8px 10px', borderRadius:8, borderLeft:`3px solid ${leadColor}`, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                     {p.summary}
                   </div>
                 )}
+
+                {/* Dernière note */}
                 {lastNote && (
                   <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8, background:'var(--bg-secondary)', padding:'6px 10px', borderRadius:8, borderLeft:'3px solid #12b76a', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', fontStyle:'italic' }}>
                     💬 {lastNote}
                   </div>
                 )}
-                <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+
+                {/* Contact */}
+                <div style={{ display:'flex', flexDirection:'column', gap:4, marginBottom:8 }}>
                   {p.telephone && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}><Phone size={11}/>{p.telephone}</span>}
                   {p.email     && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Mail size={11}/>{p.email}</span>}
                   {p.ville     && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}><MapPin size={11}/>{p.ville}</span>}
                   {(p.prenom||p.nom) && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}><User size={11}/>{p.prenom} {p.nom}</span>}
                   <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:6 }}><Clock size={10}/>{fmtDate(p.createdAt)}</span>
+                </div>
+
+                {/* ── BOUTON COMMISSION sur la card ── */}
+                <div onClick={e => e.stopPropagation()}>
+                  <CommissionBadge fiche={p} onToggle={togglePaiement}/>
                 </div>
               </div>
             );
@@ -586,11 +739,13 @@ export default function SolutionExpress() {
       )}
 
       {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* ULTRA-FICHE — identique à ton code                                  */}
+      {/* ULTRA-FICHE                                                          */}
       {/* ════════════════════════════════════════════════════════════════════ */}
       {modal === 'fiche' && selected && (
         <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) setModal(null); }} style={{ alignItems:'flex-start', padding:'20px', overflowY:'auto' }}>
           <div style={{ background:'var(--bg-card)', borderRadius:16, width:'100%', maxWidth:940, margin:'0 auto', overflow:'hidden', boxShadow:'0 25px 60px rgba(0,0,0,0.3)' }}>
+
+            {/* En-tête */}
             <div style={{ background:`linear-gradient(135deg,${STATUS_COLORS[selected.status]||'#12b76a'}20,transparent)`, borderBottom:`3px solid ${STATUS_COLORS[selected.status]||'#12b76a'}`, padding:'28px 28px 20px' }}>
               <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:16 }}>
@@ -612,7 +767,10 @@ export default function SolutionExpress() {
                 </div>
               </div>
             </div>
+
             <div style={{ padding:28 }}>
+
+              {/* Pipeline */}
               <div style={{ marginBottom:24 }}>
                 <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Pipeline</div>
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
@@ -624,6 +782,46 @@ export default function SolutionExpress() {
                   ))}
                 </div>
               </div>
+
+              {/* ── BLOC COMMISSION dans l'ultra-fiche ── */}
+              {(selected.commissionTotale > 0 || selected.commissionFixe > 0) && (
+                <div style={{ marginBottom:24, background: selected.commissionPayee ? 'rgba(18,183,106,0.06)' : 'rgba(247,144,9,0.06)', borderRadius:12, padding:'18px 20px', border:`1px solid ${selected.commissionPayee ? '#12b76a' : '#f79009'}30` }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <DollarSign size={18} color={selected.commissionPayee ? '#12b76a' : '#f79009'}/>
+                      <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Commission</span>
+                    </div>
+                    {/* Bouton toggle payé dans l'ultra-fiche */}
+                    <button
+                      onClick={() => togglePaiement(selected)}
+                      style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 16px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border:'none', background: selected.commissionPayee ? '#12b76a' : '#f79009', color:'#fff', transition:'all 0.15s' }}
+                    >
+                      {selected.commissionPayee ? <CheckCircle size={13}/> : <XCircle size={13}/>}
+                      {selected.commissionPayee ? 'Payée ✓' : 'Marquer payée'}
+                    </button>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+                    {[
+                      { label:'Commission fixe',  value:`${(selected.commissionFixe||0).toFixed(2)} TND`,  color:'#3b6cf8' },
+                      { label:'Commission extra', value:`${(selected.commissionExtra||0).toFixed(2)} TND`, color:'#a764f8' },
+                      { label:'Total commission',value:`${(selected.commissionTotale||0).toFixed(2)} TND`, color: selected.commissionPayee ? '#12b76a' : '#f79009' },
+                    ].map(s => (
+                      <div key={s.label} style={{ background:'var(--bg-card)', borderRadius:8, padding:'10px 12px', textAlign:'center' }}>
+                        <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>{s.label}</div>
+                        <div style={{ fontSize:18, fontWeight:700, color:s.color }}>{s.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {selected.dateVente && (
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:10 }}>
+                      📅 Date de vente : {fmtDate(selected.dateVente)}
+                      {selected.datePaiementCommission && ` · Payée le : ${fmtDate(selected.datePaiementCommission)}`}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Infos 3 colonnes */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:20 }}>
                 <FicheSection title="Contact">
                   <InfoRow icon={<User size={12}/>}  label="Prénom"    val={selected.prenom}    />
@@ -643,6 +841,8 @@ export default function SolutionExpress() {
                   <InfoRow icon={<Calendar size={12}/>} label="Ajouté le"     val={fmtDate(selected.createdAt)} />
                 </FicheSection>
               </div>
+
+              {/* Fournisseurs */}
               <div style={{ marginBottom:20 }}>
                 <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Fournisseurs — Actuel → Proposé</div>
                 <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'16px', display:'flex', flexDirection:'column', gap:12 }}>
@@ -651,18 +851,24 @@ export default function SolutionExpress() {
                   <FournisseurRow icon={<Smartphone size={13} color="#12b76a"/>}color="#12b76a" label="Mobile"  actuel={getFournLabel('mobile',   selected.fournisseurMobile)}   propose={getFournLabel('mobile',   selected.fournisseurProposeMobile)}/>
                 </div>
               </div>
+
+              {/* Résumé */}
               {selected.summary && (
                 <div style={{ marginBottom:20 }}>
                   <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Résumé</div>
                   <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.7, borderLeft:'3px solid #12b76a', whiteSpace:'pre-wrap' }}>{selected.summary}</div>
                 </div>
               )}
+
+              {/* Texte source */}
               {selected.sourceText && (
                 <div style={{ marginBottom:20 }}>
                   <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Texte source</div>
                   <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px', fontSize:12, color:'var(--text-secondary)', lineHeight:1.6, borderLeft:'3px solid var(--border)', whiteSpace:'pre-wrap', maxHeight:160, overflowY:'auto' }}>{selected.sourceText}</div>
                 </div>
               )}
+
+              {/* Notes */}
               <div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:12 }}>
                   Notes ({selected.notes?.length||0})
@@ -670,30 +876,26 @@ export default function SolutionExpress() {
                 {selected.notes?.length > 0 ? (
                   <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
                     {[...selected.notes].reverse().map((n, idx) => {
-                      const realIdx = (selected.notes.length - 1) - idx;
+                      const realIdx = (selected.notes.length-1) - idx;
                       return (
                         <div key={idx} style={{ background:'var(--bg-secondary)', borderRadius:8, padding:'10px 14px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.5, borderLeft:'3px solid #12b76a', display:'flex', alignItems:'flex-start', gap:10 }}>
                           <span style={{ flex:1 }}>{n}</span>
                           <button onClick={() => deleteNote(selected, realIdx)}
                             style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', flexShrink:0, padding:'2px', borderRadius:4, transition:'color 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.color='var(--danger)'}
-                            onMouseLeave={e => e.currentTarget.style.color='var(--text-muted)'}
-                            title="Supprimer cette note">
-                            <Trash2 size={13}/>
-                          </button>
+                            onMouseLeave={e => e.currentTarget.style.color='var(--text-muted)'}><Trash2 size={13}/></button>
                         </div>
                       );
                     })}
                   </div>
-                ) : (
-                  <div style={{ color:'var(--text-muted)', fontSize:13, padding:'12px 0', marginBottom:12 }}>Aucune note pour l'instant</div>
-                )}
+                ) : <div style={{ color:'var(--text-muted)', fontSize:13, padding:'12px 0', marginBottom:12 }}>Aucune note pour l'instant</div>}
                 <textarea className="input" style={{ resize:'vertical', minHeight:80, marginBottom:8 }} placeholder="Ajouter une note..." value={noteText} onChange={e => setNoteText(e.target.value)}/>
                 <button className="btn btn-primary" onClick={() => addNote(selected)} style={{ width:'100%' }}>
                   <Plus size={13}/> Ajouter la note
                 </button>
               </div>
             </div>
+
             <div style={{ padding:'16px 28px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between' }}>
               <button className="btn btn-danger btn-sm" onClick={e => handleDelete(selected,e)}><Trash2 size={13}/> Supprimer</button>
               <button className="btn btn-primary btn-sm" onClick={e => openEdit(selected,e)}><Edit2 size={13}/> Modifier</button>
@@ -703,13 +905,13 @@ export default function SolutionExpress() {
       )}
 
       {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* MODAL ADD / EDIT — DESIGN MODERNE PAR ONGLETS                       */}
+      {/* MODAL ADD / EDIT — 5 ONGLETS avec Commission                        */}
       {/* ════════════════════════════════════════════════════════════════════ */}
       {(modal==='add'||modal==='edit') && (
         <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) setModal(null); }}>
           <div style={{ background:'var(--bg-card)', borderRadius:16, width:'100%', maxWidth:680, margin:'auto', overflow:'hidden', boxShadow:'0 25px 60px rgba(0,0,0,0.3)', maxHeight:'90vh', display:'flex', flexDirection:'column' }}>
 
-            {/* ── Header coloré ── */}
+            {/* Header */}
             <div style={{ background:'linear-gradient(135deg,#12b76a20,#12b76a08)', borderBottom:'3px solid #12b76a', padding:'20px 24px 0' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
@@ -727,25 +929,19 @@ export default function SolutionExpress() {
                 </div>
                 <button className="btn btn-ghost btn-sm" onClick={() => setModal(null)}><X size={16}/></button>
               </div>
-
-              {/* Onglets */}
-              <div style={{ display:'flex', gap:0 }}>
+              <div style={{ display:'flex', gap:0, overflowX:'auto' }}>
                 {TABS.map((tab, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveTab(idx)}
-                    style={{ padding:'10px 18px', fontSize:12, fontWeight:600, cursor:'pointer', border:'none', borderBottom: activeTab===idx ? '2px solid #12b76a' : '2px solid transparent', background:'transparent', color: activeTab===idx ? '#12b76a' : 'var(--text-muted)', transition:'all 0.15s', whiteSpace:'nowrap' }}
-                  >
+                  <button key={idx} onClick={() => setActiveTab(idx)}
+                    style={{ padding:'10px 16px', fontSize:12, fontWeight:600, cursor:'pointer', border:'none', borderBottom: activeTab===idx ? '2px solid #12b76a' : '2px solid transparent', background:'transparent', color: activeTab===idx ? '#12b76a' : 'var(--text-muted)', transition:'all 0.15s', whiteSpace:'nowrap' }}>
                     {tab.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* ── Contenu onglets ── */}
             <div style={{ overflowY:'auto', flex:1, padding:'20px 24px' }}>
 
-              {/* ONGLET 0 — Contact */}
+              {/* Onglet 0 — Contact */}
               {activeTab === 0 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
@@ -757,98 +953,70 @@ export default function SolutionExpress() {
                     ))}
                   </div>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                    <div className="form-group">
-                      <label className="form-label">Sexe</label>
+                    <div className="form-group"><label className="form-label">Sexe</label>
                       <select className="select" value={form.sexe} onChange={e => setFld('sexe',e.target.value)}>
-                        <option value="inconnu">Inconnu</option>
-                        <option value="homme">Homme</option>
-                        <option value="femme">Femme</option>
+                        <option value="inconnu">Inconnu</option><option value="homme">Homme</option><option value="femme">Femme</option>
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Statut</label>
+                    <div className="form-group"><label className="form-label">Statut</label>
                       <select className="select" value={form.status} onChange={e => setFld('status',e.target.value)}>
                         {Object.entries(STATUS_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                       </select>
                     </div>
                   </div>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                    <div className="form-group">
-                      <label className="form-label">Adresse</label>
-                      <input className="input" placeholder="123 rue..." value={form.adresse||''} onChange={e => setFld('adresse',e.target.value)}/>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Ancienne adresse (déménagement)</label>
-                      <input className="input" placeholder="Ancienne adresse..." value={form.ancienneAdresse||''} onChange={e => setFld('ancienneAdresse',e.target.value)}/>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Ville</label>
+                    <div className="form-group"><label className="form-label">Adresse</label><input className="input" placeholder="123 rue..." value={form.adresse||''} onChange={e => setFld('adresse',e.target.value)}/></div>
+                    <div className="form-group"><label className="form-label">Ancienne adresse</label><input className="input" placeholder="Ancienne adresse..." value={form.ancienneAdresse||''} onChange={e => setFld('ancienneAdresse',e.target.value)}/></div>
+                    <div className="form-group"><label className="form-label">Ville</label>
                       <select className="select" value={form.ville} onChange={e => setFld('ville',e.target.value)}>
                         {VILLES.filter(v=>v).map(v => <option key={v}>{v}</option>)}
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Urgence (0-10)</label>
-                      <input type="number" min="0" max="10" className="input" value={form.urgencyScore} onChange={e => setFld('urgencyScore',Number(e.target.value))}/>
-                    </div>
+                    <div className="form-group"><label className="form-label">Urgence (0-10)</label><input type="number" min="0" max="10" className="input" value={form.urgencyScore} onChange={e => setFld('urgencyScore',Number(e.target.value))}/></div>
                   </div>
                 </div>
               )}
 
-              {/* ONGLET 1 — Entreprise */}
+              {/* Onglet 1 — Entreprise */}
               {activeTab === 1 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                    <div className="form-group">
-                      <label className="form-label">Nom de l'entreprise</label>
-                      <input className="input" placeholder="Restaurant Belle Vue..." value={form.entreprise||''} onChange={e => setFld('entreprise',e.target.value)}/>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Type client</label>
+                    <div className="form-group"><label className="form-label">Nom de l'entreprise</label><input className="input" placeholder="Restaurant Belle Vue..." value={form.entreprise||''} onChange={e => setFld('entreprise',e.target.value)}/></div>
+                    <div className="form-group"><label className="form-label">Type client</label>
                       <select className="select" value={form.typeClient} onChange={e => setFld('typeClient',e.target.value)}>
-                        <option value="b2b">🏢 B2B — Commerce</option>
-                        <option value="b2c">🏠 B2C — Résidentiel</option>
+                        <option value="b2b">🏢 B2B — Commerce</option><option value="b2c">🏠 B2C — Résidentiel</option>
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Type de commerce</label>
+                    <div className="form-group"><label className="form-label">Type de commerce</label>
                       <select className="select" value={form.typeCommerce} onChange={e => setFld('typeCommerce',e.target.value)}>
                         {Object.entries(TYPE_COMMERCE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Type de lead</label>
+                    <div className="form-group"><label className="form-label">Type de lead</label>
                       <select className="select" value={form.leadType} onChange={e => setFld('leadType',e.target.value)}>
                         {Object.entries(LEAD_TYPES).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">URL source</label>
-                      <input className="input" placeholder="https://..." value={form.sourceUrl||''} onChange={e => setFld('sourceUrl',e.target.value)}/>
-                    </div>
+                    <div className="form-group"><label className="form-label">URL source</label><input className="input" placeholder="https://..." value={form.sourceUrl||''} onChange={e => setFld('sourceUrl',e.target.value)}/></div>
                   </div>
-
-                  {/* Produits — boutons toggle */}
                   <div>
                     <label className="form-label" style={{ marginBottom:8, display:'block' }}>Produits d'intérêt</label>
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                       {Object.entries(PRODUIT_LABELS).map(([k,v]) => {
-                        const sel   = (form.produits||[]).includes(k);
+                        const sel = (form.produits||[]).includes(k);
                         const color = PRODUIT_COLORS[k]||'#8b8b9e';
-                        const Icon  = PRODUIT_ICONS[k]||Tag;
-                        return (
-                          <button key={k} type="button" onClick={() => toggleProduit(k)}
-                            style={{ padding:'8px 14px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', border:`2px solid ${sel?color:'var(--border)'}`, background:sel?`${color}18`:'var(--bg-secondary)', color:sel?color:'var(--text-muted)', display:'flex', alignItems:'center', gap:6, transition:'all 0.15s' }}>
-                            <Icon size={13}/> {v}
-                          </button>
-                        );
+                        const Icon = PRODUIT_ICONS[k]||Tag;
+                        return <button key={k} type="button" onClick={() => toggleProduit(k)}
+                          style={{ padding:'8px 14px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', border:`2px solid ${sel?color:'var(--border)'}`, background:sel?`${color}18`:'var(--bg-secondary)', color:sel?color:'var(--text-muted)', display:'flex', alignItems:'center', gap:6, transition:'all 0.15s' }}>
+                          <Icon size={13}/> {v}
+                        </button>;
                       })}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* ONGLET 2 — Système & Fournisseurs */}
+              {/* Onglet 2 — Système */}
               {activeTab === 2 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                   <div className="form-group">
@@ -857,18 +1025,13 @@ export default function SolutionExpress() {
                       {Object.entries(QUALIF_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                   </div>
-
-                  {/* Fournisseurs Actuel → Proposé */}
                   {[
                     { label:'Alarme / Sécurité', icon:<Shield size={14} color="#f04438"/>, color:'#f04438', aKey:'fournisseurAlarme',   pKey:'fournisseurProposeAlarme',   list:FOURN_ALARME   },
                     { label:'Internet',           icon:<Wifi size={14} color="#3b6cf8"/>,   color:'#3b6cf8', aKey:'fournisseurInternet', pKey:'fournisseurProposeInternet', list:FOURN_INTERNET },
                     { label:'Mobile',             icon:<Smartphone size={14} color="#12b76a"/>, color:'#12b76a', aKey:'fournisseurMobile', pKey:'fournisseurProposeMobile', list:FOURN_MOBILE },
                   ].map(({ label, icon, color, aKey, pKey, list }) => (
                     <div key={label} style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
-                        {icon}
-                        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{label}</span>
-                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>{icon}<span style={{ fontSize:13, fontWeight:600 }}>{label}</span></div>
                       <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr', gap:10, alignItems:'center' }}>
                         <div>
                           <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Actuel</div>
@@ -889,42 +1052,109 @@ export default function SolutionExpress() {
                 </div>
               )}
 
-              {/* ONGLET 3 — Résumé & Source */}
+              {/* ── Onglet 3 — COMMISSION ── */}
               {activeTab === 3 && (
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+
+                  {/* Total auto */}
+                  <div style={{ background: form.commissionPayee ? 'rgba(18,183,106,0.08)' : 'rgba(247,144,9,0.08)', borderRadius:12, padding:'20px', border:`2px solid ${form.commissionPayee ? '#12b76a' : '#f79009'}30`, textAlign:'center' }}>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:6 }}>Total commission</div>
+                    <div style={{ fontSize:36, fontWeight:700, color: form.commissionPayee ? '#12b76a' : '#f79009', lineHeight:1 }}>
+                      {((parseFloat(form.commissionFixe)||0) + (parseFloat(form.commissionExtra)||0)).toFixed(2)} TND
+                    </div>
+                    <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:8, display:'flex', justifyContent:'center', gap:16 }}>
+                      {(parseFloat(form.commissionFixe)||0) > 0 && <span>Fixe : <strong style={{color:'var(--text-primary)'}}>{(parseFloat(form.commissionFixe)||0).toFixed(2)} TND</strong></span>}
+                      {(parseFloat(form.commissionExtra)||0) > 0 && <span>Extra : <strong style={{color:'var(--text-primary)'}}>{(parseFloat(form.commissionExtra)||0).toFixed(2)} TND</strong></span>}
+                    </div>
+                  </div>
+
+                  {/* 2 champs */}
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        <DollarSign size={13} color="#3b6cf8"/> Commission fixe ($)
+                      </label>
+                      <input type="number" min="0" step="0.01" className="input" placeholder="0.00"
+                        value={form.commissionFixe||''}
+                        onChange={e => {
+                          const v = parseFloat(e.target.value)||0;
+                          setForm(f => ({ ...f, commissionFixe:v, commissionTotale:(v + (parseFloat(f.commissionExtra)||0)) }));
+                        }}/>
+                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Ta commission de base</div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        <DollarSign size={13} color="#a764f8"/> Commission extra ($)
+                      </label>
+                      <input type="number" min="0" step="0.01" className="input" placeholder="0.00"
+                        value={form.commissionExtra||''}
+                        onChange={e => {
+                          const v = parseFloat(e.target.value)||0;
+                          setForm(f => ({ ...f, commissionExtra:v, commissionTotale:((parseFloat(f.commissionFixe)||0) + v) }));
+                        }}/>
+                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Pour équipements additionnels</div>
+                    </div>
+                  </div>
+
+                  {/* Date de vente */}
+                  <div className="form-group">
+                    <label className="form-label">Date de vente</label>
+                    <DatePicker value={form.dateVente ? form.dateVente.slice(0,10) : ''} onChange={v => setFld('dateVente', v)} placeholder="Choisir une date de vente"/>
+                  </div>
+
+                  {/* Toggle Payée */}
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--bg-secondary)', borderRadius:12, padding:'16px 18px' }}>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Statut du paiement</div>
+                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:3 }}>
+                        {form.commissionPayee ? `✓ Payée${form.datePaiementCommission ? ` le ${fmtDate(form.datePaiementCommission)}` : ''}` : '⏳ En attente de paiement'}
+                      </div>
+                    </div>
+                    <button type="button"
+                      onClick={() => { setFld('commissionPayee', !form.commissionPayee); if (!form.commissionPayee) setFld('datePaiementCommission', new Date().toISOString().slice(0,10)); }}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 22px', borderRadius:20, fontSize:13, fontWeight:700, cursor:'pointer', border:'none', background: form.commissionPayee ? '#12b76a' : '#f79009', color:'#fff', transition:'all 0.2s' }}>
+                      {form.commissionPayee ? <><CheckCircle size={15}/> Payée</> : <><XCircle size={15}/> Non payée</>}
+                    </button>
+                  </div>
+
+                  {form.commissionPayee && (
+                    <div className="form-group">
+                      <label className="form-label">Date de paiement</label>
+                      <DatePicker value={form.datePaiementCommission ? form.datePaiementCommission.slice(0,10) : ''} onChange={v => setFld('datePaiementCommission', v)} placeholder="Choisir une date de paiement"/>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Onglet 4 — Résumé */}
+              {activeTab === 4 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                   <div className="form-group">
                     <label className="form-label">Résumé de l'opportunité</label>
                     <textarea className="input" style={{ resize:'vertical', minHeight:100 }} placeholder="Pourquoi ce lead est pertinent..." value={form.summary||''} onChange={e => setFld('summary',e.target.value)}/>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Texte source (copié de Solution Express)</label>
+                    <label className="form-label">Texte source</label>
                     <textarea className="input" style={{ resize:'vertical', minHeight:100 }} placeholder="Colle ici le texte..." value={form.sourceText||''} onChange={e => setFld('sourceText',e.target.value)}/>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ── Footer — navigation + sauvegarder ── */}
+            {/* Footer */}
             <div style={{ padding:'14px 24px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', background:'var(--bg-card)' }}>
               <div style={{ display:'flex', gap:6 }}>
-                {TABS.map((tab, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveTab(idx)}
-                    style={{ width:8, height:8, borderRadius:'50%', border:'none', cursor:'pointer', background: activeTab===idx ? '#12b76a' : 'var(--border)', padding:0, transition:'background 0.15s' }}
-                  />
+                {TABS.map((_, idx) => (
+                  <button key={idx} onClick={() => setActiveTab(idx)}
+                    style={{ width:8, height:8, borderRadius:'50%', border:'none', cursor:'pointer', background: activeTab===idx ? '#12b76a' : 'var(--border)', padding:0, transition:'background 0.15s' }}/>
                 ))}
               </div>
               <div style={{ display:'flex', gap:8 }}>
                 <button className="btn" onClick={() => setModal(null)}>Annuler</button>
                 {activeTab < TABS.length - 1 ? (
-                  <button className="btn btn-primary" onClick={() => setActiveTab(t => t + 1)}>
-                    Suivant →
-                  </button>
+                  <button className="btn btn-primary" onClick={() => setActiveTab(t => t+1)}>Suivant →</button>
                 ) : (
-                  <button className="btn btn-primary" onClick={handleSubmit}>
-                    {modal==='add' ? '✓ Ajouter' : '✓ Sauvegarder'}
-                  </button>
+                  <button className="btn btn-primary" onClick={handleSubmit}>{modal==='add' ? '✓ Ajouter' : '✓ Sauvegarder'}</button>
                 )}
               </div>
             </div>
