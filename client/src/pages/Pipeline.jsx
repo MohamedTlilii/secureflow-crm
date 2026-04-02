@@ -200,19 +200,11 @@ export default function Pipeline() {
   // ── FETCH — Google Alerts + Solution Express uniquement ─────────────────
   const fetchAll = useCallback(async () => {
     try {
-      const [ga, se] = await Promise.all([
-        api.get('/api/google-alerts').catch(() => ({ data: [] })),
+      const [se] = await Promise.all([
         api.get('/api/solution-express').catch(() => ({ data: [] })),
       ]);
 
       const all = [
-        // Google Alerts
-        ...ga.data.map(x => ({
-          ...x,
-          source:      'google_alert',
-          stage:       normalizeStatus(x.status, 'google_alert'),
-          displayName: x.entreprise || `${x.prenom||''} ${x.nom||''}`.trim() || 'Google Alert',
-        })),
         // Solution Express
         ...se.data.map(x => ({
           ...x,

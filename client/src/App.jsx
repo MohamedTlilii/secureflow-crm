@@ -3,7 +3,6 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import GoogleAlerts from './pages/GoogleAlerts';
 import Pipeline from './pages/Pipeline';
 import Database from './pages/Database'
 import Sidebar from './components/Sidebar';
@@ -35,7 +34,6 @@ const AppRoutes = () => {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
 <Route path="/commissions" element={<ProtectedLayout><Commissions /></ProtectedLayout>} />
-      <Route path="/google-alerts" element={<ProtectedLayout><GoogleAlerts /></ProtectedLayout>} />
       <Route path="/solution-express" element={<ProtectedLayout><SolutionExpress /></ProtectedLayout>} />
 
       <Route path="/pipeline" element={<ProtectedLayout><Pipeline /></ProtectedLayout>} />

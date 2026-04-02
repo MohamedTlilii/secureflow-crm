@@ -9,7 +9,6 @@ const NAV = [
 
   { to: '/commissions',       icon: DollarSign,      label: 'Commissions',       color: '#12b76a' },
   { to: '/solution-express',  icon: Building2,       label: 'Solution Express', color: '#2215d4' },
-    { to: '/google-alerts',     icon: Bell,            label: 'Google Alerts',    color: '#ea4335' },
   { to: '/pipeline',          icon: Kanban,          label: 'Pipeline'   ,       color: '#ad19b3'       },
   { to: '/database',          icon: Database,        label: 'Base de données',       color: '#e2287f'   },
 ];

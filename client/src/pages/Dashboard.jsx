@@ -1,27 +1,22 @@
 // ════════════════════════════════════════════════════════════════════════════
 // client/src/pages/Dashboard.jsx
-// Utilise /api/stats — Google Alerts + Solution Express uniquement
+// Solution Express uniquement
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import {
   Users, TrendingUp, CheckCircle, AlertCircle, Clock,
-  MapPin, Zap, Bell, Building2, Shield, Wifi, Smartphone, Video, DollarSign
+  MapPin, Zap, Building2, Shield, Wifi, Smartphone, Video, DollarSign,
+  Target,
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, RadialBarChart, RadialBar } from 'recharts';
 
-axios.interceptors.request.use(config => {
-  const token = localStorage.getItem('sf_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// ── Constantes labels ────────────────────────────────────────────────────────
-const PRODUIT_COLORS  = { alarme:'#f04438', cameras:'#a764f8', internet:'#3b6cf8', mobile:'#12b76a', controle_acces:'#f79009', autre:'#8b8b9e' };
-const PRODUIT_LABELS  = { alarme:'Alarme', cameras:'Caméras', internet:'Internet', mobile:'Mobile', controle_acces:'Contrôle accès', autre:'Autre' };
-const PRODUIT_ICONS   = { alarme:Shield, cameras:Video, internet:Wifi, mobile:Smartphone, controle_acces:Shield, autre:Zap };
-const QUALIF_LABELS   = {
+// ── Constantes labels ─────────────────────────────────────────────────────
+const PRODUIT_COLORS = { alarme:'#f04438', cameras:'#a764f8', internet:'#3b6cf8', mobile:'#12b76a', controle_acces:'#f79009', autre:'#8b8b9e' };
+const PRODUIT_LABELS = { alarme:'Alarme', cameras:'Caméras', internet:'Internet', mobile:'Mobile', controle_acces:'Contrôle accès', autre:'Autre' };
+const PRODUIT_ICONS  = { alarme:Shield, cameras:Video, internet:Wifi, mobile:Smartphone, controle_acces:Shield, autre:Zap };
+const QUALIF_LABELS  = {
   pas_de_systeme:'Pas de système', systeme_plus_10_ans:'+10 ans',
   systeme_non_connecte_nouveau_proprio:'Non connecté (nouveau proprio)',
   systeme_non_connecte_insatisfait:'Non connecté (insatisfait)',
@@ -43,14 +38,11 @@ const FOURN_LABELS = {
   fido:'Fido', chatr:'Chatr', virgin_plus:'Virgin Plus',
   inconnu:'Inconnu', aucun:'Aucun', autre:'Autre'
 };
-const LEAD_TYPE_LABELS  = { nouvelle_entreprise:'Nouvelle entreprise', demenagement:'Déménagement', reouverture:'Réouverture', commerce_existant:'Commerce existant', autre:'Autre' };
-const LEAD_TYPE_COLORS  = { nouvelle_entreprise:'#12b76a', demenagement:'#0077b5', reouverture:'#f79009', commerce_existant:'#a764f8', autre:'#8b8b9e' };
-const ALERT_TYPE_LABELS = { incendie:'Incendie', vol:'Vol', nouvelle_entreprise:'Nouvelle entreprise', ouverture:'Ouverture', demenagement:'Déménagement', reouverture:'Réouverture', incident:'Incident', autre:'Autre' };
-const ALERT_TYPE_COLORS = { incendie:'#f04438', vol:'#f79009', nouvelle_entreprise:'#12b76a', ouverture:'#3b6cf8', demenagement:'#0077b5', reouverture:'#f79009', incident:'#a764f8', autre:'#8b8b9e' };
-const STATUS_COLORS     = { new:'#3b6cf8', analyzed:'#3b6cf8', contacted:'#f79009', interested:'#12b76a', proposal:'#a764f8', won:'#12b76a', lost:'#f04438', ignored:'#8b8b9e', saved:'#12b76a' };
-const STATUS_LABELS_FR  = { new:'Nouveau', analyzed:'Analysé', contacted:'Contacté', interested:'Intéressé', proposal:'Soumission', won:'Gagné', lost:'Perdu', ignored:'Ignoré', saved:'Sauvegardé' };
+const LEAD_TYPE_LABELS = { nouvelle_entreprise:'Nouvelle entreprise', demenagement:'Déménagement', reouverture:'Réouverture', commerce_existant:'Commerce existant', autre:'Autre' };
+const LEAD_TYPE_COLORS = { nouvelle_entreprise:'#12b76a', demenagement:'#0077b5', reouverture:'#f79009', commerce_existant:'#a764f8', autre:'#8b8b9e' };
+const STATUS_COLORS    = { new:'#3b6cf8', contacted:'#f79009', interested:'#12b76a', proposal:'#a764f8', won:'#12b76a', lost:'#f04438', ignored:'#8b8b9e' };
+const STATUS_LABELS_FR = { new:'Nouveau', contacted:'Contacté', interested:'Intéressé', proposal:'Soumission', won:'Gagné', lost:'Perdu', ignored:'Ignoré' };
 
-// ── Mini barre de progression ─────────────────────────────────────────────────
 function ProgressBar({ value, max, color }) {
   const pct = max > 0 ? Math.round((value/max)*100) : 0;
   return (
@@ -60,9 +52,27 @@ function ProgressBar({ value, max, color }) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// COMPOSANT PRINCIPAL
-// ════════════════════════════════════════════════════════════════════════════
+function ScoreRing({ value, max, color, label, sublabel }) {
+  const pct = max > 0 ? Math.round((value/max)*100) : 0;
+  const r = 36, circ = 2 * Math.PI * r;
+  const dash = circ * (pct/100);
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+      <svg width={90} height={90} style={{ transform:'rotate(-90deg)' }}>
+        <circle cx={45} cy={45} r={r} fill="none" stroke="var(--border)" strokeWidth={7}/>
+        <circle cx={45} cy={45} r={r} fill="none" stroke={color} strokeWidth={7}
+          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+          style={{ transition:'stroke-dasharray 0.8s ease' }}/>
+      </svg>
+      <div style={{ marginTop:-68, textAlign:'center', zIndex:1, position:'relative' }}>
+        <div style={{ fontSize:18, fontWeight:800, color, lineHeight:1 }}>{value}</div>
+        <div style={{ fontSize:9, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase' }}>{label}</div>
+      </div>
+      <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:36 }}>{sublabel}</div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,7 +80,7 @@ export default function Dashboard() {
   const [commFiltre, setCommFiltre] = useState('tout');
 
   useEffect(() => {
-    axios.get('/api/stats?periode=tout')
+    api.get('/api/stats?periode=tout')
       .then(r => setStats(r.data))
       .catch(err => console.error('Dashboard stats error:', err))
       .finally(() => setLoading(false));
@@ -83,27 +93,52 @@ export default function Dashboard() {
   );
   if (!stats) return <div style={{ textAlign:'center', padding:60, color:'var(--text-muted)' }}>Erreur chargement</div>;
 
+  const convRate = stats.conversionRate || 0;
+  const enPipeline = (stats.seStatuts?.contacted||0)+(stats.seStatuts?.interested||0)+(stats.seStatuts?.proposal||0);
+
   return (
     <div className="animate-fade">
 
-      {/* ── HEADER ──────────────────────────────────────────────────────── */}
+      {/* ── HEADER ── */}
       <div className="page-header flex-between">
         <div>
           <h1>Dashboard</h1>
-          <p style={{ color:'var(--text-muted)', fontSize:13, marginTop:2 }}>Google Alerts · Solution Express</p>
+          <p style={{ color:'var(--text-muted)', fontSize:13, marginTop:2 }}>Solution Express · Vue complète</p>
         </div>
         <div style={{ fontSize:12, color:'var(--text-muted)', background:'var(--bg-card)', padding:'6px 12px', borderRadius:8, border:'1px solid var(--border)' }}>
           {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
         </div>
       </div>
 
-      {/* ── 4 STATS PRINCIPALES ─────────────────────────────────────────── */}
+      {/* ── PERFORMANCE BANNER ── */}
+      <div style={{ background:'linear-gradient(135deg,rgba(59,108,248,0.08),rgba(18,183,106,0.06))', borderRadius:16, padding:'20px 28px', marginBottom:24, border:'1px solid rgba(59,108,248,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:20 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+          <div style={{ width:52, height:52, borderRadius:14, background:'linear-gradient(135deg,#3b6cf8,#12b76a)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Target size={26} color="#fff"/>
+          </div>
+          <div>
+            <div style={{ fontSize:18, fontWeight:800, color:'var(--text-primary)' }}>
+              {convRate}% de conversion
+            </div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>
+              {stats.won || 0} gagné{(stats.won||0)!==1?'s':''} sur {stats.totalSE || 0} fiches totales
+            </div>
+          </div>
+        </div>
+        <div style={{ display:'flex', gap:32 }}>
+          <ScoreRing value={stats.won||0}       max={stats.totalSE||1} color="#12b76a" label="Gagnés"   sublabel={`/${stats.totalSE||0}`}/>
+          <ScoreRing value={enPipeline}          max={stats.totalSE||1} color="#f79009" label="Pipeline"  sublabel={`/${stats.totalSE||0}`}/>
+          <ScoreRing value={stats.urgent||0}     max={stats.totalSE||1} color="#f04438" label="Urgents"   sublabel={`score ≥7`}/>
+        </div>
+      </div>
+
+      {/* ── 4 STATS ── */}
       <div className="grid-4 mb-6">
         {[
-          { label:'Total leads',  value:stats.total,                               sub:`${stats.totalGA} alertes · ${stats.totalSE} Solution Express`, icon:Users,       color:'var(--accent)'  },
-          { label:'Urgents',      value:stats.urgent,                              sub:`Score ≥ 7 · Moy. ${stats.avgUrgence}/10`,                       icon:AlertCircle, color:'var(--danger)'  },
-          { label:'En pipeline',  value:(stats.seStatuts?.contacted||0)+(stats.seStatuts?.interested||0)+(stats.seStatuts?.proposal||0), sub:`${stats.seStatuts?.proposal||0} soumissions actives`, icon:Clock, color:'var(--warning)' },
-          { label:'Gagnés',       value:stats.won,                                 sub:`Taux de conversion ${stats.conversionRate}%`,                   icon:CheckCircle, color:'var(--success)'  },
+          { label:'Total fiches',  value:stats.totalSE||0,  sub:`${stats.b2b||0} B2B · ${stats.b2c||0} B2C`,         icon:Users,       color:'var(--accent)'  },
+          { label:'Urgents',       value:stats.urgent||0,   sub:`Score ≥ 7 · Moy. ${stats.avgUrgence||0}/10`,         icon:AlertCircle, color:'var(--danger)'  },
+          { label:'En pipeline',   value:enPipeline,        sub:`${stats.seStatuts?.proposal||0} soumissions actives`, icon:Clock,       color:'var(--warning)' },
+          { label:'Gagnés',        value:stats.won||0,      sub:`Taux de conversion ${convRate}%`,                    icon:CheckCircle, color:'var(--success)'  },
         ].map((s,i) => (
           <div key={i} className="stat-card animate-fade" style={{ animationDelay:`${i*0.05}s` }}>
             <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
@@ -120,69 +155,42 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ── GOOGLE ALERTS + SOLUTION EXPRESS ────────────────────────────── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:24 }}>
-
-        {/* Google Alerts */}
-        <div className="card" style={{ borderTop:'3px solid #ea4335' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-            <div style={{ width:38, height:38, borderRadius:9, background:'rgba(234,67,53,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <Bell size={19} color="#ea4335"/>
-            </div>
-            <div>
-              <div style={{ fontSize:15, fontWeight:700 }}>Google Alerts</div>
-              <div style={{ fontSize:12, color:'var(--text-muted)' }}>{stats.totalGA} alertes · analysées par Groq AI</div>
-            </div>
-            <div style={{ marginLeft:'auto', fontSize:28, fontWeight:800, color:'#ea4335' }}>{stats.totalGA}</div>
+      {/* ── SOLUTION EXPRESS STATUTS ── */}
+      <div className="card" style={{ borderTop:'3px solid #12b76a', marginBottom:24 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+          <div style={{ width:38, height:38, borderRadius:9, background:'rgba(18,183,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Building2 size={19} color="#12b76a"/>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
-            {[
-              { label:'Nouveau',   value:(stats.gaStatuts?.new||0)+(stats.gaStatuts?.analyzed||0), color:'#3b6cf8' },
-              { label:'Contacté',  value:stats.gaStatuts?.contacted||0,                            color:'#f79009' },
-              { label:'Sauvegardé',value:stats.gaStatuts?.saved||0,                               color:'#12b76a' },
-            ].map(s => (
-              <div key={s.label} style={{ background:'var(--bg-secondary)', borderRadius:8, padding:'10px 12px', borderLeft:`3px solid ${s.color}`, textAlign:'center' }}>
-                <div style={{ fontSize:22, fontWeight:800, color:s.color }}>{s.value}</div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginTop:2 }}>{s.label}</div>
-              </div>
-            ))}
+          <div>
+            <div style={{ fontSize:15, fontWeight:700 }}>Solution Express</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)' }}>{stats.totalSE} fiches · {stats.b2b} B2B · {stats.b2c} B2C</div>
           </div>
+          <div style={{ marginLeft:'auto', fontSize:28, fontWeight:800, color:'#12b76a' }}>{stats.totalSE}</div>
         </div>
-
-        {/* Solution Express */}
-        <div className="card" style={{ borderTop:'3px solid #12b76a' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-            <div style={{ width:38, height:38, borderRadius:9, background:'rgba(18,183,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <Building2 size={19} color="#12b76a"/>
-            </div>
-            <div>
-              <div style={{ fontSize:15, fontWeight:700 }}>Solution Express</div>
-              <div style={{ fontSize:12, color:'var(--text-muted)' }}>{stats.totalSE} fiches · {stats.b2b} B2B · {stats.b2c} B2C</div>
-            </div>
-            <div style={{ marginLeft:'auto', fontSize:28, fontWeight:800, color:'#12b76a' }}>{stats.totalSE}</div>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
-            {[
-              { label:'Nouveau',    value:stats.seStatuts?.new||0,       color:'#3b6cf8' },
-              { label:'Contacté',   value:stats.seStatuts?.contacted||0, color:'#f79009' },
-              { label:'Intéressé',  value:stats.seStatuts?.interested||0,color:'#12b76a' },
-              { label:'Soumission', value:stats.seStatuts?.proposal||0,  color:'#a764f8' },
-              { label:'Gagné',      value:stats.seStatuts?.won||0,       color:'#12b76a' },
-              { label:'Perdu',      value:stats.seStatuts?.lost||0,      color:'#f04438' },
-            ].map(s => (
-              <div key={s.label} style={{ background:'var(--bg-secondary)', borderRadius:8, padding:'8px 10px', borderLeft:`3px solid ${s.color}`, textAlign:'center' }}>
-                <div style={{ fontSize:18, fontWeight:800, color:s.color }}>{s.value}</div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginTop:2 }}>{s.label}</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:8 }}>
+          {[
+            { label:'Nouveau',    value:stats.seStatuts?.new||0,        color:'#3b6cf8' },
+            { label:'Contacté',   value:stats.seStatuts?.contacted||0,  color:'#f79009' },
+            { label:'Intéressé',  value:stats.seStatuts?.interested||0, color:'#12b76a' },
+            { label:'Soumission', value:stats.seStatuts?.proposal||0,   color:'#a764f8' },
+            { label:'Gagné',      value:stats.seStatuts?.won||0,        color:'#12b76a' },
+            { label:'Perdu',      value:stats.seStatuts?.lost||0,       color:'#f04438' },
+          ].map(s => (
+            <div key={s.label} style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'12px 10px', borderLeft:`3px solid ${s.color}`, textAlign:'center', position:'relative', overflow:'hidden' }}>
+              <div style={{ position:'absolute', bottom:-8, right:-4, fontSize:40, fontWeight:900, color:s.color, opacity:0.05, lineHeight:1 }}>{s.value}</div>
+              <div style={{ fontSize:24, fontWeight:800, color:s.color }}>{s.value}</div>
+              <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginTop:2 }}>{s.label}</div>
+              <div style={{ marginTop:6, height:3, borderRadius:2, background:'var(--border)', overflow:'hidden' }}>
+                <div style={{ height:'100%', borderRadius:2, background:s.color, width:`${stats.totalSE>0?Math.round((s.value/stats.totalSE)*100):0}%` }}/>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ── COMMISSIONS ─────────────────────────────────────────────────────── */}
+      {/* ── COMMISSIONS — NE PAS TOUCHER ── */}
       {stats.commissions && (
         <div style={{ marginBottom:24 }}>
-          {/* Header */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
               <div style={{ width:36, height:36, borderRadius:9, background:'rgba(18,183,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -193,20 +201,14 @@ export default function Dashboard() {
                 <div style={{ fontSize:11, color:'var(--text-muted)' }}>Solution Express · historique complet</div>
               </div>
             </div>
-            {/* Filtre par année */}
-            <select
-              value={commPeriode}
-              onChange={e => setCommPeriode(e.target.value)}
+            <select value={commPeriode} onChange={e => setCommPeriode(e.target.value)}
               style={{ fontSize:12, padding:'6px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', color:'var(--text-primary)', cursor:'pointer', outline:'none' }}>
               <option value="tout">Toutes les années</option>
-              {[new Date().getFullYear(), new Date().getFullYear()-1, new Date().getFullYear()-2].map(y => (
-                <option key={y} value={String(y)}>{y}</option>
+{[...new Set((stats.commissions.historique||[]).map(c => new Date(c.dateVente||c.createdAt).getFullYear()))].sort((a,b) => b-a).map(y => (
+                    <option key={y} value={String(y)}>{y}</option>
               ))}
             </select>
           </div>
-
-          {/* Stats commissions — 2 lignes */}
-          {/* Ligne 1 — Total + Payé + En attente */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:10 }}>
             <div style={{ background:'rgba(18,183,106,0.06)', borderRadius:12, padding:'16px 18px', border:'1px solid rgba(18,183,106,0.15)' }}>
               <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Total gagné</div>
@@ -224,7 +226,6 @@ export default function Dashboard() {
               <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>à recevoir</div>
             </div>
           </div>
-          {/* Ligne 2 — Max + Min + Ventes */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:14 }}>
             <div style={{ background:'rgba(167,100,248,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(167,100,248,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div>
@@ -247,24 +248,20 @@ export default function Dashboard() {
             <div style={{ background:'rgba(18,183,106,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(18,183,106,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div>
                 <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Ventes gagnées</div>
-                <div style={{ fontSize:22, fontWeight:700, color:'#12b76a' }}>
-                  {(stats.commissions.historique||[]).length}
-                </div>
+                <div style={{ fontSize:22, fontWeight:700, color:'#12b76a' }}>{(stats.commissions.historique||[]).length}</div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Solution Express</div>
               </div>
               <div style={{ fontSize:24, opacity:0.2 }}>🏆</div>
             </div>
           </div>
-          {/* Historique + filtre payée/non payée */}
           <div className="card" style={{ padding:0, overflow:'hidden' }}>
-            {/* Sous-filtres */}
             <div style={{ display:'flex', borderBottom:'1px solid var(--border)', padding:'10px 16px', gap:8 }}>
               {[['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳ En attente']].map(([k,l]) => (
                 <button key={k} onClick={() => setCommFiltre(k)}
                   style={{ padding:'4px 14px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer',
-                    border:`1px solid ${commFiltre===k ? (k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)') : 'var(--border)'}`,
-                    background: commFiltre===k ? (k==='payee'?'rgba(18,183,106,0.1)':k==='non_payee'?'rgba(247,144,9,0.1)':'rgba(59,108,248,0.1)') : 'transparent',
-                    color: commFiltre===k ? (k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)') : 'var(--text-muted)',
+                    border:`1px solid ${commFiltre===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)'):'var(--border)'}`,
+                    background: commFiltre===k?(k==='payee'?'rgba(18,183,106,0.1)':k==='non_payee'?'rgba(247,144,9,0.1)':'rgba(59,108,248,0.1)'):'transparent',
+                    color: commFiltre===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)'):'var(--text-muted)',
                     transition:'all 0.15s' }}>
                   {l}
                 </button>
@@ -272,36 +269,33 @@ export default function Dashboard() {
               <div style={{ marginLeft:'auto', fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center' }}>
                 {(stats.commissions.historique||[]).filter(c => {
                   const yr = new Date(c.dateVente||c.createdAt).getFullYear();
-                  const yearOk = commPeriode === 'tout' || String(yr) === commPeriode;
+                  const yearOk = commPeriode==='tout'||String(yr)===commPeriode;
                   const statutOk = commFiltre==='tout'?true:commFiltre==='payee'?c.commissionPayee:!c.commissionPayee;
-                  return yearOk && statutOk;
+                  return yearOk&&statutOk;
                 }).length} entrée(s)
               </div>
             </div>
-
-            {/* Liste */}
             <div style={{ padding:'8px 0' }}>
               {(() => {
                 const filteredComm = (stats.commissions.historique||[]).filter(c => {
                   const yr = new Date(c.dateVente||c.createdAt).getFullYear();
-                  const yearOk = commPeriode === 'tout' || String(yr) === commPeriode;
-                  const statutOk = commFiltre==='tout' ? true : commFiltre==='payee' ? c.commissionPayee : !c.commissionPayee;
-                  return yearOk && statutOk;
+                  const yearOk = commPeriode==='tout'||String(yr)===commPeriode;
+                  const statutOk = commFiltre==='tout'?true:commFiltre==='payee'?c.commissionPayee:!c.commissionPayee;
+                  return yearOk&&statutOk;
                 });
-                return filteredComm.length > 0 ? (
-                  filteredComm.map((c, i, arr) => (
-                  <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', borderBottom: i < arr.length-1 ? '1px solid var(--border)' : 'none', transition:'background 0.1s' }}
+                return filteredComm.length > 0 ? filteredComm.map((c,i,arr) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', borderBottom:i<arr.length-1?'1px solid var(--border)':'none', transition:'background 0.1s' }}
                     onMouseEnter={e => e.currentTarget.style.background='var(--bg-secondary)'}
                     onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-                    <div style={{ width:38, height:38, borderRadius:9, background: c.commissionPayee ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <DollarSign size={15} color={c.commissionPayee ? '#12b76a' : '#f79009'}/>
+                    <div style={{ width:38, height:38, borderRadius:9, background:c.commissionPayee?'rgba(18,183,106,0.1)':'rgba(247,144,9,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <DollarSign size={15} color={c.commissionPayee?'#12b76a':'#f79009'}/>
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        {c.entreprise || `${c.prenom||''} ${c.nom||''}`.trim() || 'Sans nom'}
+                        {c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'Sans nom'}
                       </div>
                       <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>
-                        {c.ville||'—'} · {c.dateVente ? new Date(c.dateVente).toLocaleDateString('fr-CA') : new Date(c.createdAt).toLocaleDateString('fr-CA')}
+                        {c.ville||'—'} · {c.dateVente?new Date(c.dateVente).toLocaleDateString('fr-CA'):new Date(c.createdAt).toLocaleDateString('fr-CA')}
                       </div>
                     </div>
                     {c.commissionFixe > 0 && (
@@ -311,36 +305,33 @@ export default function Dashboard() {
                       </div>
                     )}
                     <div style={{ textAlign:'right', flexShrink:0, minWidth:90 }}>
-                      <div style={{ fontSize:16, fontWeight:700, color: c.commissionPayee ? '#12b76a' : '#f79009' }}>
+                      <div style={{ fontSize:16, fontWeight:700, color:c.commissionPayee?'#12b76a':'#f79009' }}>
                         {(c.commissionTotale||0).toFixed(2)} $
                       </div>
                       <div style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, display:'inline-block', marginTop:2,
-                        background: c.commissionPayee ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.1)',
-                        color: c.commissionPayee ? '#12b76a' : '#f79009' }}>
-                        {c.commissionPayee ? '✓ Payée' : '⏳ En attente'}
+                        background:c.commissionPayee?'rgba(18,183,106,0.1)':'rgba(247,144,9,0.1)',
+                        color:c.commissionPayee?'#12b76a':'#f79009' }}>
+                        {c.commissionPayee?'✓ Payée':'⏳ En attente'}
                       </div>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text-muted)', fontSize:13 }}>
-                  Aucune commission pour cette période
-                </div>
-              );
+                )) : (
+                  <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text-muted)', fontSize:13 }}>
+                    Aucune commission pour cette période
+                  </div>
+                );
               })()}
             </div>
           </div>
         </div>
       )}
 
-      {/* ── PIPELINE + PRODUITS ──────────────────────────────────────────── */}
+      {/* ── PIPELINE + PRODUITS ── */}
       <div className="grid-2 mb-6">
-
-        {/* Pipeline chart */}
         <div className="card">
           <div className="flex-between mb-4">
             <h3 style={{ fontSize:15 }}>Pipeline global</h3>
-            <span style={{ fontSize:12, color:'var(--text-muted)' }}>{stats.total} leads</span>
+            <span style={{ fontSize:12, color:'var(--text-muted)' }}>{stats.totalSE} fiches</span>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={stats.pipelineData} barSize={30}>
@@ -353,8 +344,6 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Produits d'intérêt */}
         <div className="card">
           <div className="flex-between mb-4">
             <h3 style={{ fontSize:15 }}>Produits d'intérêt</h3>
@@ -385,33 +374,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── TYPES ALERTES + QUALIFICATION ───────────────────────────────── */}
+      {/* ── QUALIFICATION + FOURNISSEURS ── */}
       <div className="grid-2 mb-6">
-
-        {/* Types d'alertes Google */}
-        <div className="card">
-          <div className="flex-between mb-4">
-            <h3 style={{ fontSize:15 }}>Types d'alertes Google</h3>
-            <Bell size={14} color="#ea4335"/>
-          </div>
-          {(stats.byAlertType||[]).length ? (
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              {stats.byAlertType.map((a,i) => {
-                const color = ALERT_TYPE_COLORS[a._id] || '#8b8b9e';
-                return (
-                  <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }}/>
-                    <span style={{ flex:1, fontSize:13, color:'var(--text-secondary)' }}>{ALERT_TYPE_LABELS[a._id]||a._id}</span>
-                    <span style={{ fontSize:13, fontWeight:700, color }}>{a.count}</span>
-                    <ProgressBar value={a.count} max={stats.totalGA} color={color}/>
-                  </div>
-                );
-              })}
-            </div>
-          ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune alerte</div>}
-        </div>
-
-        {/* Qualification système */}
         <div className="card">
           <div className="flex-between mb-4">
             <h3 style={{ fontSize:15 }}>Qualification système</h3>
@@ -421,7 +385,7 @@ export default function Dashboard() {
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {stats.byQualif.map((q,i) => {
                 const colors = ['#f04438','#f79009','#12b76a','#3b6cf8','#a764f8','#8b8b9e'];
-                const color  = colors[i%colors.length];
+                const color = colors[i%colors.length];
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-secondary)', borderRadius:8, padding:'8px 12px' }}>
                     <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }}/>
@@ -433,12 +397,6 @@ export default function Dashboard() {
             </div>
           ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune qualification</div>}
         </div>
-      </div>
-
-      {/* ── FOURNISSEURS + TYPES DE LEAD ─────────────────────────────────── */}
-      <div className="grid-2 mb-6">
-
-        {/* Top fournisseurs actuels */}
         <div className="card">
           <div className="flex-between mb-4">
             <h3 style={{ fontSize:15 }}>Top fournisseurs actuels</h3>
@@ -457,8 +415,10 @@ export default function Dashboard() {
             </div>
           ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun fournisseur</div>}
         </div>
+      </div>
 
-        {/* Types de lead */}
+      {/* ── TYPES DE LEAD + TOP VILLES ── */}
+      <div className="grid-2 mb-6">
         <div className="card">
           <div className="flex-between mb-4">
             <h3 style={{ fontSize:15 }}>Types de leads</h3>
@@ -467,7 +427,7 @@ export default function Dashboard() {
           {(stats.byLeadType||[]).length ? (
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               {stats.byLeadType.map((l,i) => {
-                const color = LEAD_TYPE_COLORS[l._id] || '#8b8b9e';
+                const color = LEAD_TYPE_COLORS[l._id]||'#8b8b9e';
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
                     <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }}/>
@@ -480,12 +440,6 @@ export default function Dashboard() {
             </div>
           ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun type</div>}
         </div>
-      </div>
-
-      {/* ── TOP VILLES + LEADS RÉCENTS ───────────────────────────────────── */}
-      <div className="grid-2">
-
-        {/* Top villes */}
         <div className="card">
           <div className="flex-between mb-4">
             <h3 style={{ fontSize:15 }}>Top villes</h3>
@@ -498,43 +452,41 @@ export default function Dashboard() {
                   <div style={{ width:22, height:22, borderRadius:6, background:'var(--bg-hover)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'var(--text-muted)', flexShrink:0 }}>{i+1}</div>
                   <span style={{ flex:1, fontSize:13, color:'var(--text-secondary)' }}>{c._id}</span>
                   <span style={{ fontSize:13, fontWeight:700 }}>{c.count}</span>
-                  <ProgressBar value={c.count} max={stats.total} color="var(--accent)"/>
+                  <ProgressBar value={c.count} max={stats.totalSE} color="var(--accent)"/>
                 </div>
               ))}
             </div>
           ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune ville</div>}
         </div>
+      </div>
 
-        {/* Leads récents */}
-        <div className="card">
-          <div className="flex-between mb-4">
-            <h3 style={{ fontSize:15 }}>Leads récents</h3>
-            <TrendingUp size={14} color="var(--text-muted)"/>
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
-            {(stats.recentProspects||[]).length ? stats.recentProspects.map((p,i) => {
-              const avs   = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
-              const name  = p.entreprise || `${p.prenom||''} ${p.nom||''}`.trim() || 'Sans nom';
-              const ini   = (name[0]||'?').toUpperCase();
-              const isSE  = p.source === 'solution_express';
-              const color = isSE ? '#12b76a' : '#ea4335';
-              const src   = isSE ? '🏢' : '🔔';
-              const statColor = STATUS_COLORS[p.status] || '#8b8b9e';
-              return (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 0', borderBottom: i < stats.recentProspects.length-1 ? '1px solid var(--border)' : 'none' }}>
-                  <div className={`avatar ${avs[i%avs.length]}`} style={{ width:36, height:36, fontSize:13, flexShrink:0 }}>{ini}</div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{name}</div>
-                    <div style={{ fontSize:11, color:'var(--text-muted)' }}>{p.ville||'—'} · {new Date(p.createdAt).toLocaleDateString('fr-CA')}</div>
-                  </div>
-                  <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:`${color}15`, color, flexShrink:0 }}>{src}</span>
-                  <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:`${statColor}15`, color:statColor, flexShrink:0 }}>{STATUS_LABELS_FR[p.status]||p.status}</span>
+      {/* ── LEADS RÉCENTS ── */}
+      <div className="card">
+        <div className="flex-between mb-4">
+          <h3 style={{ fontSize:15 }}>Leads récents</h3>
+          <TrendingUp size={14} color="var(--text-muted)"/>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
+          {(stats.recentProspects||[]).length ? stats.recentProspects.map((p,i) => {
+            const avs  = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
+            const name = p.entreprise||`${p.prenom||''} ${p.nom||''}`.trim()||'Sans nom';
+            const ini  = (name[0]||'?').toUpperCase();
+            const statColor = STATUS_COLORS[p.status]||'#8b8b9e';
+            return (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 0', borderBottom:i<stats.recentProspects.length-1?'1px solid var(--border)':'none' }}>
+                <div className={`avatar ${avs[i%avs.length]}`} style={{ width:36, height:36, fontSize:13, flexShrink:0 }}>{ini}</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{name}</div>
+                  <div style={{ fontSize:11, color:'var(--text-muted)' }}>{p.ville||'—'} · {new Date(p.createdAt).toLocaleDateString('fr-CA')}</div>
                 </div>
-              );
-            }) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun lead</div>}
-          </div>
+                <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'rgba(18,183,106,0.1)', color:'#12b76a', flexShrink:0 }}>🏢</span>
+                <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:`${statColor}15`, color:statColor, flexShrink:0 }}>{STATUS_LABELS_FR[p.status]||p.status}</span>
+              </div>
+            );
+          }) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun lead</div>}
         </div>
       </div>
+
     </div>
   );
 }

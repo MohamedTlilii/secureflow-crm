@@ -3,14 +3,14 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api';
 import {
   DollarSign, CheckCircle, XCircle, ChevronLeft, ChevronRight,
   TrendingUp, Building2, MapPin, Calendar
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-axios.interceptors.request.use(config => {
+api.interceptors.request.use(config => {
   const token = localStorage.getItem('sf_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
@@ -143,7 +143,7 @@ export default function Commissions() {
 
   const fetchFiches = useCallback(async () => {
     try {
-      const r = await axios.get('/api/solution-express');
+      const r = await api.get('/api/solution-express');
       setFiches((r.data||[]).filter(x => (x.commissionTotale||0) > 0 || (x.commissionFixe||0) > 0));
     } catch { toast.error('Erreur chargement'); }
     finally { setLoading(false); }
@@ -153,7 +153,7 @@ export default function Commissions() {
 
   const togglePaiement = async (fiche) => {
     try {
-      await axios.put(`/api/solution-express/${fiche._id}`, {
+      await api.put(`/api/solution-express/${fiche._id}`, {
         ...fiche,
         commissionPayee: !fiche.commissionPayee,
         datePaiementCommission: !fiche.commissionPayee ? new Date().toISOString() : null,

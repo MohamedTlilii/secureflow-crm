@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { BookmarkCheck, Trash2, Database as DbIcon, MapPin, ArrowLeft, HardDrive, Users, Bell, Map, Linkedin } from 'lucide-react';
+import { Trash2, Database as DbIcon, MapPin, HardDrive, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 
-axios.interceptors.request.use(config => {
+api.interceptors.request.use(config => {
   const token = localStorage.getItem('sf_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
@@ -12,7 +12,6 @@ axios.interceptors.request.use(config => {
 const VILLES = ['','Montreal','Laval','Longueuil','Boucherville','Repentigny','Vaudreuil-Dorion','Terrebonne','Saint-Jerome','Granby','Trois-Rivieres','Drummondville','Victoriaville','Ottawa','Gatineau','Ville de Quebec'];
 
 export default function Database() {
-  const [tab, setTab] = useState('leads');
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dbStats, setDbStats] = useState(null);
@@ -21,24 +20,15 @@ export default function Database() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const [linkedin, alerts, maps] = await Promise.all([
-        axios.get('/api/linkedin'),
-        axios.get('/api/google-alerts'),
-        axios.get('/api/google-maps')
-      ]);
-      const all = [
-        ...(Array.isArray(linkedin.data) ? linkedin.data.map(l => ({...l, _source:'linkedin'})) : []),
-        ...(Array.isArray(alerts.data) ? alerts.data.map(l => ({...l, _source:'google-alerts'})) : []),
-        ...(Array.isArray(maps.data) ? maps.data.map(l => ({...l, _source:'google-maps'})) : []),
-      ];
-      setLeads(all);
+      const r = await api.get('/api/solution-express');
+      setLeads(Array.isArray(r.data) ? r.data : []);
     } catch { setLeads([]); }
     finally { setLoading(false); }
   };
 
   const fetchDbStats = async () => {
     try {
-      const r = await axios.get('/api/database/stats');
+      const r = await api.get('/api/database/stats');
       setDbStats(r.data);
     } catch { setDbStats(null); }
   };
@@ -50,27 +40,10 @@ export default function Database() {
 
   const setF = (k, v) => setFilters(f => ({ ...f, [k]: v }));
 
-  const handleSauvegarder = async (item) => {
-    try {
-      await axios.put(`/api/linkedin/${item._id}`, { status: 'saved' });
-      toast.success(`${item.prenom} ${item.nom} → Sauvegardé !`);
-      fetchLeads();
-    } catch { toast.error("Erreur"); }
-  };
-
-  const handleBackToLead = async (item) => {
-    try {
-      await axios.put(`/api/linkedin/${item._id}`, { status: 'new' });
-      toast.success(`Remis en Lead`);
-      fetchLeads();
-    } catch { toast.error("Erreur"); }
-  };
-
   const handleDelete = async (item) => {
     if (!window.confirm("Supprimer ?")) return;
     try {
-      const route = item._source === 'linkedin' ? 'linkedin' : item._source === 'google-alerts' ? 'google-alerts' : 'google-maps';
-      await axios.delete(`/api/${route}/${item._id}`);
+      await api.delete(`/api/solution-express/${item._id}`);
       setLeads(prev => prev.filter(l => l._id !== item._id));
       toast.success("Supprimé");
       fetchDbStats();
@@ -86,9 +59,7 @@ export default function Database() {
     (!filters.ville || item.ville === filters.ville)
   );
 
-  const allLeads = leads.filter(l => l.status !== 'saved' && l.status !== 'ignored');
-  const savedList = leads.filter(l => l.status === 'saved');
-  const displayData = applyFilters(tab === 'leads' ? allLeads : savedList);
+  const displayData = applyFilters(leads);
 
   const inputSt = { width:'100%', padding:'7px 10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', color:'var(--text-primary)', fontSize:13, fontFamily:'var(--font-body)', outline:'none' };
   const thStyle = { padding:'12px 16px', textAlign:'left', color:'var(--text-muted)', fontSize:11, fontWeight:600 };
@@ -106,7 +77,6 @@ export default function Database() {
             <DbIcon size={24} style={{ color:'var(--accent)' }} />
             <h1>Base de Données</h1>
           </div>
-          {/* <p>Leads LinkedIn actifs et sauvegardés</p> */}
         </div>
         <div style={{ fontSize:12, color:'var(--text-muted)', background:'var(--bg-card)', padding:'6px 12px', borderRadius:8, border:'1px solid var(--border)' }}>
           {new Date().toLocaleDateString('fr-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
@@ -149,12 +119,9 @@ export default function Database() {
           </div>
 
           {/* Compteurs par collection */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(1, 1fr)', gap:12 }}>
             {[
-              { label:'', value: dbStats.collections.prospects, icon: Users, color:'var(--accent)' },
-              { label:'LinkedIn', value: dbStats.collections.linkedin, icon: Linkedin, color:'#0077b5' },
-              { label:'Google Alerts', value: dbStats.collections.googleAlerts, icon: Bell, color:'#ea4335' },
-              { label:'Google Maps', value: dbStats.collections.googleMaps, icon: Map, color:'#34a853' },
+              { label:'Solution Express', value: dbStats.collections?.solutionexpress || leads.length, icon: Building2, color:'#12b76a' },
             ].map((c, i) => (
               <div key={i} style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'12px 14px', display:'flex', alignItems:'center', gap:10 }}>
                 <div style={{ width:34, height:34, borderRadius:8, background:`${c.color}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
@@ -173,27 +140,6 @@ export default function Database() {
           </div>
         </div>
       )}
-
-      {/* ONGLETS */}
-      <div style={{ display:'flex', gap:6, marginBottom:20 }}>
-        <button onClick={() => setTab('leads')} style={{
-          padding:'9px 18px', cursor:'pointer', borderRadius:8, fontSize:13, fontWeight:500,
-          fontFamily:'var(--font-body)', border: tab==='leads' ? 'none' : '1px solid var(--border)',
-          background: tab==='leads' ? 'var(--accent)' : 'var(--bg-card)',
-          color: tab==='leads' ? '#fff' : 'var(--text-secondary)'
-        }}>
-          Leads ({allLeads.length})
-        </button>
-        <button onClick={() => setTab('saved')} style={{
-          padding:'9px 18px', cursor:'pointer', borderRadius:8, fontSize:13, fontWeight:500,
-          fontFamily:'var(--font-body)', border: tab==='saved' ? 'none' : '1px solid var(--border)',
-          background: tab==='saved' ? '#12b76a' : 'var(--bg-card)',
-          color: tab==='saved' ? '#fff' : 'var(--text-secondary)',
-          display:'flex', alignItems:'center', gap:6
-        }}>
-          <BookmarkCheck size={13} /> Sauvegardés ({savedList.length})
-        </button>
-      </div>
 
       {/* TABLEAU */}
       <div className="card" style={{ padding:0, overflow:'hidden' }}>
@@ -227,9 +173,6 @@ export default function Database() {
                 </select>
               </th>
               <th style={thStyle}>
-                <div style={{ fontSize:10, marginBottom:4 }}>SOURCE</div>
-              </th>
-              <th style={thStyle}>
                 <div style={{ fontSize:10, marginBottom:4 }}>ACTIONS</div>
                 {Object.values(filters).some(v => v) && (
                   <button onClick={() => setFilters({ prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'' })}
@@ -242,7 +185,7 @@ export default function Database() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="8" style={{ padding:40, textAlign:'center', color:'var(--text-muted)' }}>Chargement...</td></tr>
+              <tr><td colSpan="7" style={{ padding:40, textAlign:'center', color:'var(--text-muted)' }}>Chargement...</td></tr>
             ) : displayData.length > 0 ? displayData.map(item => (
               <tr key={item._id}
                 onMouseEnter={e => e.currentTarget.style.background='var(--bg-hover)'}
@@ -258,24 +201,7 @@ export default function Database() {
                   </div>
                 </td>
                 <td style={tdStyle}>
-                  {item._source === 'linkedin' && <span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'#0077b515',color:'#0077b5'}}>LinkedIn</span>}
-                  {item._source === 'google-alerts' && <span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'#ea433515',color:'#ea4335'}}>G. Alert</span>}
-                  {item._source === 'google-maps' && <span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'#34a85315',color:'#34a853'}}>G. Maps</span>}
-                </td>
-                <td style={tdStyle}>
                   <div style={{ display:'flex', gap:6 }}>
-                    {tab === 'leads' && (
-                      <button onClick={() => handleSauvegarder(item)} className="btn btn-sm" title="Sauvegarder"
-                        style={{ background:'rgba(18,183,106,0.1)', borderColor:'rgba(18,183,106,0.2)', color:'#12b76a' }}>
-                        <BookmarkCheck size={13} />
-                      </button>
-                    )}
-                    {tab === 'saved' && (
-                      <button onClick={() => handleBackToLead(item)} className="btn btn-sm" title="Remettre en Lead"
-                        style={{ background:'rgba(59,108,248,0.1)', borderColor:'rgba(59,108,248,0.2)', color:'var(--accent)' }}>
-                        <ArrowLeft size={13} />
-                      </button>
-                    )}
                     <button onClick={() => handleDelete(item)} className="btn btn-sm btn-danger" title="Supprimer">
                       <Trash2 size={13} />
                     </button>
@@ -283,7 +209,7 @@ export default function Database() {
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan="8" style={{ padding:40, textAlign:'center', color:'var(--text-muted)' }}>
+              <tr><td colSpan="7" style={{ padding:40, textAlign:'center', color:'var(--text-muted)' }}>
                 {Object.values(filters).some(v=>v) ? 'Aucun résultat' : 'Aucun élément'}
               </td></tr>
             )}
