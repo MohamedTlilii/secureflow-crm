@@ -97,12 +97,27 @@ router.put('/:id', async (req, res) => {
       doc.recu          = recu;
       doc.dateReception = recu ? new Date() : null;
     }
-    if (note !== undefined)          doc.note           = note;
+    if (note !== undefined)           doc.note           = note;
     if (montantParJour !== undefined) {
       doc.montantParJour = montantParJour;
       doc.montantAttendu = +(doc.joursOuvres * montantParJour).toFixed(3);
     }
     await doc.save();
+
+    // ── Si décembre reçu → supprimer toute l'année et passer à l'année suivante
+    if (doc.recu && doc.mois === 11) {
+      const nextAnnee   = doc.annee + 1;
+      const allMonths   = await Essence.find({ annee: doc.annee });
+      const allReceived = allMonths.every(m => m.recu);
+
+      if (allReceived) {
+        await Essence.deleteMany({ annee: doc.annee });
+        await ensureYear(nextAnnee);
+      }
+
+      return res.json({ ...doc.toObject(), nextAnnee: allReceived ? nextAnnee : null });
+    }
+
     res.json(doc);
   } catch (e) {
     res.status(500).json({ error: e.message });

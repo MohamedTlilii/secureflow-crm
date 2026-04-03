@@ -135,13 +135,21 @@ export default function Essence() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // ── Toggle reçu ───────────────────────────────────────────────────────────
-  const toggleRecu = async (doc) => {
-    try {
-      await api.put(`/api/essence/${doc._id}`, { recu: !doc.recu });
-      toast.success(!doc.recu ? '✅ Marqué reçu !' : 'Marqué en attente');
+const toggleRecu = async (doc) => {
+  try {
+    const res = await api.put(`/api/essence/${doc._id}`, { recu: !doc.recu });
+    toast.success(!doc.recu ? '✅ Marqué reçu !' : 'Marqué en attente');
+
+    // Si décembre payé + toute l'année reçue → passer à l'année suivante
+    if (res.data.nextAnnee) {
+      toast.success(`🎉 Année ${annee} terminée ! Passage à ${res.data.nextAnnee}`);
+      await fetchAnnees();
+      setAnnee(res.data.nextAnnee);
+    } else {
       fetchData();
-    } catch { toast.error('Erreur'); }
-  };
+    }
+  } catch { toast.error('Erreur'); }
+};
 
   // ── Sauvegarder note ──────────────────────────────────────────────────────
   const saveNote = async (note) => {
