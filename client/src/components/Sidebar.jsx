@@ -149,7 +149,7 @@ export default function Sidebar() {
           </div>
         )}
       </div>
-
+ 
       {/* ── Navigation ── */}
       <nav style={{ flex:1, padding:'14px 10px', display:'flex', flexDirection:'column', gap:3 }}>
         {NAV.map(({ to, icon: Icon, label, color }, idx) => (
