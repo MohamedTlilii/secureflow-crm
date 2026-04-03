@@ -278,26 +278,28 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 style={{ margin:0, fontSize: isMobile?20:24 }}>Dashboard</h1>
-              <p style={{ color:'var(--text-muted)', fontSize:13, margin:0, marginTop:2 }}>
-                Solution Express · <span style={{ color:'#12b76a', fontWeight:700 }}>{totalSE}</span> fiche{totalSE!==1?'s':''}
-                {anneeGlobal !== 'tout' && <span style={{ color:'#3b6cf8', fontWeight:700 }}> · {anneeGlobal}</span>}
-              </p>
+              <p style={{ color: 'white', fontSize: 13, margin: 0, marginTop: 2 }}>
+  Solution Express · <span style={{ color: '#2a99de', fontWeight: 700 }}>{totalSE}</span> Fiche{totalSE !== 1 ? 's' : ''}
+  {anneeGlobal !== 'tout' && <span style={{ color: '#2a99de', fontWeight: 700 }}> · {anneeGlobal}</span>}
+</p>
             </div>
           </div>
 
           {/* Filtre année global — contrôle TOUTE la page */}
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <Filter size={13} color="var(--text-muted)"/>
+             {!isMobile && (
+              <div style={{ fontSize:12, color:'#efefef', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)', textTransform:'capitalize' }}>
+  {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+</div>
+            )}
             <select value={anneeGlobal} onChange={e => setAnneeGlobal(e.target.value)}
-              style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid rgba(59,108,248,0.25)', background:'var(--bg-card)', color:'var(--text-primary)', cursor:'pointer', outline:'none', fontWeight:700 }}>
+              style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#cfd1d2', cursor:'pointer', outline:'none', fontWeight:700 }}>
               <option value="tout">Toutes les années</option>
               {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}
             </select>
-            {!isMobile && (
-              <div style={{ fontSize:12, color:'var(--text-muted)', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)' }}>
-                {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
-              </div>
-            )}
+                        
+
+           
           </div>
         </div>
 
@@ -307,14 +309,14 @@ export default function Dashboard() {
             <div style={{ fontSize: isMobile?22:28, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}>
               <AnimatedNumber value={convRate} decimals={0} suffix="% de conversion" color="var(--text-primary)"/>
             </div>
-            <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>
+            <div style={{ fontSize:12, color:'white', marginBottom:12 }}>
               {won} gagné{won!==1?'s':''} sur {totalSE} fiche{totalSE!==1?'s':''}
             </div>
             {/* Barre conversion animée */}
             <div style={{ height:8, borderRadius:4, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
               <div style={{ height:'100%', borderRadius:4, background:'linear-gradient(90deg,#3b6cf8,#12b76a)', width:`${convRate}%`, transition:'width 1.2s ease' }}/>
             </div>
-            <div style={{ display:'flex', justifyContent:'space-between', marginTop:6, fontSize:10, color:'var(--text-muted)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginTop:6, fontSize:10, color:'white' }}>
               <span>0%</span><span>100%</span>
             </div>
           </div>
