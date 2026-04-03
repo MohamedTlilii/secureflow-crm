@@ -16,4 +16,4 @@ const EssenceSchema = new mongoose.Schema({
 // Un seul doc par (annee, mois)
 EssenceSchema.index({ annee: 1, mois: 1 }, { unique: true });
 
-module.exports = mongoose.model('Essence', EssenceSchema);
+module.exports = mongoose.model('Essence', EssenceSchema);  
