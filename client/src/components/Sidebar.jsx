@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Kanban, Shield, LogOut, Database, Building2, Wallet } from 'lucide-react';
+import { LayoutDashboard, Kanban, Shield, LogOut, Database, Building2, Wallet,Fuel } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -21,6 +21,7 @@ const NAV = [
   { to:'/commissions',      icon:Wallet,          label:'Commissions',      color:'#12b76a' },
   { to:'/solution-express', icon:Building2,       label:'Solution Express', color:'#2215d4' },
   { to:'/pipeline',         icon:Kanban,          label:'Pipeline',         color:'#ad19b3' },
+  { to:'/essence',          icon:Fuel,          label:'Essence',          color:'#e89613' },
   { to:'/database',         icon:Database,        label:'Base de données',  color:'#e2287f' },
 ];
 

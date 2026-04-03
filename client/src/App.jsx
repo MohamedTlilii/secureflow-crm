@@ -8,6 +8,7 @@ import Database from './pages/Database'
 import Sidebar from './components/Sidebar';
 import SolutionExpress from './pages/SolutionExpress';
 import Commissions from './pages/Commissions';
+import Essence from './pages/Essence';
 
 import './index.css';
 
@@ -60,6 +61,9 @@ const AppRoutes = () => {
 
       {/* /pipeline → Pipeline page (protected) */}
       <Route path="/pipeline" element={<ProtectedLayout><Pipeline /></ProtectedLayout>} />
+
+
+      <Route path="/essence" element={<ProtectedLayout><Essence /></ProtectedLayout>} />
 
       {/* /database → Database page (protected) */}
       <Route path="/database" element={<ProtectedLayout><Database /></ProtectedLayout>} />
