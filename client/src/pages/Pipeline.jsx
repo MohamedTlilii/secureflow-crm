@@ -16,12 +16,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// ── Intercepteur JWT ──────────────────────────────────────────────────────
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('sf_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
 
 // ── Hook responsive — breakpoint 768px ───────────────────────────────────
 function useIsMobile() {
@@ -63,13 +57,12 @@ function AnimatedNumber({ value, decimals = 0, color }) {
 // CONSTANTES — colonnes pipeline
 // ════════════════════════════════════════════════════════════════════════════
 const STAGES = [
-  { key:'new',        label:'Nouveau',    color:'#3b6cf8', emoji:'🆕' },
-  { key:'contacted',  label:'Contacté',   color:'#f79009', emoji:'📞' },
-  { key:'interested', label:'Intéressé',  color:'#12b76a', emoji:'✨' },
-  { key:'proposal',   label:'Soumission', color:'#a764f8', emoji:'📋' },
-  { key:'won',        label:'Gagné',      color:'#12b76a', emoji:'🏆' },
-  { key:'lost',       label:'Perdu',      color:'#f04438', emoji:'❌' },
-  { key:'ignored',    label:'Ignoré',     color:'#8b8b9e', emoji:'🚫' },
+  { key:'new',                    label:'Nouveau',              color:'#3b6cf8', emoji:'🆕' },
+  { key:'contacted',              label:'Contacté',             color:'#f79009', emoji:'📞' },
+  { key:'proposal',               label:'Soumission',           color:'#a764f8', emoji:'📋' },
+  { key:'installation_en_cours',  label:'Installation en cours',color:'#f97316', emoji:'🔧' },
+  { key:'installe',               label:'Installé',             color:'#22c55e', emoji:'✅' },
+  { key:'installation_annulee',   label:'Installation annulée', color:'#be123c', emoji:'🚫' },
 ];
 
 const AV = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
@@ -79,42 +72,7 @@ const AV = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
 // ════════════════════════════════════════════════════════════════════════════
 const normalizeStatus = (status) => status || 'new';
 
-const denormalizeStatus = (unifiedStatus, source) => {
-  if (source === 'google_alert') {
-    switch(unifiedStatus) {
-      case 'new':        return 'new';
-      case 'contacted':  return 'contacted';
-      case 'interested': return 'contacted';
-      case 'proposal':   return 'contacted';
-      case 'won':        return 'saved';
-      case 'lost':       return 'ignored';
-      case 'ignored':    return 'ignored';
-      default:           return 'new';
-    }
-  }
-  if (source === 'linkedin') {
-    switch(unifiedStatus) {
-      case 'new':        return 'new';
-      case 'contacted':  return 'contacted';
-      case 'interested': return 'qualified';
-      case 'proposal':   return 'proposal';
-      case 'won':        return 'won';
-      case 'lost':       return 'lost';
-      case 'ignored':    return 'ignored';
-      default:           return 'new';
-    }
-  }
-  if (source === 'google_map') {
-    switch(unifiedStatus) {
-      case 'new':        return 'new';
-      case 'contacted':  return 'contacted';
-      case 'won':        return 'saved';
-      case 'ignored':    return 'ignored';
-      default:           return 'new';
-    }
-  }
-  return unifiedStatus;
-};
+const denormalizeStatus = (unifiedStatus) => unifiedStatus;
 
 
 const SOURCE_BADGE = {
@@ -227,7 +185,7 @@ export default function Pipeline() {
 
   // ── Mise à jour statut — logique originale intacte ─────────────────────
 const updateStatus = async (item, targetStage) => {
-    const newStatus = denormalizeStatus(targetStage);
+    const newStatus = denormalizeStatus(targetStage, item.source);
     try {
       const { stage, source, displayName, ...cleanItem } = item;
       await api.put(`/api/solution-express/${item._id}`, { ...cleanItem, status: newStatus });
@@ -270,8 +228,8 @@ const updateStatus = async (item, targetStage) => {
 
   // ── Stats pour le header ──────────────────────────────────────────────
   const totalItems  = items.length;
-  const totalGagnes = items.filter(i => i.stage === 'won').length;
-  const totalPipeline = items.filter(i => ['contacted','interested','proposal'].includes(i.stage)).length;
+  const totalGagnes   = items.filter(i => i.stage === 'installe').length;
+  const totalPipeline = items.filter(i => ['contacted','proposal','installation_en_cours'].includes(i.stage)).length;
   const convRate    = totalItems > 0 ? Math.round((totalGagnes / totalItems) * 100) : 0;
 
   // ════════════════════════════════════════════════════════════════════════
@@ -482,14 +440,14 @@ const updateStatus = async (item, targetStage) => {
                         )}
 
                         {/* Badge source */}
-                        <div style={{ marginBottom: stage.key!=='won'&&stage.key!=='lost'&&stage.key!=='ignored' ? 8 : 0 }}>
+                        <div style={{ marginBottom: stage.key!=='installe'&&stage.key!=='installation_annulee' ? 8 : 0 }}>
                           <span style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:`${srcBadge?.color}15`, color:srcBadge?.color, border:`1px solid ${srcBadge?.color}30` }}>
                             {srcBadge?.label}
                           </span>
                         </div>
 
                         {/* Bouton Avancer */}
-                        {stage.key !== 'won' && stage.key !== 'lost' && stage.key !== 'ignored' && (
+                        {stage.key !== 'installe' && stage.key !== 'installation_annulee' && (
                           <button
                             onClick={e => advance(p, e)}
                             style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'6px', borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
@@ -638,7 +596,7 @@ const updateStatus = async (item, targetStage) => {
             {/* Footer modal */}
             <div style={{ padding: isMobile?'12px 16px':'14px 24px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between', background:'var(--bg-card)' }}>
               <button className="btn" onClick={() => setSelected(null)}>Fermer</button>
-              {selected.stage !== 'won' && selected.stage !== 'lost' && selected.stage !== 'ignored' && (
+              {selected.stage !== 'installe' && selected.stage !== 'installation_annulee' && (
                 <button className="btn btn-primary" onClick={async e => { await advance(selected, e); setSelected(null); }}
                   style={{ display:'flex', alignItems:'center', gap:6 }}>
                   Avancer <ArrowRight size={13}/>

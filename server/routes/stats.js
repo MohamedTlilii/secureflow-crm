@@ -14,28 +14,25 @@ router.get('/', auth, async (req, res) => {
     // ── COMPTEURS DE BASE ──────────────────────────────────────────────────
     const [
       totalSE,
-      seNew, seContacted, seInterested, seProposal, seWon, seLost, seIgnored,
+      seNew, seContacted, seProposal,
+      seInstallationEnCours, seInstalle, seInstallationAnnulee,
       urgent_se,
       b2b, b2c,
     ] = await Promise.all([
       SolutionExpress.countDocuments(),
-      // Solution Express statuts
-      SolutionExpress.countDocuments({ status: 'new'       }),
-      SolutionExpress.countDocuments({ status: 'contacted' }),
-      SolutionExpress.countDocuments({ status: 'interested'}),
-      SolutionExpress.countDocuments({ status: 'proposal'  }),
-      SolutionExpress.countDocuments({ status: 'won'       }),
-      SolutionExpress.countDocuments({ status: 'lost'      }),
-      SolutionExpress.countDocuments({ status: 'ignored'   }),
-      // Urgents
-      SolutionExpress.countDocuments({ urgencyScore: { $gte: 7 } }),
-      // B2B / B2C
-      SolutionExpress.countDocuments({ typeClient: 'b2b' }),
-      SolutionExpress.countDocuments({ typeClient: 'b2c' }),
+      SolutionExpress.countDocuments({ status: 'new'                   }),
+      SolutionExpress.countDocuments({ status: 'contacted'             }),
+      SolutionExpress.countDocuments({ status: 'proposal'              }),
+      SolutionExpress.countDocuments({ status: 'installation_en_cours' }),
+      SolutionExpress.countDocuments({ status: 'installe'              }),
+      SolutionExpress.countDocuments({ status: 'installation_annulee'  }),
+      SolutionExpress.countDocuments({ urgencyScore: { $gte: 7 }       }),
+      SolutionExpress.countDocuments({ typeClient: 'b2b'               }),
+      SolutionExpress.countDocuments({ typeClient: 'b2c'               }),
     ]);
 
     const total   = totalSE;
-    const won     = seWon;
+    const won     = seInstalle;
     const urgent  = urgent_se;
     const conversionRate = total > 0 ? Math.round((won / total) * 100) : 0;
 
@@ -86,8 +83,6 @@ router.get('/', auth, async (req, res) => {
       { $sort: { count: -1 } }
     ]);
 
-    const byAlertType = [];
-
     // ── LEADS RÉCENTS ──────────────────────────────────────────────────────
     const recentSE = await SolutionExpress.find().sort({ createdAt: -1 }).limit(6)
       .select('prenom nom entreprise ville status createdAt urgencyScore typeClient produits');
@@ -122,18 +117,17 @@ router.get('/', auth, async (req, res) => {
 
     res.json({
       total, won, urgent, avgUrgence, b2b, b2c, conversionRate,
-      totalGA: 0, totalSE,
-      gaStatuts: { new: 0, analyzed: 0, contacted: 0, saved: 0, ignored: 0 },
-      seStatuts: { new: seNew, contacted: seContacted, interested: seInterested, proposal: seProposal, won: seWon, lost: seLost, ignored: seIgnored },
-      byCity, byProduit, byQualif, byFourn, byLeadType, byAlertType,
+      totalSE,
+      seStatuts: { new: seNew, contacted: seContacted, proposal: seProposal, installation_en_cours: seInstallationEnCours, installe: seInstalle, installation_annulee: seInstallationAnnulee },
+      byCity, byProduit, byQualif, byFourn, byLeadType,
       recentProspects, commissions,
       pipelineData: [
-        { name: 'Nouveau',    value: seNew,        color: '#3b6cf8' },
-        { name: 'Contacté',   value: seContacted,  color: '#f79009' },
-        { name: 'Intéressé',  value: seInterested, color: '#12b76a' },
-        { name: 'Soumission', value: seProposal,   color: '#a764f8' },
-        { name: 'Gagné',      value: seWon,        color: '#12b76a' },
-        { name: 'Perdu',      value: seLost,       color: '#f04438' },
+        { name: 'Nouveau',          value: seNew,                   color: '#3b6cf8' },
+        { name: 'Contacté',         value: seContacted,             color: '#f79009' },
+        { name: 'Soumission',       value: seProposal,              color: '#a764f8' },
+        { name: 'Installation...',  value: seInstallationEnCours,   color: '#f97316' },
+        { name: 'Installé',         value: seInstalle,              color: '#22c55e' },
+        { name: 'Install. annulée', value: seInstallationAnnulee,   color: '#be123c' },
       ].filter(x => x.value > 0),
     });
 

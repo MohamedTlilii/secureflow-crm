@@ -19,13 +19,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// ── Intercepteur JWT ──────────────────────────────────────────────────────
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('sf_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
 // ════════════════════════════════════════════════════════════════════════════
 // HOOK : useIsMobile — breakpoint 768px pour responsive iPhone
 // ════════════════════════════════════════════════════════════════════════════
@@ -207,16 +200,22 @@ const TYPE_COMMERCE_LABELS = {
 };
 
 const STATUS_LABELS = {
-  new:'Nouveau', contacted:'Contacté', interested:'Intéressé',
-  proposal:'Soumission', won:'Gagné', lost:'Perdu', ignored:'Ignoré'
+  new:'Nouveau', contacted:'Contacté',
+  proposal:'Soumission',
+  installation_en_cours:'Installation en cours', installe:'Installé',
+  installation_annulee:'Installation annulée'
 };
 const STATUS_CLASS = {
-  new:'badge-p0', contacted:'badge-p1', interested:'badge-p2',
-  proposal:'badge-p3', won:'badge-won', lost:'badge-dead', ignored:'badge-dead'
+  new:'badge-p0', contacted:'badge-p1',
+  proposal:'badge-p3',
+  installation_en_cours:'badge-p1', installe:'badge-won',
+  installation_annulee:'badge-dead'
 };
 const STATUS_COLORS = {
-  new:'#3b6cf8', contacted:'#f79009', interested:'#12b76a',
-  proposal:'#a764f8', won:'#12b76a', lost:'#f04438', ignored:'#8b8b9e'
+  new:'#3b6cf8', contacted:'#f79009',
+  proposal:'#a764f8',
+  installation_en_cours:'#f97316', installe:'#22c55e',
+  installation_annulee:'#be123c'
 };
 
 const LEAD_TYPES = {
@@ -499,9 +498,9 @@ export default function SolutionExpress() {
 
   // ── Stats pour le header glassmorphism ────────────────────────────────
   const totalFiches  = fiches.length;
-  const totalGagnes  = fiches.filter(f => f.status === 'won').length;
-  const totalPipeline = fiches.filter(f => ['contacted','interested','proposal'].includes(f.status)).length;
-  const convRate     = totalFiches > 0 ? Math.round((totalGagnes / totalFiches) * 100) : 0;
+  const totalInstalle  = fiches.filter(f => f.status === 'installe').length;
+  const totalPipeline  = fiches.filter(f => ['contacted','proposal','installation_en_cours'].includes(f.status)).length;
+  const convRate       = totalFiches > 0 ? Math.round((totalInstalle / totalFiches) * 100) : 0;
 
   // ── Ouvrir modals ─────────────────────────────────────────────────────
   const openAdd   = ()     => { setForm(EMPTY_FORM); setActiveTab(0); setModal('add'); };
@@ -614,10 +613,10 @@ export default function SolutionExpress() {
         {/* Ligne 2 : Stats rapides + barre conversion */}
         <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(4,1fr)', gap:10, marginBottom:16 }}>
           {[
-            { label:'Total',    value:totalFiches,   color:'#12b76a', suffix:' fiches' },
-            { label:'Gagnés',   value:totalGagnes,   color:'#12b76a', suffix:'' },
-            { label:'Pipeline', value:totalPipeline, color:'#f79009', suffix:'' },
-            { label:'Conversion',value:convRate,     color:'#3b6cf8', suffix:'%' },
+            { label:'Total',      value:totalFiches,   color:'#12b76a', suffix:' fiches' },
+            { label:'Installés',  value:totalInstalle, color:'#22c55e', suffix:'' },
+            { label:'Pipeline',   value:totalPipeline, color:'#f79009', suffix:'' },
+            { label:'Installation',value:convRate,     color:'#3b6cf8', suffix:'%' },
           ].map((s,i) => (
             <div key={i} style={{ background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'10px 14px', border:'1px solid rgba(255,255,255,0.08)', animation:`fadeSlideUp 0.4s ${i*0.05}s ease both` }}>
               <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
@@ -631,7 +630,7 @@ export default function SolutionExpress() {
         {/* Barre de conversion animée */}
         <div>
           <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:11, color:'var(--text-muted)' }}>
-            <span>Taux de conversion</span>
+            <span>Taux d'installation</span>
             <span style={{ fontWeight:700, color:'#12b76a' }}>{convRate}%</span>
           </div>
           <div style={{ height:6, borderRadius:3, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>

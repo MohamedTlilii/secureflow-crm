@@ -10,18 +10,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../api';
 import {
-  DollarSign, CheckCircle, XCircle, ChevronLeft, ChevronRight,
+  CheckCircle, XCircle, ChevronLeft, ChevronRight,
   TrendingUp, MapPin, Calendar, Wallet
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import toast from 'react-hot-toast';
 
-// ── Intercepteur JWT ──────────────────────────────────────────────────────
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('sf_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
 
 // ── Helpers format ────────────────────────────────────────────────────────
 const fmtDate  = d => d ? new Date(d).toLocaleDateString('fr-CA', { year:'numeric', month:'short', day:'numeric' }) : '—';
@@ -459,7 +453,7 @@ export default function Commissions() {
         {/* Colonne droite : Liste historique */}
         <div style={{ background:'var(--bg-card)', borderRadius:16, overflow:'hidden', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
           <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border)', background:'linear-gradient(135deg,rgba(18,183,106,0.06),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Historique des ventes</div>
+            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Historique des commissions</div>
             {filtered.length > 0 && (
               <div style={{ fontSize:11, color:'var(--text-muted)', background:'var(--bg-secondary)', padding:'3px 12px', borderRadius:20, border:'1px solid var(--border)', fontWeight:600 }}>
                 <span style={{ color:'var(--text-primary)', fontWeight:800 }}>{filtered.length}</span> vente{filtered.length!==1?'s':''}

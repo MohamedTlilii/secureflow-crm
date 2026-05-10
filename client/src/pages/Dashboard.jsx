@@ -57,8 +57,8 @@ const FOURN_LABELS = {
 };
 const LEAD_TYPE_LABELS = { nouvelle_entreprise:'Nouvelle entreprise', demenagement:'Déménagement', reouverture:'Réouverture', commerce_existant:'Commerce existant', autre:'Autre' };
 const LEAD_TYPE_COLORS = { nouvelle_entreprise:'#12b76a', demenagement:'#0077b5', reouverture:'#f79009', commerce_existant:'#a764f8', autre:'#8b8b9e' };
-const STATUS_COLORS    = { new:'#3b6cf8', contacted:'#f79009', interested:'#12b76a', proposal:'#a764f8', won:'#12b76a', lost:'#f04438', ignored:'#8b8b9e' };
-const STATUS_LABELS_FR = { new:'Nouveau', contacted:'Contacté', interested:'Intéressé', proposal:'Soumission', won:'Gagné', lost:'Perdu', ignored:'Ignoré' };
+const STATUS_COLORS    = { new:'#3b6cf8', contacted:'#f79009', proposal:'#a764f8', installation_en_cours:'#f97316', installe:'#22c55e', installation_annulee:'#be123c' };
+const STATUS_LABELS_FR = { new:'Nouveau', contacted:'Contacté', proposal:'Soumission', installation_en_cours:'Installation en cours', installe:'Installé', installation_annulee:'Installation annulée' };
 
 // ════════════════════════════════════════════════════════════════════════════
 // COMPOSANT : ProgressBar
@@ -179,19 +179,19 @@ export default function Dashboard() {
 
   // Statuts
   const seStatuts = {
-    new:        fiches.filter(f => f.status === 'new').length,
-    contacted:  fiches.filter(f => f.status === 'contacted').length,
-    interested: fiches.filter(f => f.status === 'interested').length,
-    proposal:   fiches.filter(f => f.status === 'proposal').length,
-    won:        fiches.filter(f => f.status === 'won').length,
-    lost:       fiches.filter(f => f.status === 'lost').length,
+    new:                    fiches.filter(f => f.status === 'new').length,
+    contacted:              fiches.filter(f => f.status === 'contacted').length,
+    proposal:               fiches.filter(f => f.status === 'proposal').length,
+    installation_en_cours:  fiches.filter(f => f.status === 'installation_en_cours').length,
+    installe:               fiches.filter(f => f.status === 'installe').length,
+    installation_annulee:   fiches.filter(f => f.status === 'installation_annulee').length,
   };
   const totalSE    = fiches.length;
   const b2b        = fiches.filter(f => f.typeClient === 'b2b').length;
   const b2c        = fiches.filter(f => f.typeClient === 'b2c').length;
-  const won        = seStatuts.won;
+  const won        = seStatuts.installe;
   const urgent     = fiches.filter(f => (f.urgencyScore||0) >= 7).length;
-  const enPipeline = seStatuts.contacted + seStatuts.interested + seStatuts.proposal;
+  const enPipeline = seStatuts.contacted + seStatuts.proposal + seStatuts.installation_en_cours + seStatuts.installe + seStatuts.installation_annulee;
   const convRate   = totalSE > 0 ? Math.round((won / totalSE) * 100) : 0;
   const avgUrgence = fiches.length > 0
     ? Math.round((fiches.reduce((s,f) => s + (f.urgencyScore||0), 0) / fiches.length) * 10) / 10
@@ -231,12 +231,12 @@ export default function Dashboard() {
 
   // Pipeline data pour graphique
   const pipelineData = [
-    { name:'Nouveau',    value:seStatuts.new,        color:'#3b6cf8' },
-    { name:'Contacté',   value:seStatuts.contacted,  color:'#f79009' },
-    { name:'Intéressé',  value:seStatuts.interested, color:'#12b76a' },
-    { name:'Soumission', value:seStatuts.proposal,   color:'#a764f8' },
-    { name:'Gagné',      value:seStatuts.won,        color:'#12b76a' },
-    { name:'Perdu',      value:seStatuts.lost,       color:'#f04438' },
+    { name:'Nouveau',          value:seStatuts.new,                   color:'#3b6cf8' },
+    { name:'Contacté',         value:seStatuts.contacted,             color:'#f79009' },
+    { name:'Soumission',       value:seStatuts.proposal,              color:'#a764f8' },
+    { name:'Installation...',  value:seStatuts.installation_en_cours, color:'#f97316' },
+    { name:'Installé',         value:seStatuts.installe,              color:'#22c55e' },
+    { name:'Install. annulée', value:seStatuts.installation_annulee,  color:'#be123c' },
   ].filter(x => x.value > 0);
 
   // Commissions filtrées par année
@@ -310,7 +310,7 @@ export default function Dashboard() {
               <AnimatedNumber value={convRate} decimals={0} suffix="% de conversion" color="var(--text-primary)"/>
             </div>
             <div style={{ fontSize:12, color:'white', marginBottom:12 }}>
-              {won} gagné{won!==1?'s':''} sur {totalSE} fiche{totalSE!==1?'s':''}
+              {won} installé{won!==1?'s':''} sur {totalSE} fiche{totalSE!==1?'s':''}
             </div>
             {/* Barre conversion animée */}
             <div style={{ height:8, borderRadius:4, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
@@ -324,7 +324,7 @@ export default function Dashboard() {
           {/* ScoreRings — cachés sur mobile */}
           {!isMobile && (
             <div style={{ display:'flex', gap:28, flexShrink:0 }}>
-              <ScoreRing value={won}        max={totalSE||1} color="#12b76a" label="Gagnés"   sublabel={`sur ${totalSE}`}/>
+              <ScoreRing value={won}        max={totalSE||1} color="#12b76a" label="Installés" sublabel={`sur ${totalSE}`}/>
               <ScoreRing value={enPipeline} max={totalSE||1} color="#f79009" label="Pipeline"  sublabel={`${seStatuts.proposal} soumissions`}/>
               <ScoreRing value={urgent}     max={totalSE||1} color="#f04438" label="Urgents"   sublabel="score ≥7"/>
             </div>
@@ -342,7 +342,7 @@ export default function Dashboard() {
           { label:'Total fiches',  value:totalSE,    sub:`${b2b} B2B · ${b2c} B2C`,              icon:Users,       color:'var(--accent)'  },
           { label:'Urgents',       value:urgent,     sub:`Score ≥7 · Moy. ${avgUrgence}/10`,      icon:AlertCircle, color:'var(--danger)'  },
           { label:'En pipeline',   value:enPipeline, sub:`${seStatuts.proposal} soumissions`,      icon:Clock,       color:'var(--warning)' },
-          { label:'Gagnés',        value:won,        sub:`Taux de conversion ${convRate}%`,        icon:CheckCircle, color:'var(--success)'  },
+          { label:'Installés',      value:won,        sub:`Taux d'installation ${convRate}%`,       icon:CheckCircle, color:'var(--success)'  },
         ].map((s,i) => (
           <div key={i} className="stat-card animate-fade" style={{ animationDelay:`${i*0.06}s`, transition:'transform 0.15s,box-shadow 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.12)'; }}
@@ -377,14 +377,14 @@ export default function Dashboard() {
           </div>
           <div style={{ marginLeft:'auto', fontSize:28, fontWeight:800, color:'#12b76a' }}>{totalSE}</div>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(3,1fr)':'repeat(6,1fr)', gap: isMobile?8:10 }}>
+        <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(3,1fr)':'repeat(5,1fr)', gap: isMobile?8:10 }}>
           {[
-            { label:'Nouveau',    value:seStatuts.new,        color:'#3b6cf8' },
-            { label:'Contacté',   value:seStatuts.contacted,  color:'#f79009' },
-            { label:'Intéressé',  value:seStatuts.interested, color:'#12b76a' },
-            { label:'Soumission', value:seStatuts.proposal,   color:'#a764f8' },
-            { label:'Gagné',      value:seStatuts.won,        color:'#12b76a' },
-            { label:'Perdu',      value:seStatuts.lost,       color:'#f04438' },
+            { label:'Nouveau',          value:seStatuts.new,                   color:'#3b6cf8' },
+            { label:'Contacté',         value:seStatuts.contacted,             color:'#f79009' },
+            { label:'Soumission',       value:seStatuts.proposal,              color:'#a764f8' },
+            { label:'Installation…',    value:seStatuts.installation_en_cours, color:'#f97316' },
+            { label:'Installé',         value:seStatuts.installe,              color:'#22c55e' },
+            { label:'Install. annulée', value:seStatuts.installation_annulee,  color:'#be123c' },
           ].map((s,i) => (
             <div key={s.label} style={{ background:'var(--bg-secondary)', borderRadius:10, padding: isMobile?'10px 8px':'12px 10px', borderLeft:`3px solid ${s.color}`, textAlign:'center', position:'relative', overflow:'hidden', transition:'transform 0.15s', cursor:'default' }}
               onMouseEnter={e => e.currentTarget.style.transform='scale(1.03)'}
@@ -453,11 +453,11 @@ export default function Dashboard() {
             </div>
             <div style={{ background:'rgba(18,183,106,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(18,183,106,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between', gridColumn: isMobile?'1 / -1':'auto' }}>
               <div>
-                <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Ventes gagnées</div>
+                <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Commissions</div>
                 <div style={{ fontSize:20, fontWeight:700, color:'#12b76a' }}>{commFiches.length}</div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Solution Express</div>
               </div>
-              <div style={{ fontSize:24, opacity:0.2 }}>🏆</div>
+              <div style={{ fontSize:24, opacity:0.2 }}>✅</div>
             </div>
           </div>
 

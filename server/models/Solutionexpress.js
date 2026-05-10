@@ -126,7 +126,7 @@ const SolutionExpressSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ['new','contacted','interested','proposal','won','lost','ignored'],
+    enum: ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'],
     default: 'new'
   },
 
@@ -149,6 +149,7 @@ const SolutionExpressSchema = new mongoose.Schema({
   // ════════════════════════════════════════════════════════════════════
   montantContrat:         { type: Number, default: 0 },
   commissionFixe:         { type: Number, default: 0 },
+  commissionExtra:        { type: Number, default: 0 },
   commissionPourcentage:  { type: Number, default: 0 },
   commissionTotale:       { type: Number, default: 0 },
   commissionPayee:        { type: Boolean, default: false },

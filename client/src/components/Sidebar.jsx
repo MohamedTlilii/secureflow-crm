@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Kanban, Shield, LogOut, Database, Building2, Wallet,Fuel } from 'lucide-react';
+import { LayoutDashboard, Kanban, Shield, LogOut, Database, Building2, Wallet, Fuel } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -21,7 +21,7 @@ const NAV = [
   { to:'/commissions',      icon:Wallet,          label:'Commissions',      color:'#12b76a' },
   { to:'/solution-express', icon:Building2,       label:'Solution Express', color:'#2215d4' },
   { to:'/pipeline',         icon:Kanban,          label:'Pipeline',         color:'#ad19b3' },
-  { to:'/essence',          icon:Fuel,          label:'Essence',          color:'#e89613' },
+  { to:'/essence',          icon:Fuel,          label:'Indemnité Carburant', color:'#e89613' },
   { to:'/database',         icon:Database,        label:'Base de données',  color:'#e2287f' },
 ];
 
@@ -145,7 +145,7 @@ export default function Sidebar() {
         {/* Nom app — visible seulement quand expanded */}
         {isHovered && (
           <div className="animate-fade">
-            <div style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:15, letterSpacing:'-0.3px' }}>SecureFlow</div>
+            <div style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:15, letterSpacing:'-0.3px' }}>QC</div>
             {/* <div style={{ fontSize:11, color:'var(--text-muted)' }}>CRM Sécurité</div> */}
           </div>
         )}
@@ -196,13 +196,14 @@ export default function Sidebar() {
           marginBottom:8, transition:'all 0.2s',
           boxShadow: isHovered ? '0 2px 12px rgba(0,0,0,0.08)' : 'none'
         }}>
-          {/* Avatar image ou initiales */}
-          {user?.avatar && user.avatar.includes('http') ? (
+          {/* Avatar image */}
+          {user?.avatar && user.avatar.includes('http') && !user.avatar.includes('freepik') ? (
             <img src={user.avatar} alt="Avatar"
-              onError={e => e.target.style.display='none'}
+              onError={e => { e.target.onerror=null; e.target.src='/logo.jpg'; }}
               style={{ minWidth:32, height:32, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/>
           ) : (
-            <div className="avatar av-blue" style={{ minWidth:32, height:32, fontSize:12, flexShrink:0 }}>{initials}</div>
+            <img src="/logo.jpg" alt="Avatar"
+              style={{ minWidth:32, height:32, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/>
           )}
           {/* Nom + rôle */}
           {isHovered && (

@@ -55,7 +55,8 @@ router.get('/annees', async (req, res) => {
     const currentYear = new Date().getFullYear();
     // Années dynamiques depuis 2026 jusqu'à l'année actuelle
     const annees = [];
-    for (let y = 2026; y <= currentYear; y++) annees.push(y);
+    const startYear = 2026;
+    for (let y = startYear; y <= currentYear; y++) annees.push(y);
     res.json(annees);
   } catch (e) {
     res.status(500).json({ error: e.message });

@@ -11,17 +11,10 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Trash2, Database as DbIcon, MapPin, HardDrive,
-  Building2, Search, X, Filter
+  Building2, Filter
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api';
-
-// ── Intercepteur JWT ──────────────────────────────────────────────────────
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('sf_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
 
 // ── Hook responsive — breakpoint 768px ───────────────────────────────────
 function useIsMobile() {
@@ -90,8 +83,6 @@ export default function Database() {
   const [filters, setFilters] = useState({
     prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:''
   });
-  const [showFilters, setShowFilters] = useState(true);
-
   // ── Fetch fiches Solution Express ─────────────────────────────────────
   const fetchLeads = async () => {
     try {

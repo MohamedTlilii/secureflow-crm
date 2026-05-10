@@ -20,12 +20,6 @@ import {
 } from 'recharts';
 import toast from 'react-hot-toast';
 
-// ── JWT intercepteur ──────────────────────────────────────────────────────
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('sf_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 const MOIS_FR    = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
