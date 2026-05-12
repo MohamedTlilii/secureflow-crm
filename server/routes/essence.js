@@ -2,9 +2,11 @@
 const express  = require('express');
 const router   = express.Router();
 const Essence  = require('../models/Essence');
+const auth     = require('../middleware/auth');
 
 // ─── Helper : calcule jours ouvrés lun→ven d'un mois ────────────────────────
 function joursOuvres(annee, mois0) {
+  if (mois0 < 0 || mois0 > 11) return 0;
   let count = 0;
   const d = new Date(annee, mois0, 1);
   while (d.getMonth() === mois0) {
@@ -38,7 +40,7 @@ async function ensureYear(annee, tauxJour = 5) {
 }
 
 // ─── GET /api/essence?annee=2026 ────────────────────────────────────────────
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const annee = parseInt(req.query.annee) || new Date().getFullYear();
     await ensureYear(annee);
@@ -50,7 +52,7 @@ router.get('/', async (req, res) => {
 });
 
 // ─── GET /api/essence/annees  → liste des années disponibles ─────────────────
-router.get('/annees', async (req, res) => {
+router.get('/annees', auth, async (req, res) => {
   try {
     const currentYear = new Date().getFullYear();
     // Années dynamiques depuis 2026 jusqu'à l'année actuelle
@@ -64,7 +66,7 @@ router.get('/annees', async (req, res) => {
 });
 
 // ─── GET /api/essence/stats?annee=2026  → stats rapides ─────────────────────
-router.get('/stats', async (req, res) => {
+router.get('/stats', auth, async (req, res) => {
   try {
     const annee   = parseInt(req.query.annee) || new Date().getFullYear();
     await ensureYear(annee);
@@ -88,7 +90,7 @@ router.get('/stats', async (req, res) => {
 });
 
 // ─── PUT /api/essence/:id  → toggle reçu + note + taux ──────────────────────
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
     const { recu, note, montantParJour } = req.body;
     const doc = await Essence.findById(req.params.id);
@@ -120,20 +122,6 @@ router.put('/:id', async (req, res) => {
     }
 
     res.json(doc);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// ─── POST /api/essence/mark-all  → marquer tous les mois d'une année ────────
-router.post('/mark-all', async (req, res) => {
-  try {
-    const { annee, recu } = req.body;
-    await Essence.updateMany(
-      { annee },
-      { $set: { recu, dateReception: recu ? new Date() : null } }
-    );
-    res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

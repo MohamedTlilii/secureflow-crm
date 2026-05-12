@@ -45,14 +45,11 @@ router.get('/', auth, async (req, res) => {
     const byCity = citySE.filter(c => c._id).sort((a,b) => b.count - a.count).slice(0, 8);
 
     // ── PRODUITS ───────────────────────────────────────────────────────────
-    const seProduits = await SolutionExpress.find({}, 'produits');
-    const produitCounts = {};
-    seProduits.forEach(x => (x.produits||[]).forEach(p => {
-      produitCounts[p] = (produitCounts[p]||0) + 1;
-    }));
-    const byProduit = Object.entries(produitCounts)
-      .map(([_id, count]) => ({ _id, count }))
-      .sort((a,b) => b.count - a.count);
+    const byProduit = await SolutionExpress.aggregate([
+      { $unwind: { path: '$produits', preserveNullAndEmptyArrays: false } },
+      { $group: { _id: '$produits', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
 
     // ── QUALIFICATION SYSTÈME ──────────────────────────────────────────────
     const byQualif = await SolutionExpress.aggregate([
@@ -110,7 +107,7 @@ router.get('/', auth, async (req, res) => {
     const commissions = avecComm.length > 0 ? {
       totalGagne: Math.round(totalGagne * 100) / 100,
       totalPaye:  Math.round(totalPaye  * 100) / 100,
-      enAttente:  Math.round((totalGagne - totalPaye) * 100) / 100,
+      enAttente:  Math.round(Math.max(0, totalGagne - totalPaye) * 100) / 100,
       moyenne:    Math.round((avecComm.length > 0 ? totalGagne / avecComm.length : 0) * 100) / 100,
       historique: periodeComm,
     } : null;

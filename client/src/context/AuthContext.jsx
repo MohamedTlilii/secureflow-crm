@@ -5,7 +5,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 // The context object — holds user, loading, login, logout
 // null = no default value, will always be provided by AuthProvider
@@ -23,10 +23,7 @@ export function AuthProvider({ children }) {
     if (!token) { setLoading(false); return; }       // No token → skip validation, not logged in
 
     // Hit /api/auth/me to verify the token is still valid and get fresh user data
-    // Change the URL here if the backend /me endpoint moves
-    axios.get('https://secureflow-crm.onrender.com/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-    })
+    api.get('/api/auth/me')
       .then(res => setUser(res.data.user))  // Token valid → store user in state
       .catch(() => {
         // Token expired or invalid → clean up so user sees login screen
@@ -38,9 +35,8 @@ export function AuthProvider({ children }) {
 
   // ── Login ─────────────────────────────────────────────────────────────────
   // Called from Login page. Sends credentials, stores token, sets user in state.
-  // Change the URL here if the login endpoint changes.
   const login = async (email, password) => {
-    const res = await axios.post('https://secureflow-crm.onrender.com/api/auth/login', { email, password });
+    const res = await api.post('/api/auth/login', { email, password });
     localStorage.setItem('sf_token', res.data.token); // Persist token for next page refresh
     setUser(res.data.user);                            // Update global user state immediately
     return res.data;                                   // Caller can use this to redirect or show errors
