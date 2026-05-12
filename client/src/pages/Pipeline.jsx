@@ -12,7 +12,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../api';
 import {
   ArrowRight, X, MapPin, Phone, Mail, Building2, Calendar,
-  Shield, TrendingUp, Target, Zap, ChevronLeft, ChevronRight
+  Shield, TrendingUp, Target, Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -78,66 +78,6 @@ const denormalizeStatus = (unifiedStatus) => unifiedStatus;
 const SOURCE_BADGE = {
   solution_express: { label:'🏢 Solution Express', color:'#12b76a' },
 };
-
-// ════════════════════════════════════════════════════════════════════════════
-// COMPOSANT : MiniCalendar — identique à l'original avec design amélioré
-// ════════════════════════════════════════════════════════════════════════════
-function MiniCalendar({ items }) {
-  const today   = new Date();
-  const [current, setCurrent] = useState({ year: today.getFullYear(), month: today.getMonth() });
-
-  const daysInMonth = new Date(current.year, current.month + 1, 0).getDate();
-  const firstDay    = new Date(current.year, current.month, 1).getDay();
-  const offset      = firstDay === 0 ? 6 : firstDay - 1;
-  const rdvDates    = items.filter(p => p.rdvDate).map(p => new Date(p.rdvDate).toDateString());
-
-  const prevMonth = () => setCurrent(c => ({ year: c.month===0?c.year-1:c.year, month: c.month===0?11:c.month-1 }));
-  const nextMonth = () => setCurrent(c => ({ year: c.month===11?c.year+1:c.year, month: c.month===11?0:c.month+1 }));
-  const monthName = new Date(current.year, current.month).toLocaleDateString('fr-CA', { month:'long', year:'numeric' });
-  const days = ['L','M','M','J','V','S','D'];
-
-  return (
-    <div style={{ background:'var(--bg-card)', borderRadius:16, padding:16, marginBottom:20, border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
-      {/* Header calendrier */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-        <button onClick={prevMonth} style={{ width:28, height:28, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', transition:'all 0.15s' }}
-          onMouseEnter={e => { e.currentTarget.style.background='var(--bg-hover)'; e.currentTarget.style.color='#3b6cf8'; }}
-          onMouseLeave={e => { e.currentTarget.style.background='var(--bg-secondary)'; e.currentTarget.style.color='var(--text-muted)'; }}>
-          <ChevronLeft size={14}/>
-        </button>
-        <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', textTransform:'capitalize' }}>{monthName}</span>
-        <button onClick={nextMonth} style={{ width:28, height:28, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', transition:'all 0.15s' }}
-          onMouseEnter={e => { e.currentTarget.style.background='var(--bg-hover)'; e.currentTarget.style.color='#3b6cf8'; }}
-          onMouseLeave={e => { e.currentTarget.style.background='var(--bg-secondary)'; e.currentTarget.style.color='var(--text-muted)'; }}>
-          <ChevronRight size={14}/>
-        </button>
-      </div>
-      {/* Jours semaine */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:6 }}>
-        {days.map((d,i) => <div key={i} style={{ textAlign:'center', fontSize:9, color:'var(--text-muted)', fontWeight:700, padding:'2px 0' }}>{d}</div>)}
-      </div>
-      {/* Grille jours */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
-        {Array(offset).fill(null).map((_,i) => <div key={`e${i}`}/>)}
-        {Array(daysInMonth).fill(null).map((_,i) => {
-          const day     = i + 1;
-          const date    = new Date(current.year, current.month, day);
-          const isToday = date.toDateString() === today.toDateString();
-          const hasRdv  = rdvDates.includes(date.toDateString());
-          return (
-            <div key={day} style={{ textAlign:'center', fontSize:11, padding:'5px 2px', borderRadius:7, transition:'all 0.1s',
-              background: isToday ? 'linear-gradient(135deg,#3b6cf8,#12b76a)' : hasRdv ? 'rgba(59,108,248,0.12)' : 'transparent',
-              color: isToday ? 'white' : hasRdv ? '#3b6cf8' : 'var(--text-primary)',
-              fontWeight: isToday||hasRdv ? 700 : 400 }}>
-              {day}
-              {hasRdv && !isToday && <div style={{ width:4, height:4, borderRadius:'50%', background:'#3b6cf8', margin:'1px auto 0' }}/>}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ════════════════════════════════════════════════════════════════════════════
 // COMPOSANT PRINCIPAL : Pipeline
@@ -242,18 +182,15 @@ const updateStatus = async (item, targetStage) => {
           HEADER GLASSMORPHISM
           Gradient bleu/vert + stats pipeline + barre conversion
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{
-        background:'linear-gradient(135deg,rgba(59,108,248,0.1),rgba(167,100,248,0.06),rgba(18,183,106,0.04))',
-        borderRadius:20, padding: isMobile?'18px 16px':'22px 28px',
-        marginBottom:24, border:'1px solid rgba(59,108,248,0.18)',
-        boxShadow:'0 8px 32px rgba(59,108,248,0.08)',
-        backdropFilter:'blur(10px)',
-        animation:'fadeSlideUp 0.4s ease both'
-      }}>
+      <div style={{ padding:'1.5px', borderRadius:22, background:'linear-gradient(135deg,#a78bfa70,#3b6cf840,#12b76a25)', marginBottom:24, animation:'fadeSlideUp 0.4s ease both' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'20.5px', padding: isMobile?'18px 16px':'28px 32px', backdropFilter:'blur(40px)', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', top:-80, left:-60, width:280, height:280, borderRadius:'50%', background:'radial-gradient(circle,rgba(167,139,250,0.18) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:-50, right:-30, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,108,248,0.12) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'relative', zIndex:1 }}>
         {/* Ligne 1 : Titre + date */}
         <div style={{ display:'flex', alignItems: isMobile?'flex-start':'center', justifyContent:'space-between', flexDirection: isMobile?'column':'row', gap: isMobile?10:0, marginBottom:16 }}>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#3b6cf8,#a764f8)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 20px rgba(59,108,248,0.4)', flexShrink:0 }}>
+            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#a78bfa,#3b6cf8)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(167,139,250,0.55)', flexShrink:0 }}>
               <Target size={26} color="#fff"/>
             </div>
             <div>
@@ -295,10 +232,12 @@ const updateStatus = async (item, targetStage) => {
             <span style={{ fontWeight:700, color:'#12b76a' }}>{convRate}%</span>
           </div>
           <div style={{ height:6, borderRadius:3, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
-            <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#3b6cf8,#12b76a)', width:`${convRate}%`, transition:'width 1.2s ease' }}/>
+            <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#a78bfa,#12b76a)', width:`${convRate}%`, transition:'width 1.2s ease', boxShadow:'0 0 12px rgba(167,139,250,0.6)' }}/>
           </div>
         </div>
-      </div>
+        </div>{/* /zIndex:1 */}
+      </div>{/* /glassmorphism */}
+      </div>{/* /gradient border */}
 
       {/* ════════════════════════════════════════════════════════════════
           KANBAN
@@ -306,8 +245,12 @@ const updateStatus = async (item, targetStage) => {
           Desktop : toutes les colonnes côte à côte
           ════════════════════════════════════════════════════════════════ */}
       {loading ? (
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'40vh' }}>
-          <div style={{ width:36, height:36, border:'3px solid rgba(59,108,248,0.2)', borderTopColor:'#3b6cf8', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'40vh', flexDirection:'column', gap:16 }}>
+          <div style={{ position:'relative', width:44, height:44 }}>
+            <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid rgba(59,130,246,0.12)' }}/>
+            <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#3b82f6', animation:'spin 0.9s linear infinite' }}/>
+            <div style={{ position:'absolute', inset:4, borderRadius:'50%', border:'2px solid transparent', borderBottomColor:'rgba(192,132,252,0.5)', animation:'spin 1.5s linear infinite reverse' }}/>
+          </div>
         </div>
       ) : (
         <div style={{
@@ -327,18 +270,18 @@ const updateStatus = async (item, targetStage) => {
                 onDragLeave={onDragLeave}
                 onDrop={e => onDrop(e, stage.key)}
                 style={{
-                  // Snap scroll sur mobile
                   scrollSnapAlign: isMobile?'start':'none',
-                  background: isDropTarget ? `${stage.color}08` : 'var(--bg-secondary)',
+                  background: isDropTarget ? `${stage.color}10` : 'rgba(3,8,26,0.97)',
                   borderRadius:16, padding:12,
-                  border: isDropTarget ? `2px dashed ${stage.color}` : '1px solid var(--border)',
+                  border: isDropTarget ? `2px dashed ${stage.color}` : `1px solid ${stage.color}30`,
                   display:'flex', flexDirection:'column',
                   minWidth: isMobile?'85vw':240,
                   maxWidth: isMobile?'85vw':280,
                   transition:'all 0.2s',
-                  // Slide-in animation par colonne avec délai progressif
                   animation:`fadeSlideUp 0.4s ${stageIdx * 0.06}s ease both`,
-                  flexShrink:0
+                  flexShrink:0,
+                  backdropFilter:'blur(20px)',
+                  boxShadow:`0 4px 20px ${stage.color}15`
                 }}>
 
                 {/* ── En-tête colonne ── */}
@@ -373,12 +316,12 @@ const updateStatus = async (item, targetStage) => {
                         onDragEnd={onDragEnd}
                         onClick={() => setSelected(p)}
                         style={{
-                          background:'var(--bg-card)',
-                          border:'1px solid var(--border)',
+                          background:'rgba(4,10,24,0.97)',
+                          border:`1px solid ${stage.color}25`,
                           borderRadius:12, padding:'12px 12px 10px',
                           cursor:'pointer', transition:'all 0.2s',
                           borderLeft:`3px solid ${stage.color}`,
-                          boxShadow:'0 2px 8px rgba(0,0,0,0.06)',
+                          boxShadow:`0 2px 12px rgba(0,0,0,0.15), 0 0 0 0 ${stage.color}`,
                           // Effet visuel pendant le drag
                           opacity: isDragging ? 0.4 : 1,
                           transform: isDragging ? 'scale(0.96)' : 'scale(1)',
@@ -481,7 +424,7 @@ const updateStatus = async (item, targetStage) => {
           ════════════════════════════════════════════════════════════════ */}
       {selected && (
         <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) setSelected(null); }}>
-          <div style={{ background:'var(--bg-card)', borderRadius: isMobile?0:16, width:'100%', maxWidth:560, margin:'auto', overflow:'hidden', boxShadow:'0 25px 60px rgba(0,0,0,0.3)' }}>
+          <div style={{ background:'rgba(3,8,26,0.98)', borderRadius: isMobile?0:16, width:'100%', maxWidth:560, margin:'auto', overflow:'hidden', boxShadow:`0 25px 60px rgba(0,0,0,0.5), 0 0 0 1.5px ${stageInfo(selected.stage)?.color||'#a78bfa'}40`, backdropFilter:'blur(40px)' }}>
 
             {/* Header modal avec gradient selon statut */}
             <div style={{ background:`linear-gradient(135deg,${stageInfo(selected.stage)?.color||'#3b6cf8'}18,transparent)`, borderBottom:`3px solid ${stageInfo(selected.stage)?.color||'#3b6cf8'}`, padding: isMobile?'18px 16px':'22px 24px' }}>
@@ -519,7 +462,7 @@ const updateStatus = async (item, targetStage) => {
                   ['Ajouté le',  new Date(selected.createdAt).toLocaleDateString('fr-CA'), Calendar],
                   ['Statut',     stageInfo(selected.stage)?.label || '—', Target],
                 ].map(([label, val, Icon]) => (
-                  <div key={label} style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'10px 12px', transition:'transform 0.15s' }}
+                  <div key={label} style={{ background:'rgba(5,12,32,0.9)', borderRadius:10, padding:'10px 12px', transition:'transform 0.15s', border:'1px solid rgba(255,255,255,0.07)' }}
                     onMouseEnter={e => e.currentTarget.style.transform='translateX(3px)'}
                     onMouseLeave={e => e.currentTarget.style.transform='translateX(0)'}>
                     <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginBottom:3, display:'flex', alignItems:'center', gap:4 }}>
@@ -609,10 +552,8 @@ const updateStatus = async (item, targetStage) => {
 
       {/* Keyframes animations */}
       <style>{`
-        @keyframes fadeSlideUp {
-          from { opacity:0; transform:translateY(16px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
+        @keyframes fadeSlideUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin { to { transform:rotate(360deg); } }
       `}</style>
     </div>
   );

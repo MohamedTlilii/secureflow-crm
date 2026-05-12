@@ -161,8 +161,13 @@ export default function Dashboard() {
   }, []);
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh' }}>
-      <div style={{ width:36, height:36, border:'3px solid rgba(59,108,248,0.2)', borderTopColor:'var(--accent)', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', flexDirection:'column', gap:16 }}>
+      <div style={{ position:'relative', width:44, height:44 }}>
+        <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid rgba(16,185,129,0.12)' }}/>
+        <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#10b981', animation:'spin 0.9s linear infinite' }}/>
+        <div style={{ position:'absolute', inset:4, borderRadius:'50%', border:'2px solid transparent', borderBottomColor:'rgba(59,130,246,0.5)', animation:'spin 1.5s linear infinite reverse' }}/>
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
   if (!stats) return <div style={{ textAlign:'center', padding:60, color:'var(--text-muted)' }}>Erreur chargement</div>;
@@ -258,22 +263,26 @@ export default function Dashboard() {
     <div className="animate-fade">
 
       {/* ════════════════════════════════════════════════════════════════
-          HEADER GLASSMORPHISM
-          Gradient bleu/vert + filtre année global + ScoreRings + barre conversion
+          HEADER ULTRA-MODERN
+          Gradient border + Aurora orbs + glassmorphism
           ════════════════════════════════════════════════════════════════ */}
+      <div style={{ padding:'1.5px', borderRadius:22, background:'linear-gradient(135deg,#12b76a60,#61DAFB30,#a78bfa25)', marginBottom:24, animation:'fadeSlideUp 0.4s ease both' }}>
       <div style={{
-        background:'linear-gradient(135deg,rgba(59,108,248,0.12),rgba(18,183,106,0.08),rgba(59,108,248,0.06))',
-        borderRadius:20, padding: isMobile ? '20px 16px' : '24px 28px',
-        marginBottom:24, border:'1px solid rgba(59,108,248,0.2)',
-        boxShadow:'0 8px 32px rgba(59,108,248,0.1)',
-        backdropFilter:'blur(10px)',
-        animation:'fadeSlideUp 0.4s ease both'
+        background:'rgba(2,8,16,0.97)',
+        borderRadius:'20.5px', padding: isMobile ? '20px 16px' : '28px 32px',
+        backdropFilter:'blur(40px)',
+        position:'relative', overflow:'hidden'
       }}>
+        {/* Aurora orbs */}
+        <div style={{ position:'absolute', top:-80, left:-60, width:320, height:320, borderRadius:'50%', background:'radial-gradient(circle,rgba(18,183,106,0.18) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', top:-20, right:-40, width:220, height:220, borderRadius:'50%', background:'radial-gradient(circle,rgba(97,218,251,0.12) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:-60, right:100, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(167,139,250,0.10) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'relative', zIndex:1 }}>
 
         {/* Ligne 1 : Titre + filtre année global */}
         <div style={{ display:'flex', alignItems: isMobile?'flex-start':'center', justifyContent:'space-between', flexDirection: isMobile?'column':'row', gap: isMobile?12:0, marginBottom:20 }}>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#3b6cf8,#12b76a)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 20px rgba(59,108,248,0.4)', flexShrink:0 }}>
+            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#12b76a,#61DAFB)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(18,183,106,0.5)', flexShrink:0 }}>
               <Target size={26} color="#fff"/>
             </div>
             <div>
@@ -330,7 +339,9 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-      </div>
+        </div>{/* /zIndex:1 */}
+      </div>{/* /glassmorphism */}
+      </div>{/* /gradient border */}
 
       {/* ════════════════════════════════════════════════════════════════
           4 STATS CARDS
@@ -339,22 +350,24 @@ export default function Dashboard() {
           ════════════════════════════════════════════════════════════════ */}
       <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(4,1fr)', gap: isMobile?10:14, marginBottom:24 }}>
         {[
-          { label:'Total fiches',  value:totalSE,    sub:`${b2b} B2B · ${b2c} B2C`,              icon:Users,       color:'var(--accent)'  },
-          { label:'Urgents',       value:urgent,     sub:`Score ≥7 · Moy. ${avgUrgence}/10`,      icon:AlertCircle, color:'var(--danger)'  },
-          { label:'En pipeline',   value:enPipeline, sub:`${seStatuts.proposal} soumissions`,      icon:Clock,       color:'var(--warning)' },
-          { label:'Installés',      value:won,        sub:`Taux d'installation ${convRate}%`,       icon:CheckCircle, color:'var(--success)'  },
+          { label:'Total fiches',  value:totalSE,    sub:`${b2b} B2B · ${b2c} B2C`,              icon:Users,       color:'#3b6cf8'  },
+          { label:'Urgents',       value:urgent,     sub:`Score ≥7 · Moy. ${avgUrgence}/10`,      icon:AlertCircle, color:'#f04438'  },
+          { label:'En pipeline',   value:enPipeline, sub:`${seStatuts.proposal} soumissions`,      icon:Clock,       color:'#f79009'  },
+          { label:'Installés',     value:won,        sub:`Taux d'installation ${convRate}%`,       icon:CheckCircle, color:'#12b76a'  },
         ].map((s,i) => (
-          <div key={i} className="stat-card animate-fade" style={{ animationDelay:`${i*0.06}s`, transition:'transform 0.15s,box-shadow 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.12)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}>
-            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
-              <div>
-                <div className="stat-label">{s.label}</div>
-                <div className="stat-value">{s.value}</div>
-                <div className="stat-sub">{s.sub}</div>
-              </div>
-              <div style={{ width:40, height:40, borderRadius:10, background:`${s.color}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <s.icon size={18} color={s.color}/>
+          <div key={i} style={{ padding:'1px', borderRadius:14, background:`linear-gradient(135deg,${s.color}60,${s.color}20)`, animation:`fadeSlideUp 0.4s ${i*0.07}s ease both` }}>
+            <div className="stat-card" style={{ background:'rgba(2,8,16,0.97)', borderRadius:13, height:'100%', transition:'transform 0.2s,box-shadow 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow=`0 12px 32px ${s.color}25`; }}
+              onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}>
+              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
+                <div>
+                  <div className="stat-label">{s.label}</div>
+                  <div className="stat-value" style={{ color:s.color }}>{s.value}</div>
+                  <div className="stat-sub">{s.sub}</div>
+                </div>
+                <div style={{ width:42, height:42, borderRadius:12, background:`${s.color}20`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 0 18px ${s.color}30` }}>
+                  <s.icon size={19} color={s.color}/>
+                </div>
               </div>
             </div>
           </div>
@@ -366,7 +379,8 @@ export default function Dashboard() {
           6 statuts filtrés par année globale
           Mobile : 3 colonnes / Desktop : 6 colonnes
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px', marginBottom:24, border:'1px solid var(--border)', borderTop:'3px solid #12b76a', boxShadow:'0 4px 20px rgba(0,0,0,0.06)', animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
+      <div style={{ padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#12b76a50,#61DAFB25,#a78bfa15)', marginBottom:24, animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
           <div style={{ width:38, height:38, borderRadius:9, background:'rgba(18,183,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <Building2 size={19} color="#12b76a"/>
@@ -375,7 +389,7 @@ export default function Dashboard() {
             <div style={{ fontSize:15, fontWeight:700 }}>Solution Express</div>
             <div style={{ fontSize:12, color:'var(--text-muted)' }}>{totalSE} fiches · {b2b} B2B · {b2c} B2C</div>
           </div>
-          <div style={{ marginLeft:'auto', fontSize:28, fontWeight:800, color:'#12b76a' }}>{totalSE}</div>
+          <div style={{ marginLeft:'auto', fontSize:28, fontWeight:800, color:'#12b76a', textShadow:'0 0 20px rgba(18,183,106,0.5)' }}>{totalSE}</div>
         </div>
         <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(3,1fr)':'repeat(5,1fr)', gap: isMobile?8:10 }}>
           {[
@@ -392,20 +406,22 @@ export default function Dashboard() {
               <div style={{ position:'absolute', bottom:-8, right:-4, fontSize:36, fontWeight:900, color:s.color, opacity:0.05, lineHeight:1 }}>{s.value}</div>
               <div style={{ fontSize: isMobile?20:24, fontWeight:800, color:s.color }}>{s.value}</div>
               <div style={{ fontSize: isMobile?9:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginTop:2 }}>{s.label}</div>
-              <div style={{ marginTop:6, height:3, borderRadius:2, background:'var(--border)', overflow:'hidden' }}>
-                <div style={{ height:'100%', borderRadius:2, background:s.color, width:`${totalSE>0?Math.round((s.value/totalSE)*100):0}%`, transition:'width 1s ease' }}/>
+              <div style={{ marginTop:6, height:3, borderRadius:2, background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
+                <div style={{ height:'100%', borderRadius:2, background:s.color, width:`${totalSE>0?Math.round((s.value/totalSE)*100):0}%`, transition:'width 1s ease', boxShadow:`0 0 8px ${s.color}80` }}/>
               </div>
             </div>
           ))}
         </div>
       </div>
+      </div>{/* /gradient border */}
 
       {/* ════════════════════════════════════════════════════════════════
           COMMISSIONS — filtrées par année globale
           $ → TND, DollarSign → Wallet
           ════════════════════════════════════════════════════════════════ */}
       {commissions && (
-        <div style={{ marginBottom:24, animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
+        <div style={{ marginBottom:24, animation:'fadeSlideUp 0.4s 0.15s ease both', padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#12b76a40,#61DAFB20,#a78bfa10)' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
             <div style={{ width:36, height:36, borderRadius:9, background:'rgba(18,183,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
               <Wallet size={18} color="#12b76a"/>
@@ -518,6 +534,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        </div>
       )}
 
       {/* ════════════════════════════════════════════════════════════════
@@ -525,7 +542,8 @@ export default function Dashboard() {
           Mobile : 1 colonne / Desktop : 2 colonnes
           ════════════════════════════════════════════════════════════════ */}
       <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr 1fr', gap:14, marginBottom:24 }}>
-        <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+        <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#3b6cf840,#a78bfa20)' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', height:'100%' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <h3 style={{ fontSize:15, margin:0 }}>Pipeline global</h3>
             <span style={{ fontSize:12, color:'var(--text-muted)' }}>{totalSE} fiches</span>
@@ -541,10 +559,12 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+        </div>{/* /gradient border pipeline */}
+        <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#f7900940,#12b76a20)' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', height:'100%' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <h3 style={{ fontSize:15, margin:0 }}>Produits d'intérêt</h3>
-            <Zap size={14} color="var(--warning)"/>
+            <Zap size={14} color="#f79009"/>
           </div>
           {byProduit.length ? (
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
@@ -569,6 +589,7 @@ export default function Dashboard() {
             </div>
           ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun produit</div>}
         </div>
+        </div>{/* /gradient border produits */}
       </div>
 
       {/* ════════════════════════════════════════════════════════════════
@@ -576,10 +597,11 @@ export default function Dashboard() {
           Mobile : 1 colonne / Desktop : 2 colonnes
           ════════════════════════════════════════════════════════════════ */}
       <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr 1fr', gap:14, marginBottom:24 }}>
-        <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+        <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#f0443840,#a78bfa20)' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', height:'100%' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <h3 style={{ fontSize:15, margin:0 }}>Qualification système</h3>
-            <Shield size={14} color="var(--text-muted)"/>
+            <Shield size={14} color="#a78bfa"/>
           </div>
           {byQualif.length ? (
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
@@ -599,10 +621,12 @@ export default function Dashboard() {
             </div>
           ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune qualification</div>}
         </div>
-        <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+        </div>{/* /gradient border qualif */}
+        <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#3b6cf840,#61DAFB20)' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', height:'100%' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <h3 style={{ fontSize:15, margin:0 }}>Top fournisseurs actuels</h3>
-            <TrendingUp size={14} color="var(--text-muted)"/>
+            <TrendingUp size={14} color="#61DAFB"/>
           </div>
           {byFourn.length ? (
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -617,6 +641,7 @@ export default function Dashboard() {
             </div>
           ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun fournisseur</div>}
         </div>
+        </div>{/* /gradient border fournisseurs */}
       </div>
 
       {/* ════════════════════════════════════════════════════════════════
@@ -624,10 +649,11 @@ export default function Dashboard() {
           Mobile : 1 colonne / Desktop : 2 colonnes
           ════════════════════════════════════════════════════════════════ */}
       <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr 1fr', gap:14, marginBottom:24 }}>
-        <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+        <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#12b76a40,#f7900920)' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', height:'100%' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <h3 style={{ fontSize:15, margin:0 }}>Types de leads</h3>
-            <Building2 size={14} color="var(--text-muted)"/>
+            <Building2 size={14} color="#12b76a"/>
           </div>
           {byLeadType.length ? (
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -635,7 +661,7 @@ export default function Dashboard() {
                 const color = LEAD_TYPE_COLORS[l._id]||'#8b8b9e';
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }}/>
+                    <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0, boxShadow:`0 0 6px ${color}80` }}/>
                     <span style={{ flex:1, fontSize:13, color:'var(--text-secondary)' }}>{LEAD_TYPE_LABELS[l._id]||l._id}</span>
                     <span style={{ fontSize:13, fontWeight:700, color }}>{l.count}</span>
                     <ProgressBar value={l.count} max={totalSE} color={color}/>
@@ -645,10 +671,12 @@ export default function Dashboard() {
             </div>
           ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun type</div>}
         </div>
-        <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+        </div>{/* /gradient border lead types */}
+        <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#61DAFB40,#a78bfa20)' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', height:'100%' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <h3 style={{ fontSize:15, margin:0 }}>Top villes</h3>
-            <MapPin size={14} color="var(--text-muted)"/>
+            <MapPin size={14} color="#61DAFB"/>
           </div>
           {byCity.length ? (
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -656,22 +684,24 @@ export default function Dashboard() {
                 <div key={i} style={{ display:'flex', alignItems:'center', gap:12, transition:'transform 0.15s' }}
                   onMouseEnter={e => e.currentTarget.style.transform='translateX(3px)'}
                   onMouseLeave={e => e.currentTarget.style.transform='translateX(0)'}>
-                  <div style={{ width:22, height:22, borderRadius:6, background:'var(--bg-hover)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'var(--text-muted)', flexShrink:0 }}>{i+1}</div>
+                  <div style={{ width:22, height:22, borderRadius:6, background:'rgba(97,218,251,0.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#61DAFB', flexShrink:0 }}>{i+1}</div>
                   <span style={{ flex:1, fontSize:13, color:'var(--text-secondary)' }}>{c._id}</span>
                   <span style={{ fontSize:13, fontWeight:700 }}>{c.count}</span>
-                  <ProgressBar value={c.count} max={totalSE} color="var(--accent)"/>
+                  <ProgressBar value={c.count} max={totalSE} color="#61DAFB"/>
                 </div>
               ))}
             </div>
           ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune ville</div>}
         </div>
+        </div>{/* /gradient border villes */}
       </div>
 
       {/* ════════════════════════════════════════════════════════════════
           LEADS RÉCENTS — filtrés par année globale
           Pleine largeur
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+      <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#12b76a40,#61DAFB25,#a78bfa15)' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
           <h3 style={{ fontSize:15, margin:0 }}>Leads récents</h3>
           <TrendingUp size={14} color="var(--text-muted)"/>
@@ -698,13 +728,14 @@ export default function Dashboard() {
           }) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun lead</div>}
         </div>
       </div>
+      </div>{/* /gradient border recent leads */}
 
-      {/* Keyframes animations */}
       <style>{`
         @keyframes fadeSlideUp {
-          from { opacity:0; transform:translateY(16px); }
+          from { opacity:0; transform:translateY(20px); }
           to   { opacity:1; transform:translateY(0); }
         }
+        @keyframes spin { to { transform:rotate(360deg); } }
       `}</style>
     </div>
   );

@@ -195,8 +195,13 @@ const toggleRecu = async (doc) => {
   };
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh' }}>
-      <div style={{ width:38, height:38, border:'3px solid rgba(245,158,11,0.2)', borderTopColor:'#f59e0b', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', flexDirection:'column', gap:16 }}>
+      <div style={{ position:'relative', width:44, height:44 }}>
+        <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid rgba(245,158,11,0.12)' }}/>
+        <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#f59e0b', animation:'spin 0.9s linear infinite' }}/>
+        <div style={{ position:'absolute', inset:4, borderRadius:'50%', border:'2px solid transparent', borderBottomColor:'rgba(251,146,60,0.5)', animation:'spin 1.5s linear infinite reverse' }}/>
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
@@ -221,15 +226,13 @@ const toggleRecu = async (doc) => {
       )}
 
       {/* ══════════════════════════════════════════════════════════════
-          HEADER GLASSMORPHISM ORANGE
+          HEADER ULTRA-MODERN — gradient border + aurora orange
           ══════════════════════════════════════════════════════════════ */}
-      <div style={{
-        background: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(234,88,12,0.07),rgba(245,158,11,0.04))',
-        borderRadius:20, padding: isMobile ? '20px 16px' : '24px 28px',
-        marginBottom:22, border:'1px solid rgba(245,158,11,0.22)',
-        boxShadow:'0 8px 32px rgba(245,158,11,0.12)', backdropFilter:'blur(10px)',
-        animation:'fadeSlideUp 0.4s ease both'
-      }}>
+      <div style={{ padding:'1.5px', borderRadius:22, background:'linear-gradient(135deg,#f59e0b70,#61DAFB30,#a78bfa20)', marginBottom:22, animation:'fadeSlideUp 0.4s ease both' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'20.5px', padding: isMobile ? '20px 16px' : '28px 32px', backdropFilter:'blur(40px)', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', top:-80, left:-60, width:280, height:280, borderRadius:'50%', background:'radial-gradient(circle,rgba(245,158,11,0.20) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:-50, right:-30, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(97,218,251,0.10) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'relative', zIndex:1 }}>
 
         {/* Ligne 1 : icône + titre + contrôles */}
         <div style={{ display:'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 14 : 0 }}>
@@ -274,11 +277,13 @@ const toggleRecu = async (doc) => {
               {stats?.pctRecu || 0}% reçu
             </span>
           </div>
-          <div style={{ height:8, borderRadius:4, background:'rgba(255,255,255,0.1)', overflow:'hidden' }}>
-            <div style={{ height:'100%', borderRadius:4, background:`linear-gradient(90deg,#f59e0b,${pctColor})`, width:`${stats?.pctRecu || 0}%`, transition:'width 1.2s ease' }}/>
+          <div style={{ height:8, borderRadius:4, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
+            <div style={{ height:'100%', borderRadius:4, background:`linear-gradient(90deg,#f59e0b,${pctColor})`, width:`${stats?.pctRecu || 0}%`, transition:'width 1.2s ease', boxShadow:'0 0 12px rgba(245,158,11,0.6)' }}/>
           </div>
         </div>
-      </div>
+        </div>{/* /zIndex:1 */}
+      </div>{/* /glassmorphism */}
+      </div>{/* /gradient border */}
 
       {/* ══════════════════════════════════════════════════════════════
           STATS CARDS
@@ -287,9 +292,10 @@ const toggleRecu = async (doc) => {
       <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '2fr 1fr 1fr 1fr 1fr', gap: isMobile ? 10 : 14, marginBottom:22 }}>
 
         {/* Total attendu — pleine largeur mobile */}
-        <div style={{ gridColumn: isMobile ? '1 / -1' : 'auto', background:'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.04))', borderRadius:16, padding: isMobile ? '16px 18px' : '22px 26px', border:'1px solid rgba(245,158,11,0.22)', display:'flex', alignItems:'center', gap:14, boxShadow:'0 4px 20px rgba(245,158,11,0.1)', animation:'fadeSlideUp 0.4s 0.05s ease both' }}>
-          <div style={{ width: isMobile?44:56, height: isMobile?44:56, borderRadius:14, background:'linear-gradient(135deg,#f59e0b,#ea580c)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 4px 14px rgba(245,158,11,0.4)' }}>
-            <Target size={isMobile?20:26} color="#fff"/>
+        <div style={{ gridColumn: isMobile ? '1 / -1' : 'auto', padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#f59e0b70,#ea580c35)', animation:'fadeSlideUp 0.4s 0.05s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile ? '16px 18px' : '22px 26px', backdropFilter:'blur(20px)', display:'flex', alignItems:'center', gap:14, height:'100%' }}>
+          <div style={{ width: isMobile?44:56, height: isMobile?44:56, borderRadius:14, background:'linear-gradient(135deg,#f59e0b,#ea580c)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 4px 20px rgba(245,158,11,0.5)' }}>
+            <Target size={isMobile?20:26} color="#030a16"/>
           </div>
           <div>
             <div style={{ fontSize:10, color:'#f59e0b', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>Objectif annuel</div>
@@ -301,44 +307,54 @@ const toggleRecu = async (doc) => {
             </div>
           </div>
         </div>
+        </div>{/* /gradient total */}
 
         {/* Reçu */}
-        <div style={{ background:'linear-gradient(135deg,rgba(18,183,106,0.1),rgba(18,183,106,0.03))', borderRadius:16, padding: isMobile?'14px 12px':'20px 18px', border:'1px solid rgba(18,183,106,0.2)', textAlign:'center', animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
+        <div style={{ padding:'1px', borderRadius:16, background:'linear-gradient(135deg,#12b76a60,#61DAFB20)', animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>✓ Reçu</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={stats?.totalRecu || 0} color="#12b76a"/></div>
           <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>{stats?.moisRecus || 0} mois payés</div>
         </div>
+        </div>
 
         {/* Manquant */}
-        <div style={{ background:'linear-gradient(135deg,rgba(240,68,56,0.08),rgba(240,68,56,0.02))', borderRadius:16, padding: isMobile?'14px 12px':'20px 18px', border:'1px solid rgba(240,68,56,0.15)', textAlign:'center', animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
+        <div style={{ padding:'1px', borderRadius:16, background:'linear-gradient(135deg,#f0443860,#f7900920)', animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#f04438', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>⏳ Manquant</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={stats?.totalManquant || 0} color="#f04438"/></div>
           <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>{(stats?.moisTotal||0) - (stats?.moisRecus||0)} mois</div>
         </div>
+        </div>
 
         {/* Jours ouvrés */}
-        <div style={{ background:'linear-gradient(135deg,rgba(59,108,248,0.08),rgba(59,108,248,0.02))', borderRadius:16, padding: isMobile?'14px 12px':'20px 18px', border:'1px solid rgba(59,108,248,0.18)', textAlign:'center', animation:'fadeSlideUp 0.4s 0.2s ease both' }}>
-          <div style={{ fontSize:10, color:'#3b6cf8', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>📅 Jours</div>
-          <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={stats?.totalJours || 0} decimals={0} suffix="" color="#3b6cf8"/></div>
+        <div style={{ padding:'1px', borderRadius:16, background:'linear-gradient(135deg,#61DAFB50,#3b6cf820)', animation:'fadeSlideUp 0.4s 0.2s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
+          <div style={{ fontSize:10, color:'#61DAFB', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>📅 Jours</div>
+          <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={stats?.totalJours || 0} decimals={0} suffix="" color="#61DAFB"/></div>
           <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>jours ouvrés</div>
+        </div>
         </div>
 
         {/* Simulateur */}
-        <div style={{ background:'linear-gradient(135deg,rgba(167,100,248,0.08),rgba(167,100,248,0.02))', borderRadius:16, padding: isMobile?'14px 12px':'20px 18px', border:'1px solid rgba(167,100,248,0.18)', textAlign:'center', animation:'fadeSlideUp 0.4s 0.25s ease both' }}>
-          <div style={{ fontSize:10, color:'#a764f8', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:6 }}>⚡ Sim.</div>
+        <div style={{ padding:'1px', borderRadius:16, background:'linear-gradient(135deg,#a78bfa60,#61DAFB20)', animation:'fadeSlideUp 0.4s 0.25s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
+          <div style={{ fontSize:10, color:'#a78bfa', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:6 }}>⚡ Sim.</div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:4, marginBottom:4 }}>
             <input type="number" value={simJours} min={1} max={31} onChange={e => setSimJours(parseInt(e.target.value)||0)}
               style={{ width:44, padding:'3px 6px', borderRadius:6, border:'1px solid rgba(167,100,248,0.3)', background:'var(--bg-secondary)', color:'var(--text-primary)', fontSize:13, fontWeight:700, textAlign:'center', outline:'none' }}/>
             <span style={{ fontSize:10, color:'var(--text-muted)' }}>j</span>
           </div>
-          <div style={{ fontSize: isMobile?14:17, fontWeight:800, color:'#a764f8', lineHeight:1 }}>{(simJours * 5).toFixed(3)} TND</div>
+          <div style={{ fontSize: isMobile?14:17, fontWeight:800, color:'#a78bfa', lineHeight:1 }}>{(simJours * 5).toFixed(3)} TND</div>
         </div>
+        </div>{/* /gradient sim */}
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
           GRAPHIQUE — Toggle Barres / Cumulatif
           ══════════════════════════════════════════════════════════════ */}
-      <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile ? '16px' : '20px 24px', marginBottom:22, border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)', animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
+      <div style={{ padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#f59e0b50,#12b76a25,#a78bfa15)', marginBottom:22, animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile ? '16px' : '20px 24px', backdropFilter:'blur(20px)' }}>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:8 }}>
           <div>
@@ -403,11 +419,13 @@ const toggleRecu = async (doc) => {
           </span>
         </div>
       </div>
+      </div>{/* /gradient border chart */}
 
       {/* ══════════════════════════════════════════════════════════════
           LISTE MENSUELLE
           ══════════════════════════════════════════════════════════════ */}
-      <div style={{ background:'var(--bg-card)', borderRadius:16, overflow:'hidden', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)', animation:'fadeSlideUp 0.4s 0.2s ease both' }}>
+      <div style={{ padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#f59e0b40,#61DAFB20,#a78bfa15)', animation:'fadeSlideUp 0.4s 0.2s ease both' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', overflow:'hidden', backdropFilter:'blur(20px)' }}>
 
         <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border)', background:'linear-gradient(135deg,rgba(245,158,11,0.06),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
           <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Historique mensuel {annee}</div>
@@ -495,6 +513,7 @@ const toggleRecu = async (doc) => {
           </div>
         )}
       </div>
+      </div>{/* /gradient border liste */}
 
       {/* Modal note */}
       {noteModal && <NoteModal mois={noteModal} onSave={saveNote} onClose={() => setNoteModal(null)}/>}

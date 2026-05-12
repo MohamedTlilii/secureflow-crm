@@ -1,103 +1,80 @@
-// ════════════════════════════════════════════════════════════════════════════
-// client/src/components/Sidebar.jsx
-// ════════════════════════════════════════════════════════════════════════════
-// RESPONSIVE  : Mobile (< 768px) → bottom nav bar / Desktop → sidebar collapsible
-// DESIGN      : Glassmorphism, gradient actif, glow icônes, avatar animé
-// ANIMATIONS  : hover scale icônes, active glow, expand/collapse smooth
-// LOGIQUE     : Toutes les fonctionnalités originales intactes
-// ════════════════════════════════════════════════════════════════════════════
-
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Kanban, Shield, LogOut, Database, Building2, Wallet, Fuel } from 'lucide-react';
+import { LayoutDashboard, Kanban, LogOut, Database, Building2, Wallet, Fuel } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-// ════════════════════════════════════════════════════════════════════════════
-// NAVIGATION — pour ajouter une page : { to, icon, label, color }
-// ════════════════════════════════════════════════════════════════════════════
 const NAV = [
-  { to:'/',                 icon:LayoutDashboard, label:'Dashboard',        color:'#15a5d9' },
-  { to:'/commissions',      icon:Wallet,          label:'Commissions',      color:'#12b76a' },
-  { to:'/solution-express', icon:Building2,       label:'Solution Express', color:'#2215d4' },
-  { to:'/pipeline',         icon:Kanban,          label:'Pipeline',         color:'#ad19b3' },
-  { to:'/essence',          icon:Fuel,          label:'Indemnité Carburant', color:'#e89613' },
-  { to:'/database',         icon:Database,        label:'Base de données',  color:'#e2287f' },
+  { to:'/',                 icon:LayoutDashboard, label:'Dashboard',           color:'#38bdf8' },
+  { to:'/commissions',      icon:Wallet,          label:'Commissions',         color:'#10b981' },
+  { to:'/solution-express', icon:Building2,       label:'Solution Express',    color:'#818cf8' },
+  { to:'/pipeline',         icon:Kanban,          label:'Pipeline',            color:'#c084fc' },
+  { to:'/essence',          icon:Fuel,            label:'Indemnité Carburant', color:'#fb923c' },
+  { to:'/database',         icon:Database,        label:'Base de données',     color:'#f472b6' },
 ];
 
-// ════════════════════════════════════════════════════════════════════════════
-// HOOK : useIsMobile — breakpoint 768px
-// ════════════════════════════════════════════════════════════════════════════
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
   }, []);
   return isMobile;
 }
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
-  const navigate         = useNavigate();
-  const isMobile         = useIsMobile();
-  const [isHovered, setIsHovered] = useState(false); // Expand/collapse desktop
+  const { user, logout }  = useAuth();
+  const navigate          = useNavigate();
+  const isMobile          = useIsMobile();
+  const [expanded, setExpanded] = useState(false);
 
-  // ── Logout ────────────────────────────────────────────────────────────
   const handleLogout = () => { logout(); toast.success('Déconnecté'); navigate('/login'); };
 
-  // ── Initiales avatar ──────────────────────────────────────────────────
-  const initials = user
-    ? (user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2))
-    : 'AS';
+  const w = expanded ? '240px' : '70px';
+  document.documentElement.style.setProperty('--sidebar-w', isMobile ? '0px' : w);
 
-  // ── Largeur sidebar desktop ───────────────────────────────────────────
-  const width = isHovered ? '240px' : '70px';
-  document.documentElement.style.setProperty('--sidebar-w', isMobile ? '0px' : width);
-
-  // ════════════════════════════════════════════════════════════════════════
-  // MOBILE — Bottom navigation bar
-  // ════════════════════════════════════════════════════════════════════════
+  // ── MOBILE — bottom nav ──────────────────────────────────────────────────
   if (isMobile) {
     return (
       <nav style={{
         position:'fixed', bottom:0, left:0, right:0, zIndex:200,
-        background:'var(--bg-card)',
-        borderTop:'1px solid var(--border)',
-        backdropFilter:'blur(20px)',
+        background:'rgba(2,8,16,0.97)',
+        borderTop:'1px solid rgba(59,130,246,0.12)',
+        backdropFilter:'blur(28px)',
         display:'flex', alignItems:'center',
-        padding:'8px 4px 12px', // padding-bottom pour safe area iPhone
-        boxShadow:'0 -4px 24px rgba(0,0,0,0.15)'
+        padding:'6px 2px 14px',
+        boxShadow:'0 -8px 40px rgba(0,0,0,0.45)'
       }}>
         {NAV.map(({ to, icon: Icon, label, color }) => (
           <NavLink key={to} to={to} end={to === '/'} style={({ isActive }) => ({
             flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-            padding:'6px 4px', borderRadius:10,
-            color: isActive ? color : 'var(--text-muted)',
-            textDecoration:'none', transition:'all 0.2s',
+            padding:'6px 2px', borderRadius:10,
+            color: isActive ? color : 'rgba(139,154,184,0.7)',
+            textDecoration:'none',
+            transition:'color 0.2s',
             position:'relative'
           })}>
             {({ isActive }) => (
               <>
-                {/* Point indicateur actif */}
                 {isActive && (
                   <div style={{
-                    position:'absolute', top:0, left:'50%', transform:'translateX(-50%)',
-                    width:24, height:3, borderRadius:2,
-                    background:color, boxShadow:`0 0 8px ${color}`
+                    position:'absolute', top:-6, left:'50%', transform:'translateX(-50%)',
+                    width:20, height:2.5, borderRadius:2,
+                    background:`linear-gradient(90deg,${color},${color}aa)`,
+                    boxShadow:`0 0 10px ${color}99`
                   }}/>
                 )}
-                {/* Fond coloré si actif */}
                 <div style={{
-                  width:36, height:36, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center',
-                  background: isActive ? `${color}18` : 'transparent',
-                  transition:'all 0.2s',
-                  transform: isActive ? 'scale(1.1)' : 'scale(1)'
+                  width:34, height:34, borderRadius:9,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  background: isActive ? `${color}1a` : 'transparent',
+                  transition:'background 0.2s, transform 0.2s',
+                  transform: isActive ? 'scale(1.12)' : 'scale(1)'
                 }}>
-                  <Icon size={20}/>
+                  <Icon size={18} style={{ filter: isActive ? `drop-shadow(0 0 5px ${color}99)` : 'none', transition:'filter 0.2s' }}/>
                 </div>
-                <span style={{ fontSize:9, fontWeight: isActive ? 700 : 500, letterSpacing:0.3 }}>
+                <span style={{ fontSize:9, fontWeight: isActive ? 700 : 500, letterSpacing:0.2, opacity: isActive ? 1 : 0.7, transition:'opacity 0.2s' }}>
                   {label.split(' ')[0]}
                 </span>
               </>
@@ -108,123 +85,183 @@ export default function Sidebar() {
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════
-  // DESKTOP — Sidebar collapsible 70px → 240px
-  // ════════════════════════════════════════════════════════════════════════
+  // ── DESKTOP — collapsible sidebar ────────────────────────────────────────
   return (
     <aside
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
       style={{
-        width,
-        background:'var(--bg-secondary)',
-        borderRight:'1px solid var(--border)',
+        width: w,
+        background:'rgba(2,8,16,0.98)',
+        borderRight:'1px solid rgba(255,255,255,0.06)',
         position:'fixed', top:0, left:0, bottom:0,
         display:'flex', flexDirection:'column',
         zIndex:100,
-        transition:'width 0.3s ease',
+        transition:'width 0.35s cubic-bezier(0.4,0,0.2,1)',
         overflow:'hidden',
-        boxShadow: isHovered ? '4px 0 24px rgba(0,0,0,0.1)' : 'none'
+        backdropFilter:'blur(24px)',
+        boxShadow: expanded
+          ? '6px 0 48px rgba(0,0,0,0.45), 2px 0 0 rgba(59,130,246,0.06)'
+          : '4px 0 20px rgba(0,0,0,0.35)'
       }}>
 
-      {/* ── Logo ── */}
+      {/* ── Logo ──────────────────────────────────────────────────────────── */}
       <div style={{
-        padding:'22px 17px 20px', borderBottom:'1px solid var(--border)',
-        display:'flex', alignItems:'center', gap:12
+        padding:'18px 17px 16px',
+        borderBottom:'1px solid rgba(255,255,255,0.06)',
+        display:'flex', alignItems:'center', gap:11,
+        flexShrink:0
       }}>
-        {/* Icône logo avec glow */}
+        {/* Mini logo — hexagone + courbe + goutte (identique à la Login) */}
         <div style={{
           minWidth:36, height:36, borderRadius:10,
-          background:'linear-gradient(135deg,var(--accent),#6b46fa)',
+          background:'linear-gradient(145deg,#041612 0%,#073322 55%,#041612 100%)',
           display:'flex', alignItems:'center', justifyContent:'center',
-          boxShadow: isHovered ? '0 0 20px var(--accent-glow)' : '0 0 10px var(--accent-glow)',
-          flexShrink:0, transition:'box-shadow 0.3s'
+          boxShadow: expanded
+            ? '0 0 24px rgba(18,183,106,0.55), 0 0 50px rgba(18,183,106,0.18)'
+            : '0 0 12px rgba(18,183,106,0.32)',
+          flexShrink:0,
+          transition:'box-shadow 0.35s ease',
+          position:'relative', overflow:'hidden'
         }}>
-          <Shield size={18} color="#fff"/>
+          <svg viewBox="0 0 100 100" width="22" height="22" style={{ overflow:'visible' }}>
+            <defs>
+              <linearGradient id="sb_lg1" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#12b76a"/>
+                <stop offset="100%" stopColor="#61DAFB"/>
+              </linearGradient>
+              <linearGradient id="sb_lg2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#61DAFB" stopOpacity="0.95"/>
+                <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.75"/>
+              </linearGradient>
+            </defs>
+            {/* Hexagone externe */}
+            <polygon points="94,50 72,88 28,88 6,50 28,12 72,12"
+              fill="none" stroke="url(#sb_lg1)" strokeWidth="3.5" strokeLinejoin="round"/>
+            {/* Courbe commission */}
+            <polyline points="22,76 36,61 50,49 64,37 77,24"
+              fill="none" stroke="url(#sb_lg1)" strokeWidth="4"
+              strokeLinecap="round" strokeLinejoin="round"/>
+            {/* Goutte carburant */}
+            <path d="M77,14 C77,14 70,22 70,27 C70,30.9 73.1,34 77,34 C80.9,34 84,30.9 84,27 C84,22 77,14 77,14Z"
+              fill="url(#sb_lg2)"/>
+          </svg>
         </div>
-        {/* Nom app — visible seulement quand expanded */}
-        {isHovered && (
-          <div className="animate-fade">
-            <div style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:15, letterSpacing:'-0.3px' }}>QC</div>
-            {/* <div style={{ fontSize:11, color:'var(--text-muted)' }}>CRM Sécurité</div> */}
+
+        {/* Texte — visible seulement en expanded */}
+        <div style={{
+          opacity: expanded ? 1 : 0,
+          transform: expanded ? 'translateX(0)' : 'translateX(-8px)',
+          transition:'opacity 0.25s ease, transform 0.25s ease',
+          pointerEvents: expanded ? 'auto' : 'none',
+          whiteSpace:'nowrap', overflow:'hidden'
+        }}>
+          <div style={{
+            fontFamily:'var(--font-display)', fontWeight:800, fontSize:13.5,
+            letterSpacing:'-0.3px',
+            background:'linear-gradient(135deg,#e8fff5 0%,#12b76a 30%,#61DAFB 70%,#a78bfa 100%)',
+            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text'
+          }}>
+            SecureFlow CRM
           </div>
-        )}
+          <div style={{ fontSize:9.5, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:1 }}>
+            Québec · Sécurité
+          </div>
+        </div>
       </div>
- 
-      {/* ── Navigation ── */}
-      <nav style={{ flex:1, padding:'14px 10px', display:'flex', flexDirection:'column', gap:3 }}>
+
+      {/* ── Navigation ────────────────────────────────────────────────────── */}
+      <nav style={{ flex:1, padding:'12px 9px', display:'flex', flexDirection:'column', gap:2, overflowY:'auto', overflowX:'hidden' }}>
         {NAV.map(({ to, icon: Icon, label, color }, idx) => (
           <NavLink key={to} to={to} end={to === '/'} style={({ isActive }) => ({
             display:'flex', alignItems:'center', gap:14,
             padding:'10px 13px', borderRadius:10,
             color: isActive ? color : 'var(--text-secondary)',
-            background: isActive ? `${color}12` : 'transparent',
-            borderLeft: isActive ? `2px solid ${color}` : '2px solid transparent',
-            fontSize:13, fontWeight: isActive ? 600 : 500,
-            transition:'all 0.18s', textDecoration:'none',
-            // Glow subtil si actif
-            boxShadow: isActive ? `inset 0 0 20px ${color}08` : 'none',
-            // Animation décalée à l'apparition
-            animationDelay:`${idx * 0.05}s`
+            background: isActive ? `${color}14` : 'transparent',
+            borderLeft: `2px solid ${isActive ? color : 'transparent'}`,
+            fontSize:13, fontWeight: isActive ? 600 : 400,
+            transition:'all 0.18s ease',
+            textDecoration:'none',
+            boxShadow: isActive ? `inset 0 0 24px ${color}0a` : 'none',
+            willChange:'background, color',
           })}>
             {({ isActive }) => (
               <>
-                {/* Icône avec scale au hover */}
                 <div style={{
                   minWidth:18, display:'flex', alignItems:'center', justifyContent:'center',
-                  transition:'transform 0.2s',
-                  filter: isActive ? `drop-shadow(0 0 4px ${color}80)` : 'none'
+                  flexShrink:0,
+                  filter: isActive ? `drop-shadow(0 0 5px ${color}aa)` : 'none',
+                  transition:'filter 0.2s, transform 0.2s',
+                  transform: isActive ? 'scale(1.1)' : 'scale(1)'
                 }}>
-                  <Icon size={18} style={{ flexShrink:0 }}/>
+                  <Icon size={18}/>
                 </div>
-                {/* Label — visible seulement quand expanded */}
-                {isHovered && <span className="animate-fade">{label}</span>}
+                <span style={{
+                  opacity: expanded ? 1 : 0,
+                  transform: expanded ? 'translateX(0)' : 'translateX(-6px)',
+                  transition:`opacity 0.22s ease ${idx * 0.025}s, transform 0.22s ease ${idx * 0.025}s`,
+                  whiteSpace:'nowrap', overflow:'hidden',
+                  pointerEvents: expanded ? 'auto' : 'none'
+                }}>
+                  {label}
+                </span>
               </>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* ── Section utilisateur ── */}
-      <div style={{ padding:'14px 10px', borderTop:'1px solid var(--border)' }}>
+      {/* ── User + Logout ─────────────────────────────────────────────────── */}
+      <div style={{ padding:'12px 9px', borderTop:'1px solid rgba(255,255,255,0.05)', flexShrink:0 }}>
 
-        {/* Card avatar + infos */}
+        {/* Avatar card */}
         <div style={{
           display:'flex', alignItems:'center', gap:10,
-          padding:'10px', borderRadius:10,
-          background:'var(--bg-card)', border:'1px solid var(--border)',
-          marginBottom:8, transition:'all 0.2s',
-          boxShadow: isHovered ? '0 2px 12px rgba(0,0,0,0.08)' : 'none'
+          padding:'9px 11px', borderRadius:10,
+          background:'rgba(16,185,129,0.06)',
+          border:`1px solid ${expanded ? 'rgba(16,185,129,0.18)' : 'rgba(16,185,129,0.1)'}`,
+          marginBottom:6,
+          transition:'border-color 0.25s, box-shadow 0.25s',
+          boxShadow: expanded ? '0 2px 16px rgba(16,185,129,0.1)' : 'none',
+          overflow:'hidden'
         }}>
-          {/* Avatar image */}
-          {user?.avatar && user.avatar.includes('http') && !user.avatar.includes('freepik') ? (
-            <img src={user.avatar} alt="Avatar"
-              onError={e => { e.target.onerror=null; e.target.src='/logo.jpg'; }}
-              style={{ minWidth:32, height:32, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/>
-          ) : (
-            <img src="/logo.jpg" alt="Avatar"
-              style={{ minWidth:32, height:32, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/>
-          )}
-          {/* Nom + rôle */}
-          {isHovered && (
-            <div style={{ flex:1, minWidth:0 }} className="animate-fade">
-              <div style={{ fontSize:13, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name}</div>
-              <div style={{ fontSize:11, color:'var(--text-muted)', textTransform:'capitalize' }}>{user?.role}</div>
-            </div>
-          )}
+          <img src="/logo.jpg" alt="Logo"
+            style={{ minWidth:30, height:30, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'1.5px solid rgba(16,185,129,0.3)' }}/>
+          <div style={{
+            flex:1, minWidth:0,
+            opacity: expanded ? 1 : 0,
+            transform: expanded ? 'translateX(0)' : 'translateX(-6px)',
+            transition:'opacity 0.22s ease 0.05s, transform 0.22s ease 0.05s',
+            pointerEvents: expanded ? 'auto' : 'none'
+          }}>
+            <div style={{ fontSize:12.5, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', color:'var(--text-primary)' }}>{user?.name}</div>
+            <div style={{ fontSize:10.5, color:'var(--text-muted)', textTransform:'capitalize', marginTop:1 }}>{user?.role}</div>
+          </div>
         </div>
 
-        {/* Bouton déconnexion */}
-        <button onClick={handleLogout} className="btn btn-ghost"
+        {/* Logout */}
+        <button onClick={handleLogout}
           style={{
-            width:'100%', justifyContent: isHovered?'flex-start':'center',
-            color:'var(--text-secondary)', padding:'10px', borderRadius:10,
-            transition:'all 0.2s'
+            width:'100%', display:'flex', alignItems:'center',
+            justifyContent: expanded ? 'flex-start' : 'center',
+            gap:12, padding:'9px 13px', borderRadius:10,
+            background:'transparent', border:'1px solid transparent',
+            color:'var(--text-secondary)', cursor:'pointer',
+            fontSize:13, fontWeight:500,
+            transition:'background 0.18s, color 0.18s, border-color 0.18s',
+            overflow:'hidden'
           }}
-          onMouseEnter={e => { e.currentTarget.style.background='rgba(240,68,56,0.08)'; e.currentTarget.style.color='#f04438'; }}
-          onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='var(--text-secondary)'; }}>
-          <LogOut size={16}/>
-          {isHovered && <span style={{ marginLeft:12 }}>Déconnexion</span>}
+          onMouseEnter={e => { e.currentTarget.style.background='rgba(239,68,68,0.08)'; e.currentTarget.style.color='#ef4444'; e.currentTarget.style.borderColor='rgba(239,68,68,0.2)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='var(--text-secondary)'; e.currentTarget.style.borderColor='transparent'; }}>
+          <LogOut size={16} style={{ flexShrink:0 }}/>
+          <span style={{
+            opacity: expanded ? 1 : 0,
+            transform: expanded ? 'translateX(0)' : 'translateX(-6px)',
+            transition:'opacity 0.22s ease 0.05s, transform 0.22s ease 0.05s',
+            whiteSpace:'nowrap'
+          }}>
+            Déconnexion
+          </span>
         </button>
       </div>
     </aside>

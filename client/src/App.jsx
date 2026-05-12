@@ -20,11 +20,25 @@ import './index.css';
 const ProtectedLayout = ({ children }) => {
   const { user, loading } = useAuth(); // Pull auth state from context
 
-  // Show a spinning loader while auth state is being determined
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'var(--bg-primary)' }}>
-      {/* Spinner: styled with CSS variables, animated with 'spin' keyframe from index.css */}
-      <div style={{ width:32, height:32, border:'2px solid var(--border)', borderTopColor:'var(--accent)', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100vh', background:'var(--bg-primary)', gap:20 }}>
+      {/* Gradient logo */}
+      <div style={{ position:'relative', width:64, height:64, marginBottom:4 }}>
+        <div style={{ position:'absolute', inset:0, borderRadius:18, background:'linear-gradient(135deg,#10b981,#3b82f6)', opacity:0.15, filter:'blur(20px)' }}/>
+        <div style={{ position:'absolute', inset:0, borderRadius:18, background:'linear-gradient(135deg,#10b981,#3b82f6)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 40px rgba(16,185,129,0.4)' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        {/* Orbit ring */}
+        <div style={{ position:'absolute', inset:-10, borderRadius:'50%', border:'1.5px solid transparent', borderTopColor:'rgba(16,185,129,0.6)', borderRightColor:'rgba(59,130,246,0.3)', animation:'spin 1.2s linear infinite' }}/>
+        <div style={{ position:'absolute', inset:-18, borderRadius:'50%', border:'1px solid transparent', borderBottomColor:'rgba(59,130,246,0.4)', borderLeftColor:'rgba(16,185,129,0.2)', animation:'spin 2s linear infinite reverse' }}/>
+      </div>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:17, fontWeight:800, letterSpacing:'-0.4px', color:'var(--text-primary)' }}>QC</div>
+        <div style={{ fontSize:11, color:'var(--text-muted)', letterSpacing:'0.14em', textTransform:'uppercase', marginTop:4, fontWeight:600 }}>Chargement…</div>
+      </div>
+      <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
     </div>
   );
 
@@ -87,7 +101,19 @@ export default function App() {
 
         {/* Global toast config — change position or style here to affect all toasts */}
         <Toaster position="top-right" toastOptions={{
-          style: { background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: '13px' }
+          style: {
+            background: '#0d1b30',
+            color: 'var(--text-primary)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            fontSize: '13px',
+            fontFamily: 'var(--font-body)',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(16px)',
+            padding: '12px 16px',
+          },
+          success: { iconTheme: { primary:'#10b981', secondary:'#fff' } },
+          error:   { iconTheme: { primary:'#ef4444', secondary:'#fff' } },
         }} />
 
         <AppRoutes /> {/* All route definitions live here */}

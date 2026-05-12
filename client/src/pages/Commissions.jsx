@@ -255,8 +255,13 @@ export default function Commissions() {
   });
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh' }}>
-      <div style={{ width:36, height:36, border:'3px solid rgba(18,183,106,0.2)', borderTopColor:'#12b76a', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', flexDirection:'column', gap:16 }}>
+      <div style={{ position:'relative', width:44, height:44 }}>
+        <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid rgba(16,185,129,0.12)' }}/>
+        <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#10b981', animation:'spin 0.9s linear infinite' }}/>
+        <div style={{ position:'absolute', inset:4, borderRadius:'50%', border:'2px solid transparent', borderBottomColor:'rgba(59,130,246,0.5)', animation:'spin 1.5s linear infinite reverse' }}/>
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
@@ -264,25 +269,21 @@ export default function Commissions() {
     <div className="animate-fade">
 
       {/* ════════════════════════════════════════════════════════════════
-          HEADER GLASSMORPHISM
-          Fond gradient vert subtil + stats rapides inline
+          HEADER ULTRA-MODERN — gradient border + aurora
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{
-        background: 'linear-gradient(135deg,rgba(18,183,106,0.1),rgba(59,108,248,0.06),rgba(18,183,106,0.04))',
-        borderRadius:20, padding: isMobile ? '20px 16px' : '24px 28px',
-        marginBottom:24, border:'1px solid rgba(18,183,106,0.18)',
-        boxShadow:'0 8px 32px rgba(18,183,106,0.1)',
-        backdropFilter:'blur(10px)',
-        animation:'fadeSlideUp 0.4s ease both'
-      }}>
+      <div style={{ padding:'1.5px', borderRadius:22, background:'linear-gradient(135deg,#12b76a70,#61DAFB35,#a78bfa25)', marginBottom:24, animation:'fadeSlideUp 0.4s ease both' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'20.5px', padding: isMobile ? '20px 16px' : '28px 32px', backdropFilter:'blur(40px)', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', top:-80, left:-60, width:280, height:280, borderRadius:'50%', background:'radial-gradient(circle,rgba(18,183,106,0.20) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:-50, right:-30, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(97,218,251,0.12) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'relative', zIndex:1 }}>
 
         {/* Ligne 1 : Icône + Titre + Filtres */}
         <div style={{ display:'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 14 : 0 }}>
 
           {/* Icône + Titre */}
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#12b76a,#0e9558)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 20px rgba(18,183,106,0.4)', flexShrink:0 }}>
-              <Wallet size={26} color="#191818"/>
+            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#12b76a,#61DAFB)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(18,183,106,0.55)', flexShrink:0 }}>
+              <Wallet size={26} color="#030a16"/>
             </div>
             <div>
               <h1 style={{ margin:0, fontSize: isMobile ? 20 : 24 }}>Commissions</h1>
@@ -325,11 +326,13 @@ export default function Commissions() {
               {pctPaye}% payé
             </span>
           </div>
-          <div style={{ height:8, borderRadius:4, background:'rgba(255,255,255,0.1)', overflow:'hidden' }}>
-            <div style={{ height:'100%', borderRadius:4, background:`linear-gradient(90deg,#12b76a,${pctPaye >= 70 ? '#0e9558' : '#f79009'})`, width:`${pctPaye}%`, transition:'width 1s ease' }}/>
+          <div style={{ height:8, borderRadius:4, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
+            <div style={{ height:'100%', borderRadius:4, background:`linear-gradient(90deg,#12b76a,${pctPaye >= 70 ? '#61DAFB' : '#f79009'})`, width:`${pctPaye}%`, transition:'width 1s ease', boxShadow:'0 0 12px rgba(18,183,106,0.6)' }}/>
           </div>
         </div>
-      </div>
+        </div>{/* /zIndex:1 */}
+      </div>{/* /glassmorphism */}
+      </div>{/* /gradient border */}
 
       {/* ════════════════════════════════════════════════════════════════
           STATS CARDS DÉTAILLÉES
@@ -338,9 +341,10 @@ export default function Commissions() {
       <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '2fr 1fr 1fr 1fr 1fr', gap: isMobile ? 10 : 14, marginBottom:24 }}>
 
         {/* Total — pleine largeur sur mobile */}
-        <div style={{ gridColumn: isMobile ? '1 / -1' : 'auto', background:'linear-gradient(135deg,rgba(18,183,106,0.12),rgba(18,183,106,0.04))', borderRadius:16, padding: isMobile ? '16px 18px' : '22px 26px', border:'1px solid rgba(18,183,106,0.2)', display:'flex', alignItems:'center', gap:14, boxShadow:'0 4px 20px rgba(18,183,106,0.08)', animation:'fadeSlideUp 0.4s 0.05s ease both' }}>
-          <div style={{ width: isMobile?44:56, height: isMobile?44:56, borderRadius:14, background:'linear-gradient(135deg,#12b76a,#0e9558)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 4px 14px rgba(18,183,106,0.4)' }}>
-            <TrendingUp size={isMobile?20:26} color="#fff"/>
+        <div style={{ gridColumn: isMobile ? '1 / -1' : 'auto', padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#12b76a70,#61DAFB35)', animation:'fadeSlideUp 0.4s 0.05s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile ? '16px 18px' : '22px 26px', backdropFilter:'blur(20px)', display:'flex', alignItems:'center', gap:14, height:'100%' }}>
+          <div style={{ width: isMobile?44:56, height: isMobile?44:56, borderRadius:14, background:'linear-gradient(135deg,#12b76a,#61DAFB)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 4px 20px rgba(18,183,106,0.5)' }}>
+            <TrendingUp size={isMobile?20:26} color="#030a16"/>
           </div>
           <div>
             <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>Total gagné</div>
@@ -348,40 +352,50 @@ export default function Commissions() {
             <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>{filtered.length} vente{filtered.length!==1?'s':''} · moy. {fmtMoney(totalGagne/Math.max(filtered.length,1))}</div>
           </div>
         </div>
+        </div>{/* /gradient total */}
 
         {/* Payé */}
-        <div style={{ background:'linear-gradient(135deg,rgba(59,108,248,0.08),rgba(59,108,248,0.02))', borderRadius:16, padding: isMobile?'14px 12px':'20px 18px', border:'1px solid rgba(59,108,248,0.18)', textAlign:'center', boxShadow:'0 4px 20px rgba(59,108,248,0.06)', animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
-          <div style={{ fontSize:10, color:'#3b6cf8', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>✓ Payé</div>
-          <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={totalPaye} color="#3b6cf8"/></div>
+        <div style={{ padding:'1px', borderRadius:16, background:'linear-gradient(135deg,#3b6cf860,#61DAFB20)', animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
+          <div style={{ fontSize:10, color:'#61DAFB', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>✓ Payé</div>
+          <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={totalPaye} color="#61DAFB"/></div>
           <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>{filtered.filter(c=>c.commissionPayee).length} vente{filtered.filter(c=>c.commissionPayee).length!==1?'s':''}</div>
+        </div>
         </div>
 
         {/* Attente */}
-        <div style={{ background:'linear-gradient(135deg,rgba(247,144,9,0.08),rgba(247,144,9,0.02))', borderRadius:16, padding: isMobile?'14px 12px':'20px 18px', border:'1px solid rgba(247,144,9,0.18)', textAlign:'center', boxShadow:'0 4px 20px rgba(247,144,9,0.06)', animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
+        <div style={{ padding:'1px', borderRadius:16, background:'linear-gradient(135deg,#f7900960,#f0443820)', animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#f79009', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>⏳ Attente</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={enAttente} color="#f79009"/></div>
           <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>{filtered.filter(c=>!c.commissionPayee).length} vente{filtered.filter(c=>!c.commissionPayee).length!==1?'s':''}</div>
         </div>
+        </div>
 
         {/* Maximum */}
-        <div style={{ background:'linear-gradient(135deg,rgba(167,100,248,0.08),rgba(167,100,248,0.02))', borderRadius:16, padding: isMobile?'14px 12px':'20px 18px', border:'1px solid rgba(167,100,248,0.18)', textAlign:'center', boxShadow:'0 4px 20px rgba(167,100,248,0.06)', animation:'fadeSlideUp 0.4s 0.2s ease both' }}>
-          <div style={{ fontSize:10, color:'#a764f8', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>↑ Max</div>
-          <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={maximum} color="#a764f8"/></div>
+        <div style={{ padding:'1px', borderRadius:16, background:'linear-gradient(135deg,#a78bfa60,#61DAFB20)', animation:'fadeSlideUp 0.4s 0.2s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
+          <div style={{ fontSize:10, color:'#a78bfa', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>↑ Max</div>
+          <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={maximum} color="#a78bfa"/></div>
           <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>meilleure</div>
+        </div>
         </div>
 
         {/* Minimum */}
-        <div style={{ background:'linear-gradient(135deg,rgba(139,139,158,0.08),rgba(139,139,158,0.02))', borderRadius:16, padding: isMobile?'14px 12px':'20px 18px', border:'1px solid rgba(139,139,158,0.18)', textAlign:'center', animation:'fadeSlideUp 0.4s 0.25s ease both' }}>
+        <div style={{ padding:'1px', borderRadius:16, background:'linear-gradient(135deg,#8b8b9e40,#61DAFB15)', animation:'fadeSlideUp 0.4s 0.25s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#8b8b9e', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>↓ Min</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={minimum} color="#8b8b9e"/></div>
           <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>plus petite</div>
+        </div>
         </div>
       </div>
 
       {/* ════════════════════════════════════════════════════════════════
           GRAPHIQUE PAR MOIS
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px 24px', marginBottom:24, border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+      <div style={{ padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#12b76a50,#61DAFB25,#a78bfa15)', marginBottom:24 }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile?'16px':'20px 24px', backdropFilter:'blur(20px)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:8 }}>
           <div>
             <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Commissions par mois</div>
@@ -402,6 +416,7 @@ export default function Commissions() {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      </div>{/* /gradient border chart */}
 
       {/* ════════════════════════════════════════════════════════════════
           CALENDRIER + LISTE
@@ -451,8 +466,9 @@ export default function Commissions() {
         </div>
 
         {/* Colonne droite : Liste historique */}
-        <div style={{ background:'var(--bg-card)', borderRadius:16, overflow:'hidden', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
-          <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border)', background:'linear-gradient(135deg,rgba(18,183,106,0.06),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#12b76a40,#a78bfa20)' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', overflow:'hidden', backdropFilter:'blur(20px)' }}>
+          <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.08)', background:'linear-gradient(135deg,rgba(18,183,106,0.08),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Historique des commissions</div>
             {filtered.length > 0 && (
               <div style={{ fontSize:11, color:'var(--text-muted)', background:'var(--bg-secondary)', padding:'3px 12px', borderRadius:20, border:'1px solid var(--border)', fontWeight:600 }}>
@@ -530,14 +546,15 @@ export default function Commissions() {
             </div>
           )}
         </div>
-      </div>
+        </div>{/* /glassmorphism historique */}
+        </div>{/* /gradient border historique */}
 
-      {/* Keyframes */}
       <style>{`
         @keyframes fadeSlideUp {
-          from { opacity:0; transform:translateY(16px); }
+          from { opacity:0; transform:translateY(20px); }
           to   { opacity:1; transform:translateY(0); }
         }
+        @keyframes spin { to { transform:rotate(360deg); } }
       `}</style>
     </div>
   );

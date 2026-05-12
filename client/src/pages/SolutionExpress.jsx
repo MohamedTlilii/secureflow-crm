@@ -301,7 +301,7 @@ const iSt = {
 // Section dans l'ultra-fiche avec titre uppercase
 function FicheSection({ title, children }) {
   return (
-    <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px' }}>
+    <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', border:'1px solid rgba(255,255,255,0.05)' }}>
       <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>{title}</div>
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>{children}</div>
     </div>
@@ -581,18 +581,15 @@ export default function SolutionExpress() {
           HEADER GLASSMORPHISM
           Gradient vert + stats inline + barre conversion
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{
-        background:'linear-gradient(135deg,rgba(18,183,106,0.1),rgba(59,108,248,0.06),rgba(18,183,106,0.04))',
-        borderRadius:20, padding: isMobile ? '18px 16px' : '22px 28px',
-        marginBottom:24, border:'1px solid rgba(18,183,106,0.18)',
-        boxShadow:'0 8px 32px rgba(18,183,106,0.1)',
-        backdropFilter:'blur(10px)',
-        animation:'fadeSlideUp 0.4s ease both'
-      }}>
+      <div style={{ padding:'1.5px', borderRadius:22, background:'linear-gradient(135deg,#2215d470,#12b76a40,#61DAFB25)', marginBottom:24, animation:'fadeSlideUp 0.4s ease both' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'20.5px', padding: isMobile ? '18px 16px' : '28px 32px', backdropFilter:'blur(40px)', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', top:-80, left:-60, width:300, height:300, borderRadius:'50%', background:'radial-gradient(circle,rgba(34,21,212,0.18) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:-40, right:-20, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(18,183,106,0.14) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'relative', zIndex:1 }}>
         {/* Ligne 1 : Icône + Titre + Bouton nouveau */}
         <div style={{ display:'flex', alignItems: isMobile?'flex-start':'center', justifyContent:'space-between', flexDirection: isMobile?'column':'row', gap: isMobile?12:0, marginBottom:16 }}>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#12b76a,#0e9558)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 20px rgba(18,183,106,0.4)', flexShrink:0 }}>
+            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#2215d4,#12b76a)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(34,21,212,0.55)', flexShrink:0 }}>
               <Building2 size={26} color="#fff"/>
             </div>
             <div>
@@ -616,10 +613,10 @@ export default function SolutionExpress() {
             { label:'Total',      value:totalFiches,   color:'#12b76a', suffix:' fiches' },
             { label:'Installés',  value:totalInstalle, color:'#22c55e', suffix:'' },
             { label:'Pipeline',   value:totalPipeline, color:'#f79009', suffix:'' },
-            { label:'Installation',value:convRate,     color:'#3b6cf8', suffix:'%' },
+            { label:'Installation',value:convRate,     color:'#61DAFB', suffix:'%' },
           ].map((s,i) => (
-            <div key={i} style={{ background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'10px 14px', border:'1px solid rgba(255,255,255,0.08)', animation:`fadeSlideUp 0.4s ${i*0.05}s ease both` }}>
-              <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
+            <div key={i} style={{ background:`${s.color}12`, borderRadius:10, padding:'10px 14px', border:`1px solid ${s.color}25`, animation:`fadeSlideUp 0.4s ${i*0.05}s ease both` }}>
+              <div style={{ fontSize:10, color:s.color, fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
               <div style={{ fontSize: isMobile?18:22, fontWeight:800 }}>
                 <AnimatedNumber value={s.value} decimals={0} suffix={s.suffix} color={s.color}/>
               </div>
@@ -634,16 +631,19 @@ export default function SolutionExpress() {
             <span style={{ fontWeight:700, color:'#12b76a' }}>{convRate}%</span>
           </div>
           <div style={{ height:6, borderRadius:3, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
-            <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#12b76a,#3b6cf8)', width:`${convRate}%`, transition:'width 1.2s ease' }}/>
+            <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#2215d4,#12b76a,#61DAFB)', width:`${convRate}%`, transition:'width 1.2s ease', boxShadow:'0 0 12px rgba(18,183,106,0.5)' }}/>
           </div>
         </div>
-      </div>
+        </div>{/* /zIndex:1 */}
+      </div>{/* /glassmorphism */}
+      </div>{/* /gradient border */}
 
       {/* ════════════════════════════════════════════════════════════════
           FILTRES — glassmorphism subtil
           Mobile : caché par défaut / Desktop : visible par défaut
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{ background:'var(--bg-card)', borderRadius:16, padding:14, marginBottom:20, border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+      <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#2215d430,#12b76a20,#61DAFB10)', marginBottom:20 }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding:14, backdropFilter:'blur(20px)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: showFilters ? 14 : 0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <Filter size={13} color="var(--text-muted)"/>
@@ -757,6 +757,7 @@ export default function SolutionExpress() {
           </div>
         )}
       </div>
+      </div>{/* /gradient border filters */}
 
       {/* ════════════════════════════════════════════════════════════════
           BARRE DE RECHERCHE — glow vert au focus
@@ -803,7 +804,11 @@ export default function SolutionExpress() {
           ════════════════════════════════════════════════════════════════ */}
       {loading ? (
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'40vh' }}>
-          <div style={{ width:36, height:36, border:'3px solid rgba(18,183,106,0.2)', borderTopColor:'#12b76a', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+          <div style={{ position:'relative', width:44, height:44 }}>
+            <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid rgba(129,140,248,0.12)' }}/>
+            <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#818cf8', animation:'spin 0.9s linear infinite' }}/>
+            <div style={{ position:'absolute', inset:4, borderRadius:'50%', border:'2px solid transparent', borderBottomColor:'rgba(16,185,129,0.5)', animation:'spin 1.5s linear infinite reverse' }}/>
+          </div>
         </div>
       ) : sorted.length === 0 ? (
         <div className="empty-state">
@@ -821,24 +826,24 @@ export default function SolutionExpress() {
               <div key={p._id}
                 onClick={() => openFiche(p)}
                 style={{
-                  background:'var(--bg-card)',
+                  background:'rgba(2,8,16,0.97)',
                   borderRadius:16, padding: isMobile?16:20,
                   cursor:'pointer', transition:'all 0.2s',
-                  border:`1px solid var(--border)`,
+                  border:`1px solid ${statusColor}30`,
                   borderTop:`3px solid ${statusColor}`,
-                  boxShadow:'0 2px 12px rgba(0,0,0,0.06)',
-                  // fadeSlideUp avec délai progressif
+                  boxShadow:`0 2px 16px rgba(0,0,0,0.15)`,
+                  backdropFilter:'blur(20px)',
                   animation:`fadeSlideUp 0.4s ${Math.min(i * 0.04, 0.5)}s ease both`
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.transform='translateY(-4px)';
-                  e.currentTarget.style.boxShadow=`0 12px 32px rgba(0,0,0,0.12), 0 0 0 1px ${statusColor}40`;
+                  e.currentTarget.style.boxShadow=`0 16px 40px rgba(0,0,0,0.2), 0 0 0 1px ${statusColor}50`;
                   e.currentTarget.style.borderColor=`${statusColor}60`;
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.transform='';
-                  e.currentTarget.style.boxShadow='0 2px 12px rgba(0,0,0,0.06)';
-                  e.currentTarget.style.borderColor='var(--border)';
+                  e.currentTarget.style.boxShadow=`0 2px 16px rgba(0,0,0,0.15)`;
+                  e.currentTarget.style.borderColor=`${statusColor}30`;
                 }}>
 
                 {/* ── Avatar + Nom + Score urgence ── */}
@@ -954,7 +959,7 @@ export default function SolutionExpress() {
           ════════════════════════════════════════════════════════════════ */}
       {modal === 'fiche' && selected && (
         <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) setModal(null); }} style={{ alignItems:'flex-start', padding: isMobile?'0':'20px', overflowY:'auto' }}>
-          <div style={{ background:'var(--bg-card)', borderRadius: isMobile?0:16, width:'100%', maxWidth:940, margin:'0 auto', overflow:'hidden', boxShadow:'0 25px 60px rgba(0,0,0,0.3)' }}>
+          <div style={{ background:'rgba(3,8,26,0.98)', borderRadius: isMobile?0:16, width:'100%', maxWidth:940, margin:'0 auto', overflow:'hidden', boxShadow:`0 25px 80px rgba(0,0,0,0.6), 0 0 0 1px ${STATUS_COLORS[selected.status]||'#12b76a'}30`, backdropFilter:'blur(40px)' }}>
 
             {/* En-tête avec gradient selon statut */}
             <div style={{ background:`linear-gradient(135deg,${STATUS_COLORS[selected.status]||'#12b76a'}20,transparent)`, borderBottom:`3px solid ${STATUS_COLORS[selected.status]||'#12b76a'}`, padding: isMobile?'20px 16px 16px':'28px 28px 20px' }}>
@@ -987,7 +992,7 @@ export default function SolutionExpress() {
                     <button key={k} onClick={() => changeStatus(selected,k)}
                       style={{ padding: isMobile?'5px 10px':'6px 14px', borderRadius:20, fontSize: isMobile?11:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
                         border:`2px solid ${selected.status===k?STATUS_COLORS[k]:'var(--border)'}`,
-                        background:selected.status===k?STATUS_COLORS[k]:'var(--bg-secondary)',
+                        background:selected.status===k?STATUS_COLORS[k]:'rgba(5,12,32,0.9)',
                         color:selected.status===k?'#fff':'var(--text-secondary)' }}>
                       {v}
                     </button>
@@ -1019,7 +1024,7 @@ export default function SolutionExpress() {
                       { label:'Commission extra', value:`${(selected.commissionExtra||0).toFixed(2)} TND`, color:'#a764f8' },
                       { label:'Total',            value:`${(selected.commissionTotale||0).toFixed(2)} TND`, color: selected.commissionPayee?'#12b76a':'#f79009' },
                     ].map(s => (
-                      <div key={s.label} style={{ background:'var(--bg-card)', borderRadius:10, padding:'10px 14px', textAlign:'center', transition:'transform 0.15s' }}
+                      <div key={s.label} style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'10px 14px', textAlign:'center', border:'1px solid rgba(255,255,255,0.05)', transition:'transform 0.15s' }}
                         onMouseEnter={e => e.currentTarget.style.transform='translateY(-2px)'}
                         onMouseLeave={e => e.currentTarget.style.transform='translateY(0)'}>
                         <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>{s.label}</div>
@@ -1060,7 +1065,7 @@ export default function SolutionExpress() {
               {/* ── Fournisseurs avec hover slide ── */}
               <div style={{ marginBottom:20 }}>
                 <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Fournisseurs — Actuel → Proposé</div>
-                <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'16px', display:'flex', flexDirection:'column', gap:12 }}>
+                <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'16px', border:'1px solid rgba(255,255,255,0.05)', display:'flex', flexDirection:'column', gap:12 }}>
                   <FournisseurRow icon={<Shield size={13} color="#f04438"/>}     color="#f04438" label="Alarme"   actuel={getFournLabel('alarme',   selected.fournisseurAlarme)}   propose={getFournLabel('alarme',   selected.fournisseurProposeAlarme)}/>
                   <FournisseurRow icon={<Wifi size={13} color="#3b6cf8"/>}       color="#3b6cf8" label="Internet" actuel={getFournLabel('internet', selected.fournisseurInternet)} propose={getFournLabel('internet', selected.fournisseurProposeInternet)}/>
                   <FournisseurRow icon={<Smartphone size={13} color="#12b76a"/>} color="#12b76a" label="Mobile"  actuel={getFournLabel('mobile',   selected.fournisseurMobile)}   propose={getFournLabel('mobile',   selected.fournisseurProposeMobile)}/>
@@ -1071,7 +1076,7 @@ export default function SolutionExpress() {
               {selected.summary && (
                 <div style={{ marginBottom:20 }}>
                   <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Résumé</div>
-                  <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.7, borderLeft:'3px solid #12b76a', whiteSpace:'pre-wrap' }}>{selected.summary}</div>
+                  <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.7, borderLeft:'3px solid #12b76a', border:'1px solid rgba(255,255,255,0.05)', borderLeftWidth:3, whiteSpace:'pre-wrap' }}>{selected.summary}</div>
                 </div>
               )}
 
@@ -1079,7 +1084,7 @@ export default function SolutionExpress() {
               {selected.sourceText && (
                 <div style={{ marginBottom:20 }}>
                   <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Texte source</div>
-                  <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px', fontSize:12, color:'var(--text-secondary)', lineHeight:1.6, borderLeft:'3px solid var(--border)', whiteSpace:'pre-wrap', maxHeight:160, overflowY:'auto' }}>{selected.sourceText}</div>
+                  <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', fontSize:12, color:'var(--text-secondary)', lineHeight:1.6, borderLeft:'3px solid rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.05)', borderLeftWidth:3, whiteSpace:'pre-wrap', maxHeight:160, overflowY:'auto' }}>{selected.sourceText}</div>
                 </div>
               )}
 
@@ -1093,7 +1098,7 @@ export default function SolutionExpress() {
                     {[...selected.notes].reverse().map((n, idx) => {
                       const realIdx = (selected.notes.length-1) - idx;
                       return (
-                        <div key={idx} style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'10px 14px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.5, borderLeft:'3px solid #12b76a', display:'flex', alignItems:'flex-start', gap:10, transition:'transform 0.15s' }}
+                        <div key={idx} style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'10px 14px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.5, borderLeft:'3px solid #12b76a', border:'1px solid rgba(255,255,255,0.05)', borderLeftWidth:3, display:'flex', alignItems:'flex-start', gap:10, transition:'transform 0.15s' }}
                           onMouseEnter={e => e.currentTarget.style.transform='translateX(3px)'}
                           onMouseLeave={e => e.currentTarget.style.transform='translateX(0)'}>
                           <span style={{ flex:1 }}>{n}</span>
@@ -1114,7 +1119,7 @@ export default function SolutionExpress() {
             </div>
 
             {/* Footer ultra-fiche */}
-            <div style={{ padding: isMobile?'12px 16px':'16px 28px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between' }}>
+            <div style={{ padding: isMobile?'12px 16px':'16px 28px', borderTop:'1px solid rgba(255,255,255,0.07)', display:'flex', justifyContent:'space-between', background:'rgba(3,8,26,0.98)' }}>
               <button className="btn btn-danger btn-sm" onClick={e => handleDelete(selected,e)}><Trash2 size={13}/> Supprimer</button>
               <button className="btn btn-primary btn-sm" onClick={e => openEdit(selected,e)}><Edit2 size={13}/> Modifier</button>
             </div>
@@ -1128,7 +1133,7 @@ export default function SolutionExpress() {
           ════════════════════════════════════════════════════════════════ */}
       {(modal==='add'||modal==='edit') && (
         <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) setModal(null); }}>
-          <div style={{ background:'var(--bg-card)', borderRadius: isMobile?0:16, width:'100%', maxWidth:680, margin:'auto', overflow:'hidden', boxShadow:'0 25px 60px rgba(0,0,0,0.3)', maxHeight: isMobile?'100vh':'90vh', display:'flex', flexDirection:'column' }}>
+          <div style={{ background:'rgba(3,8,26,0.98)', borderRadius: isMobile?0:16, width:'100%', maxWidth:680, margin:'auto', overflow:'hidden', boxShadow:`0 25px 80px rgba(0,0,0,0.6), 0 0 0 1px ${STATUS_COLORS[form.status]||'#12b76a'}30`, backdropFilter:'blur(40px)', maxHeight: isMobile?'100vh':'90vh', display:'flex', flexDirection:'column' }}>
 
             {/* Header modal avec gradient selon statut sélectionné */}
             <div style={{ background:`linear-gradient(135deg,${STATUS_COLORS[form.status]||'#12b76a'}18,transparent)`, borderBottom:`3px solid ${STATUS_COLORS[form.status]||'#12b76a'}`, padding:'20px 24px 0' }}>
@@ -1264,7 +1269,7 @@ export default function SolutionExpress() {
                     { label:'Internet',           icon:<Wifi size={14} color="#3b6cf8"/>,   color:'#3b6cf8', aKey:'fournisseurInternet', pKey:'fournisseurProposeInternet', list:FOURN_INTERNET },
                     { label:'Mobile',             icon:<Smartphone size={14} color="#12b76a"/>, color:'#12b76a', aKey:'fournisseurMobile', pKey:'fournisseurProposeMobile', list:FOURN_MOBILE },
                   ].map(({ label, icon, color, aKey, pKey, list }) => (
-                    <div key={label} style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'14px 16px' }}>
+                    <div key={label} style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', border:'1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>{icon}<span style={{ fontSize:13, fontWeight:600 }}>{label}</span></div>
                       <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr auto 1fr', gap:10, alignItems:'center' }}>
                         <div>
@@ -1337,7 +1342,7 @@ export default function SolutionExpress() {
                   </div>
 
                   {/* Toggle payée */}
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--bg-secondary)', borderRadius:12, padding:'16px 18px' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(4,10,24,0.95)', borderRadius:12, padding:'16px 18px', border:'1px solid rgba(255,255,255,0.05)' }}>
                     <div>
                       <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Statut du paiement</div>
                       <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:3 }}>
@@ -1379,7 +1384,7 @@ export default function SolutionExpress() {
             </div>
 
             {/* Footer modal */}
-            <div style={{ padding:'14px 24px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', background:'var(--bg-card)' }}>
+            <div style={{ padding:'14px 24px', borderTop:'1px solid rgba(255,255,255,0.07)', display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(3,8,26,0.98)' }}>
               {/* Indicateurs d'onglet */}
               <div style={{ display:'flex', gap:6 }}>
                 {TABS.map((_, idx) => (
@@ -1405,10 +1410,8 @@ export default function SolutionExpress() {
 
       {/* ── Keyframes animations ── */}
       <style>{`
-        @keyframes fadeSlideUp {
-          from { opacity:0; transform:translateY(16px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
+        @keyframes fadeSlideUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes commPulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(247,144,9,0); }
           50%       { box-shadow: 0 0 0 4px rgba(247,144,9,0.15); }

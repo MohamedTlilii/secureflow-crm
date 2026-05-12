@@ -138,8 +138,8 @@ export default function Database() {
     : dbStats.storagePercent >= 50 ? '#f79009' : '#12b76a';
 
   // ── Style colonnes tableau ────────────────────────────────────────────
-  const thStyle = { padding:'12px 16px', textAlign:'left', color:'var(--text-muted)', fontSize:11, fontWeight:600, background:'var(--bg-secondary)', borderBottom:'1px solid var(--border)' };
-  const tdStyle = { padding:'13px 16px', borderTop:'1px solid var(--border)', fontSize:13, color:'var(--text-primary)' };
+  const thStyle = { padding:'12px 16px', textAlign:'left', color:'var(--text-secondary)', fontSize:11, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', background:'rgba(2,8,16,0.95)', borderBottom:'1px solid rgba(255,255,255,0.08)' };
+  const tdStyle = { padding:'13px 16px', borderTop:'1px solid rgba(255,255,255,0.06)', fontSize:13, color:'var(--text-primary)' };
 
   return (
     <div className="animate-fade">
@@ -148,17 +148,14 @@ export default function Database() {
           HEADER GLASSMORPHISM
           Gradient bleu + stats inline + date
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{
-        background:'linear-gradient(135deg,rgba(59,108,248,0.1),rgba(18,183,106,0.06),rgba(59,108,248,0.04))',
-        borderRadius:20, padding: isMobile?'18px 16px':'22px 28px',
-        marginBottom:24, border:'1px solid rgba(59,108,248,0.18)',
-        boxShadow:'0 8px 32px rgba(59,108,248,0.08)',
-        backdropFilter:'blur(10px)',
-        animation:'fadeSlideUp 0.4s ease both'
-      }}>
+      <div style={{ padding:'1.5px', borderRadius:22, background:'linear-gradient(135deg,#e2287f60,#61DAFB30,#a78bfa25)', marginBottom:24, animation:'fadeSlideUp 0.4s ease both' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'20.5px', padding: isMobile?'18px 16px':'28px 32px', backdropFilter:'blur(40px)', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', top:-80, left:-60, width:280, height:280, borderRadius:'50%', background:'radial-gradient(circle,rgba(226,40,127,0.15) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:-50, right:-30, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(97,218,251,0.10) 0%,transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'relative', zIndex:1 }}>
         <div style={{ display:'flex', alignItems: isMobile?'flex-start':'center', justifyContent:'space-between', flexDirection: isMobile?'column':'row', gap: isMobile?12:0, marginBottom:16 }}>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#3b6cf8,#12b76a)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 20px rgba(59,108,248,0.4)', flexShrink:0 }}>
+            <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#e2287f,#a78bfa)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 6px 28px rgba(226,40,127,0.50)', flexShrink:0 }}>
               <DbIcon size={26} color="#fff"/>
             </div>
             <div>
@@ -178,25 +175,28 @@ export default function Database() {
         {/* Stats rapides */}
         <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(3,1fr)', gap:10 }}>
           {[
-            { label:'Total fiches',   value:leads.length,                                                   color:'#3b6cf8' },
-            { label:'Résultats',      value:displayData.length,                                             color:'#12b76a' },
-            { label:'Filtrés',        value:leads.length - displayData.length,                              color:'#f79009' },
+            { label:'Total fiches',   value:leads.length,                       color:'#e2287f' },
+            { label:'Résultats',      value:displayData.length,                 color:'#12b76a' },
+            { label:'Filtrés',        value:leads.length - displayData.length,  color:'#f79009' },
           ].map((s,i) => (
-            <div key={i} style={{ background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'10px 14px', border:'1px solid rgba(255,255,255,0.08)', animation:`fadeSlideUp 0.4s ${i*0.05}s ease both` }}>
-              <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
+            <div key={i} style={{ background:`${s.color}12`, borderRadius:10, padding:'10px 14px', border:`1px solid ${s.color}25`, animation:`fadeSlideUp 0.4s ${i*0.05}s ease both` }}>
+              <div style={{ fontSize:10, color:s.color, fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
               <div style={{ fontSize: isMobile?18:22, fontWeight:800 }}>
                 <AnimatedNumber value={s.value} decimals={0} color={s.color}/>
               </div>
             </div>
           ))}
         </div>
-      </div>
+        </div>{/* /zIndex:1 */}
+      </div>{/* /glassmorphism */}
+      </div>{/* /gradient border */}
 
       {/* ════════════════════════════════════════════════════════════════
           STOCKAGE MONGODB — card moderne avec barre animée
           ════════════════════════════════════════════════════════════════ */}
       {dbStats && (
-        <div style={{ background:'var(--bg-card)', borderRadius:16, padding: isMobile?'16px':'20px', marginBottom:24, border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)', animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
+        <div style={{ padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#12b76a50,#61DAFB25,#a78bfa15)', marginBottom:24, animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
+        <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)' }}>
 
           {/* Header storage */}
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
@@ -255,13 +255,15 @@ export default function Database() {
             </div>
           </div>
         </div>
+        </div>
       )}
 
       {/* ════════════════════════════════════════════════════════════════
           TABLEAU avec filtres inline
           Mobile : scroll horizontal / Desktop : tableau complet
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{ background:'var(--bg-card)', borderRadius:16, overflow:'hidden', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)', animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
+      <div style={{ padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#e2287f40,#a78bfa25,#61DAFB15)', animation:'fadeSlideUp 0.4s 0.15s ease both' }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', overflow:'hidden', backdropFilter:'blur(20px)' }}>
 
         {/* Header tableau */}
         <div style={{ padding:'14px 20px', borderBottom:'1px solid var(--border)', background:'linear-gradient(135deg,rgba(59,108,248,0.06),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
@@ -346,7 +348,10 @@ export default function Database() {
                 <tr>
                   <td colSpan="7" style={{ padding:60, textAlign:'center' }}>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'var(--text-muted)' }}>
-                      <div style={{ width:24, height:24, border:'2px solid rgba(59,108,248,0.2)', borderTopColor:'#3b6cf8', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+                      <div style={{ position:'relative', width:28, height:28 }}>
+                        <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#f472b6', animation:'spin 0.9s linear infinite' }}/>
+                        <div style={{ position:'absolute', inset:3, borderRadius:'50%', border:'1.5px solid transparent', borderBottomColor:'rgba(167,100,248,0.5)', animation:'spin 1.4s linear infinite reverse' }}/>
+                      </div>
                       Chargement...
                     </div>
                   </td>
@@ -447,13 +452,14 @@ export default function Database() {
           </div>
         )}
       </div>
+      </div>{/* /gradient border table */}
 
-      {/* Keyframes animations */}
       <style>{`
         @keyframes fadeSlideUp {
-          from { opacity:0; transform:translateY(14px); }
+          from { opacity:0; transform:translateY(16px); }
           to   { opacity:1; transform:translateY(0); }
         }
+        @keyframes spin { to { transform:rotate(360deg); } }
       `}</style>
     </div>
   );
