@@ -10,10 +10,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../api';
-import {
-  ArrowRight, X, MapPin, Phone, Mail, Building2, Calendar,
-  Shield, TrendingUp, Target, Zap
-} from 'lucide-react';
+import { ArrowRight, MapPin, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 
@@ -72,12 +69,7 @@ const AV = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
 // ════════════════════════════════════════════════════════════════════════════
 const normalizeStatus = (status) => status || 'new';
 
-const denormalizeStatus = (unifiedStatus) => unifiedStatus;
 
-
-const SOURCE_BADGE = {
-  solution_express: { label:'🏢 Solution Express', color:'#12b76a' },
-};
 
 // ════════════════════════════════════════════════════════════════════════════
 // COMPOSANT PRINCIPAL : Pipeline
@@ -87,7 +79,6 @@ export default function Pipeline() {
 
   // ── États ─────────────────────────────────────────────────────────────
   const [items, setItems]         = useState([]);
-  const [selected, setSelected]   = useState(null);
   const [loading, setLoading]     = useState(true);
   const [dragOver, setDragOver]   = useState(null); // colonne survolée pendant drag
   const [dragging, setDragging]   = useState(null); // item en cours de drag
@@ -125,7 +116,7 @@ export default function Pipeline() {
 
   // ── Mise à jour statut — logique originale intacte ─────────────────────
 const updateStatus = async (item, targetStage) => {
-    const newStatus = denormalizeStatus(targetStage, item.source);
+    const newStatus = targetStage;
     try {
       const { stage, source, displayName, ...cleanItem } = item;
       await api.put(`/api/solution-express/${item._id}`, { ...cleanItem, status: newStatus });
@@ -164,13 +155,14 @@ const updateStatus = async (item, targetStage) => {
     return ((parts[0]?.[0]||'')+(parts[1]?.[0]||'')).toUpperCase() || '?';
   };
 
-  const stageInfo = (key) => STAGES.find(s => s.key === key);
-
   // ── Stats pour le header ──────────────────────────────────────────────
-  const totalItems  = items.length;
-  const totalGagnes   = items.filter(i => i.stage === 'installe').length;
-  const totalPipeline = items.filter(i => ['contacted','proposal','installation_en_cours'].includes(i.stage)).length;
-  const convRate    = totalItems > 0 ? Math.round((totalGagnes / totalItems) * 100) : 0;
+  const totalItems   = items.length;
+  const totalGagnes  = items.filter(i => i.stage === 'installe').length;
+  const inCours      = items.filter(i => i.stage === 'installation_en_cours').length;
+  const proposals    = items.filter(i => i.stage === 'proposal').length;
+  const b2b          = items.filter(i => i.typeClient === 'b2b').length;
+  const b2c          = items.filter(i => i.typeClient === 'b2c').length;
+  const convRate     = totalItems > 0 ? Math.round((totalGagnes / totalItems) * 100) : 0;
 
   // ════════════════════════════════════════════════════════════════════════
   // RENDER
@@ -195,13 +187,13 @@ const updateStatus = async (item, targetStage) => {
             </div>
             <div>
               <h1 style={{ margin:0, fontSize: isMobile?20:24 }}>Pipeline</h1>
-              <p style={{ color:'var(--text-muted)', fontSize:13, margin:0, marginTop:2 }}>
-                Kanban · <span style={{ color:'#3b6cf8', fontWeight:700 }}>{totalItems}</span> fiche{totalItems!==1?'s':''}
+              <p style={{ color:'#ffffff', fontSize:13, margin:0, marginTop:2 }}>
+                <span style={{ color:'#3b6cf8', fontWeight:700 }}>{totalItems}</span> fiche{totalItems!==1?'s':''}
               </p>
             </div>
           </div>
           {!isMobile && (
-            <div style={{ fontSize:12, color:'var(--text-muted)', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)' }}>
+            <div style={{ fontSize:12, color:'#efefef', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)', textTransform:'capitalize' }}>
               {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
             </div>
           )}
@@ -210,24 +202,22 @@ const updateStatus = async (item, targetStage) => {
         {/* Ligne 2 : Stats rapides */}
         <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(4,1fr)', gap:10, marginBottom:16 }}>
           {[
-            { label:'Total',     value:totalItems,    color:'#3b6cf8' },
-            { label:'Gagnés',    value:totalGagnes,   color:'#12b76a' },
-            { label:'Pipeline',  value:totalPipeline, color:'#f79009' },
-            { label:'Taux conv', value:convRate,      color:'#a764f8', suffix:'%' },
+            { label:'Total fiches',          value:totalItems,   sub:`${b2b} B2B · ${b2c} B2C`,                   color:'#3b6cf8' },
+            { label:'Installés',             value:totalGagnes,  sub:`Taux d'installation ${convRate}%`,           color:'#22c55e' },
+            { label:'Installation en cours', value:inCours,      sub:`${inCours} en cours`,                        color:'#f97316' },
+            { label:'Soumissions',           value:proposals,    sub:`${proposals} fiche${proposals!==1?'s':''}`,  color:'#a764f8' },
           ].map((s,i) => (
             <div key={i} style={{ background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'10px 14px', border:'1px solid rgba(255,255,255,0.08)', animation:`fadeSlideUp 0.4s ${i*0.05}s ease both` }}>
-              <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
-              <div style={{ fontSize: isMobile?18:22, fontWeight:800 }}>
-                <AnimatedNumber value={s.value} decimals={0} color={s.color}/>
-                {s.suffix && <span style={{ color:s.color }}>{s.suffix}</span>}
-              </div>
+              <div style={{ fontSize:10, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
+              <div style={{ fontSize: isMobile?18:22, fontWeight:800, color:s.color }}>{s.value}</div>
+              <div style={{ fontSize:11, color:'#ffffff', marginTop:3 }}>{s.sub}</div>
             </div>
           ))}
         </div>
 
         {/* Barre conversion */}
         <div>
-          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:11, color:'var(--text-muted)' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:11, color:'#ffffff' }}>
             <span>Taux de conversion</span>
             <span style={{ fontWeight:700, color:'#12b76a' }}>{convRate}%</span>
           </div>
@@ -289,10 +279,10 @@ const updateStatus = async (item, targetStage) => {
                   <div style={{ display:'flex', alignItems:'center', gap:7 }}>
                     {/* Indicateur couleur */}
                     <div style={{ width:10, height:10, borderRadius:'50%', background:stage.color, boxShadow:`0 0 6px ${stage.color}60` }}/>
-                    <span style={{ fontSize:12, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:'0.06em' }}>{stage.label}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:'#ffffff', textTransform:'uppercase', letterSpacing:'0.06em' }}>{stage.label}</span>
                   </div>
                   {/* Badge compteur */}
-                  <span style={{ fontSize:12, fontWeight:800, background:stageItems.length > 0 ? `${stage.color}18` : 'var(--bg-card)', color:stageItems.length > 0 ? stage.color : 'var(--text-muted)', borderRadius:20, padding:'2px 10px', border:`1px solid ${stageItems.length > 0 ? stage.color+'30' : 'var(--border)'}`, transition:'all 0.3s' }}>
+                  <span style={{ fontSize:12, fontWeight:800, background:stageItems.length > 0 ? `${stage.color}18` : 'var(--bg-card)', color:stageItems.length > 0 ? stage.color : '#ffffff', borderRadius:20, padding:'2px 10px', border:`1px solid ${stageItems.length > 0 ? stage.color+'30' : 'var(--border)'}`, transition:'all 0.3s' }}>
                     {stageItems.length}
                   </span>
                 </div>
@@ -305,7 +295,6 @@ const updateStatus = async (item, targetStage) => {
                 {/* ── Cards de la colonne ── */}
                 <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1 }}>
                   {stageItems.map((p, i) => {
-                    const srcBadge  = SOURCE_BADGE[p.source];
                     const isSE      = p.source === 'solution_express';
                     const isDragging = dragging === p._id;
 
@@ -314,7 +303,6 @@ const updateStatus = async (item, targetStage) => {
                         draggable
                         onDragStart={e => onDragStart(e, p._id, p.source, p)}
                         onDragEnd={onDragEnd}
-                        onClick={() => setSelected(p)}
                         style={{
                           background:'rgba(4,10,24,0.97)',
                           border:`1px solid ${stage.color}25`,
@@ -348,13 +336,13 @@ const updateStatus = async (item, targetStage) => {
                           <div className={`avatar ${AV[i%AV.length]}`} style={{ width:32, height:32, fontSize:11, flexShrink:0 }}>{ini(p)}</div>
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ fontSize:13, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', color:'var(--text-primary)' }}>{p.displayName}</div>
-                            {p.entreprise && <div style={{ fontSize:11, color:'var(--text-muted)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', marginTop:1 }}>{p.entreprise}</div>}
+                            {(p.prenom||p.nom) && <div style={{ fontSize:11, color:'#ffffff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', marginTop:1 }}>{`${p.prenom||''} ${p.nom||''}`.trim()}</div>}
                           </div>
                         </div>
 
                         {/* Ville */}
                         {p.ville && (
-                          <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:7, display:'flex', alignItems:'center', gap:4 }}>
+                          <div style={{ fontSize:11, color:'#ffffff', marginBottom:7, display:'flex', alignItems:'center', gap:4 }}>
                             <MapPin size={9}/> {p.ville}
                           </div>
                         )}
@@ -382,12 +370,14 @@ const updateStatus = async (item, targetStage) => {
                           </div>
                         )}
 
-                        {/* Badge source */}
-                        <div style={{ marginBottom: stage.key!=='installe'&&stage.key!=='installation_annulee' ? 8 : 0 }}>
-                          <span style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:`${srcBadge?.color}15`, color:srcBadge?.color, border:`1px solid ${srcBadge?.color}30` }}>
-                            {srcBadge?.label}
-                          </span>
-                        </div>
+                        {/* Commission */}
+                        {(p.commissionTotale||0) > 0 && (
+                          <div style={{ marginBottom: stage.key!=='installe'&&stage.key!=='installation_annulee' ? 8 : 0 }}>
+                            <span style={{ fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'rgba(18,183,106,0.12)', color:'#12b76a', border:'1px solid rgba(18,183,106,0.25)' }}>
+                              💰 {p.commissionTotale} $
+                            </span>
+                          </div>
+                        )}
 
                         {/* Bouton Avancer */}
                         {stage.key !== 'installe' && stage.key !== 'installation_annulee' && (
@@ -408,7 +398,7 @@ const updateStatus = async (item, targetStage) => {
 
                   {/* État vide */}
                   {stageItems.length === 0 && (
-                    <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text-muted)', fontSize:12, borderRadius:10, border:`2px dashed ${isDropTarget ? stage.color : 'var(--border)'}`, transition:'border-color 0.2s', background: isDropTarget ? `${stage.color}04` : 'transparent' }}>
+                    <div style={{ textAlign:'center', padding:'24px 0', color:'#ffffff', fontSize:12, borderRadius:10, border:`2px dashed ${isDropTarget ? stage.color : 'var(--border)'}`, transition:'border-color 0.2s', background: isDropTarget ? `${stage.color}04` : 'transparent' }}>
                       {isDropTarget ? `Déposer ici` : 'Vide'}
                     </div>
                   )}
@@ -419,136 +409,6 @@ const updateStatus = async (item, targetStage) => {
         </div>
       )}
 
-      {/* ════════════════════════════════════════════════════════════════
-          MODAL DÉTAIL — glassmorphism + toutes les infos
-          ════════════════════════════════════════════════════════════════ */}
-      {selected && (
-        <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) setSelected(null); }}>
-          <div style={{ background:'rgba(3,8,26,0.98)', borderRadius: isMobile?0:16, width:'100%', maxWidth:560, margin:'auto', overflow:'hidden', boxShadow:`0 25px 60px rgba(0,0,0,0.5), 0 0 0 1.5px ${stageInfo(selected.stage)?.color||'#a78bfa'}40`, backdropFilter:'blur(40px)' }}>
-
-            {/* Header modal avec gradient selon statut */}
-            <div style={{ background:`linear-gradient(135deg,${stageInfo(selected.stage)?.color||'#3b6cf8'}18,transparent)`, borderBottom:`3px solid ${stageInfo(selected.stage)?.color||'#3b6cf8'}`, padding: isMobile?'18px 16px':'22px 24px' }}>
-              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                  <div className="avatar av-blue" style={{ width:48, height:48, fontSize:16 }}>{ini(selected)}</div>
-                  <div>
-                    <h2 style={{ margin:'0 0 4px', fontSize: isMobile?17:20 }}>{selected.displayName}</h2>
-                    <div style={{ fontSize:12, color:'var(--text-muted)' }}>{selected.entreprise||'—'}</div>
-                  </div>
-                </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}><X size={16}/></button>
-              </div>
-
-              {/* Badges statut + source */}
-              <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap' }}>
-                <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20, background:`${stageInfo(selected.stage)?.color}20`, color:stageInfo(selected.stage)?.color, border:`1px solid ${stageInfo(selected.stage)?.color}40` }}>
-                  {stageInfo(selected.stage)?.emoji} {stageInfo(selected.stage)?.label}
-                </span>
-                <span style={{ fontSize:10, fontWeight:600, padding:'3px 10px', borderRadius:20, background:`${SOURCE_BADGE[selected.source]?.color}15`, color:SOURCE_BADGE[selected.source]?.color, border:`1px solid ${SOURCE_BADGE[selected.source]?.color}30` }}>
-                  {SOURCE_BADGE[selected.source]?.label}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ padding: isMobile?'16px':'22px 24px' }}>
-
-              {/* Infos en grille */}
-              <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr 1fr', gap:10, marginBottom:16 }}>
-                {[
-                  ['Ville',      selected.ville      ||'—', MapPin],
-                  ['Téléphone',  selected.telephone  ||'—', Phone],
-                  ['Email',      selected.email      ||'—', Mail],
-                  ['Entreprise', selected.entreprise ||'—', Building2],
-                  ['Ajouté le',  new Date(selected.createdAt).toLocaleDateString('fr-CA'), Calendar],
-                  ['Statut',     stageInfo(selected.stage)?.label || '—', Target],
-                ].map(([label, val, Icon]) => (
-                  <div key={label} style={{ background:'rgba(5,12,32,0.9)', borderRadius:10, padding:'10px 12px', transition:'transform 0.15s', border:'1px solid rgba(255,255,255,0.07)' }}
-                    onMouseEnter={e => e.currentTarget.style.transform='translateX(3px)'}
-                    onMouseLeave={e => e.currentTarget.style.transform='translateX(0)'}>
-                    <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginBottom:3, display:'flex', alignItems:'center', gap:4 }}>
-                      <Icon size={9}/>{label}
-                    </div>
-                    <div style={{ fontSize:13, color:'var(--text-primary)', wordBreak:'break-word' }}>{val}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Infos Solution Express */}
-              {selected.source === 'solution_express' && (
-                <>
-                  {(selected.produits||[]).length > 0 && (
-                    <div style={{ marginBottom:14 }}>
-                      <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Produits</div>
-                      <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                        {selected.produits.map(code => (
-                          <span key={code} style={{ fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:20, background:'rgba(18,183,106,0.1)', color:'#12b76a', border:'1px solid rgba(18,183,106,0.2)' }}>
-                            {code}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {selected.qualificationSysteme && selected.qualificationSysteme !== 'inconnu' && (
-                    <div style={{ marginBottom:14, background:'var(--bg-secondary)', borderRadius:10, padding:'10px 12px' }}>
-                      <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Qualification système</div>
-                      <div style={{ fontSize:13, color:'var(--text-primary)' }}>🔒 {selected.qualificationSysteme?.replace(/_/g,' ')}</div>
-                    </div>
-                  )}
-                  {selected.summary && (
-                    <div style={{ marginBottom:14 }}>
-                      <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Résumé</div>
-                      <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'12px 14px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.6, borderLeft:'3px solid #12b76a' }}>
-                        {selected.summary}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Message IA */}
-              {selected.aiMessage && (
-                <div style={{ marginBottom:14 }}>
-                  <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Message IA</div>
-                  <div style={{ background:'var(--bg-secondary)', borderRadius:10, padding:'12px 14px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.6 }}>
-                    {selected.aiMessage}
-                  </div>
-                </div>
-              )}
-
-              {/* Changer le statut */}
-              <div style={{ marginBottom:16 }}>
-                <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Changer le statut</div>
-                <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                  {STAGES.map(s => (
-                    <button key={s.key}
-                      onClick={async () => { await updateStatus(selected, s.key); setSelected(null); }}
-                      style={{ padding:'5px 12px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
-                        border:`2px solid ${selected.stage===s.key?s.color:'var(--border)'}`,
-                        background:selected.stage===s.key?s.color:'var(--bg-secondary)',
-                        color:selected.stage===s.key?'#fff':'var(--text-secondary)',
-                        transform: selected.stage===s.key ? 'scale(1.05)' : 'scale(1)' }}
-                      onMouseEnter={e => { if(selected.stage!==s.key) { e.currentTarget.style.borderColor=s.color; e.currentTarget.style.color=s.color; }}}
-                      onMouseLeave={e => { if(selected.stage!==s.key) { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--text-secondary)'; }}}>
-                      {s.emoji} {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer modal */}
-            <div style={{ padding: isMobile?'12px 16px':'14px 24px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between', background:'var(--bg-card)' }}>
-              <button className="btn" onClick={() => setSelected(null)}>Fermer</button>
-              {selected.stage !== 'installe' && selected.stage !== 'installation_annulee' && (
-                <button className="btn btn-primary" onClick={async e => { await advance(selected, e); setSelected(null); }}
-                  style={{ display:'flex', alignItems:'center', gap:6 }}>
-                  Avancer <ArrowRight size={13}/>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Keyframes animations */}
       <style>{`

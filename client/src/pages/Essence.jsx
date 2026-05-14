@@ -73,13 +73,13 @@ function NoteModal({ mois, onSave, onClose }) {
           <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>
             📝 Note — {MOIS_FR[mois?.mois]} {mois?.annee}
           </div>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:20 }}><X size={18}/></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#ffffff', fontSize:20 }}><X size={18}/></button>
         </div>
         <textarea value={txt} onChange={e => setTxt(e.target.value)} rows={4}
           placeholder="Ex: Reçu en retard, paiement partiel..."
           style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid rgba(245,158,11,0.3)', background:'var(--bg-secondary)', color:'var(--text-primary)', fontSize:13, resize:'vertical', outline:'none' }}/>
         <div style={{ display:'flex', gap:10, marginTop:14, justifyContent:'flex-end' }}>
-          <button onClick={onClose} style={{ padding:'8px 18px', borderRadius:10, border:'1px solid var(--border)', background:'transparent', color:'var(--text-muted)', cursor:'pointer', fontWeight:600, fontSize:13 }}>Annuler</button>
+          <button onClick={onClose} style={{ padding:'8px 18px', borderRadius:10, border:'1px solid var(--border)', background:'transparent', color:'#ffffff', cursor:'pointer', fontWeight:600, fontSize:13 }}>Annuler</button>
           <button onClick={() => onSave(txt)} style={{ padding:'8px 20px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#f59e0b,#ea580c)', color:'#fff', cursor:'pointer', fontWeight:700, fontSize:13 }}>Sauvegarder</button>
         </div>
       </div>
@@ -243,7 +243,7 @@ const toggleRecu = async (doc) => {
             </div>
             <div>
               <h1 style={{ margin:0, fontSize: isMobile ? 20 : 24 }}>Indemnité Carburant</h1>
-              <p style={{ color:'var(--text-muted)', fontSize:13, margin:'2px 0 0' }}>
+              <p style={{ color:'#ffffff', fontSize:13, margin:'2px 0 0' }}>
                 5 DT/jour · Lun → Ven ·{' '}
                 <span style={{ color:'#f59e0b', fontWeight:700 }}>{stats?.totalJours || 0}</span> jours ouvrés
               </p>
@@ -270,7 +270,7 @@ const toggleRecu = async (doc) => {
         {/* Barre de progression */}
         <div style={{ marginTop:20 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-            <span style={{ fontSize:12, color:'var(--text-muted)', fontWeight:600 }}>
+            <span style={{ fontSize:12, color:'#ffffff', fontWeight:600 }}>
               {stats?.moisRecus || 0} / {stats?.moisTotal || 0} mois reçus
             </span>
             <span style={{ fontSize:14, fontWeight:800, color: pctColor }}>
@@ -302,7 +302,7 @@ const toggleRecu = async (doc) => {
             <div style={{ fontSize: isMobile?22:28, fontWeight:800, color:'#f59e0b', lineHeight:1 }}>
               <AnimatedNumber value={stats?.totalAttendu || 0} color="#f59e0b"/>
             </div>
-            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>
+            <div style={{ fontSize:11, color:'#ffffff', marginTop:6 }}>
               {stats?.moisTotal || 0} mois · {fmtMoney((stats?.totalAttendu || 0) / Math.max(stats?.moisTotal || 1, 1))}/mois moy.
             </div>
           </div>
@@ -314,7 +314,7 @@ const toggleRecu = async (doc) => {
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>✓ Reçu</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={stats?.totalRecu || 0} color="#12b76a"/></div>
-          <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>{stats?.moisRecus || 0} mois payés</div>
+          <div style={{ fontSize:10, color:'#ffffff', marginTop:6 }}>{stats?.moisRecus || 0} mois payés</div>
         </div>
         </div>
 
@@ -323,7 +323,7 @@ const toggleRecu = async (doc) => {
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#f04438', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>⏳ Manquant</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={stats?.totalManquant || 0} color="#f04438"/></div>
-          <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>{(stats?.moisTotal||0) - (stats?.moisRecus||0)} mois</div>
+          <div style={{ fontSize:10, color:'#ffffff', marginTop:6 }}>{(stats?.moisTotal||0) - (stats?.moisRecus||0)} mois</div>
         </div>
         </div>
 
@@ -332,7 +332,7 @@ const toggleRecu = async (doc) => {
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#61DAFB', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>📅 Jours</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={stats?.totalJours || 0} decimals={0} suffix="" color="#61DAFB"/></div>
-          <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>jours ouvrés</div>
+          <div style={{ fontSize:10, color:'#ffffff', marginTop:6 }}>jours ouvrés</div>
         </div>
         </div>
 
@@ -343,7 +343,7 @@ const toggleRecu = async (doc) => {
           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:4, marginBottom:4 }}>
             <input type="number" value={simJours} min={1} max={31} onChange={e => setSimJours(parseInt(e.target.value)||0)}
               style={{ width:44, padding:'3px 6px', borderRadius:6, border:'1px solid rgba(167,100,248,0.3)', background:'var(--bg-secondary)', color:'var(--text-primary)', fontSize:13, fontWeight:700, textAlign:'center', outline:'none' }}/>
-            <span style={{ fontSize:10, color:'var(--text-muted)' }}>j</span>
+            <span style={{ fontSize:10, color:'#ffffff' }}>j</span>
           </div>
           <div style={{ fontSize: isMobile?14:17, fontWeight:800, color:'#a78bfa', lineHeight:1 }}>{(simJours * 5).toFixed(3)} TND</div>
         </div>
@@ -361,14 +361,14 @@ const toggleRecu = async (doc) => {
             <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>
               {vueMode === 'annee' ? 'Carburant par mois' : 'Tendance cumulative'}
             </div>
-            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{annee}</div>
+            <div style={{ fontSize:11, color:'#ffffff', marginTop:2 }}>{annee}</div>
           </div>
           <div style={{ display:'flex', gap:3, background:'rgba(0,0,0,0.08)', borderRadius:10, padding:3 }}>
             {[['annee','Barres',BarChart2],['cumul','Cumul',TrendingUp]].map(([k,l,Icon]) => (
               <button key={k} onClick={() => setVueMode(k)}
                 style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'none', transition:'all 0.2s',
                   background: vueMode===k ? '#f59e0b' : 'transparent',
-                  color: vueMode===k ? '#fff' : 'var(--text-muted)',
+                  color: vueMode===k ? '#fff' : '#ffffff',
                   boxShadow: vueMode===k ? '0 2px 8px rgba(245,158,11,0.4)' : 'none' }}>
                 <Icon size={12}/> {!isMobile && l}
               </button>
@@ -379,7 +379,7 @@ const toggleRecu = async (doc) => {
         <ResponsiveContainer width="100%" height={isMobile ? 130 : 170}>
           {vueMode === 'annee' ? (
             <BarChart data={chartBar} barSize={isMobile ? 14 : 22} margin={{ top:0, right:0, bottom:0, left:0 }}>
-              <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize: isMobile?8:10 }} axisLine={false} tickLine={false}/>
+              <XAxis dataKey="name" tick={{ fill:'#ffffff', fontSize: isMobile?8:10 }} axisLine={false} tickLine={false}/>
               <YAxis hide/>
               <Tooltip contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, fontSize:12 }}
                 formatter={v => [fmtMoney(v), '']} cursor={{ fill:'rgba(255,255,255,0.04)' }}/>
@@ -398,7 +398,7 @@ const toggleRecu = async (doc) => {
                   <stop offset="95%" stopColor="#12b76a" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize: isMobile?8:10 }} axisLine={false} tickLine={false}/>
+              <XAxis dataKey="name" tick={{ fill:'#ffffff', fontSize: isMobile?8:10 }} axisLine={false} tickLine={false}/>
               <YAxis hide/>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)"/>
               <Tooltip contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, fontSize:12 }}
@@ -411,10 +411,10 @@ const toggleRecu = async (doc) => {
 
         {/* Légende */}
         <div style={{ display:'flex', gap:16, marginTop:10, flexWrap:'wrap' }}>
-          <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'var(--text-muted)' }}>
+          <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#ffffff' }}>
             <span style={{ width:10, height:10, borderRadius:2, background:'#12b76a', display:'inline-block' }}/> Reçu
           </span>
-          <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'var(--text-muted)' }}>
+          <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#ffffff' }}>
             <span style={{ width:10, height:10, borderRadius:2, background:'#f59e0b', opacity:0.7, display:'inline-block' }}/> En attente
           </span>
         </div>
@@ -454,18 +454,18 @@ const toggleRecu = async (doc) => {
                     <div style={{ fontSize: isMobile?13:14, fontWeight:700, color:'var(--text-primary)' }}>
                       {MOIS_FR[doc.mois]} {doc.annee}
                     </div>
-                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                    <div style={{ fontSize:11, color:'#ffffff', marginTop:2, display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
                       <span style={{ display:'flex', alignItems:'center', gap:3 }}><Calendar size={9}/>{doc.joursOuvres} jours ouvrés</span>
                       {doc.recu && doc.dateReception && !isMobile && (
                         <span style={{ color:'#12b76a', fontWeight:600 }}>· Reçu le {fmtDate(doc.dateReception)}</span>
                       )}
-                      {hasNote && <span style={{ color:'var(--text-muted)', fontStyle:'italic', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:120 }}>📝 {doc.note}</span>}
+                      {hasNote && <span style={{ color:'#ffffff', fontStyle:'italic', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:120 }}>📝 {doc.note}</span>}
                     </div>
                   </div>
 
                   {/* Taux — masqué mobile */}
                   {!isMobile && (
-                    <div style={{ textAlign:'right', flexShrink:0, fontSize:11, color:'var(--text-muted)' }}>
+                    <div style={{ textAlign:'right', flexShrink:0, fontSize:11, color:'#ffffff' }}>
                       {doc.joursOuvres} × {doc.montantParJour} TND
                     </div>
                   )}
@@ -480,9 +480,9 @@ const toggleRecu = async (doc) => {
                   {/* Bouton note */}
                   {!isMobile && (
                     <button onClick={() => setNoteModal(doc)}
-                      style={{ padding:'6px 10px', borderRadius:10, border:'1px solid var(--border)', background:'transparent', color:'var(--text-muted)', cursor:'pointer', transition:'all 0.2s', flexShrink:0 }}
+                      style={{ padding:'6px 10px', borderRadius:10, border:'1px solid var(--border)', background:'transparent', color:'#ffffff', cursor:'pointer', transition:'all 0.2s', flexShrink:0 }}
                       onMouseEnter={e => { e.currentTarget.style.color='#f59e0b'; e.currentTarget.style.borderColor='rgba(245,158,11,0.4)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.color='var(--text-muted)'; e.currentTarget.style.borderColor='var(--border)'; }}>
+                      onMouseLeave={e => { e.currentTarget.style.color='#ffffff'; e.currentTarget.style.borderColor='var(--border)'; }}>
                       <FileText size={13}/>
                     </button>
                   )}
@@ -504,11 +504,11 @@ const toggleRecu = async (doc) => {
             })}
           </div>
         ) : (
-          <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text-muted)' }}>
+          <div style={{ textAlign:'center', padding:'60px 20px', color:'#ffffff' }}>
             <div style={{ width:64, height:64, borderRadius:18, background:'rgba(245,158,11,0.08)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', border:'1px solid rgba(245,158,11,0.15)' }}>
               <Fuel size={30} color="#f59e0b" style={{ opacity:0.4 }}/>
             </div>
-            <div style={{ fontSize:14, fontWeight:600, color:'var(--text-secondary)', marginBottom:6 }}>Aucune donnée pour {annee}</div>
+            <div style={{ fontSize:14, fontWeight:600, color:'#ffffff', marginBottom:6 }}>Aucune donnée pour {annee}</div>
             <div style={{ fontSize:12 }}>Les mois apparaîtront automatiquement</div>
           </div>
         )}

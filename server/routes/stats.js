@@ -102,13 +102,13 @@ router.get('/', auth, async (req, res) => {
       ? avecComm
       : avecComm.filter(x => new Date(x.dateVente || x.createdAt) >= debut);
 
-    const totalGagne = avecComm.reduce((s,x) => s + (x.commissionTotale||0), 0);
-    const totalPaye  = avecComm.filter(x => x.commissionPayee).reduce((s,x) => s + (x.commissionTotale||0), 0);
-    const commissions = avecComm.length > 0 ? {
+    const totalGagne = periodeComm.reduce((s,x) => s + (x.commissionTotale||0), 0);
+    const totalPaye  = periodeComm.filter(x => x.commissionPayee).reduce((s,x) => s + (x.commissionTotale||0), 0);
+    const commissions = periodeComm.length > 0 ? {
       totalGagne: Math.round(totalGagne * 100) / 100,
       totalPaye:  Math.round(totalPaye  * 100) / 100,
       enAttente:  Math.round(Math.max(0, totalGagne - totalPaye) * 100) / 100,
-      moyenne:    Math.round((avecComm.length > 0 ? totalGagne / avecComm.length : 0) * 100) / 100,
+      moyenne:    Math.round((periodeComm.length > 0 ? totalGagne / periodeComm.length : 0) * 100) / 100,
       historique: periodeComm,
     } : null;
 

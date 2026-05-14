@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 
 
 // ── Helpers format ────────────────────────────────────────────────────────
-const fmtDate  = d => d ? new Date(d).toLocaleDateString('fr-CA', { year:'numeric', month:'short', day:'numeric' }) : '—';
+const fmtDate  = d => d ? new Date(d).toLocaleDateString('fr-CA', { year:'numeric', month:'short', day:'numeric', timeZone:'UTC' }) : '—';
 const fmtMoney = v => `${(v||0).toFixed(2)} TND`;
 
 // ── Hook responsive ───────────────────────────────────────────────────────
@@ -63,8 +63,7 @@ function AnimatedNumber({ value, decimals = 2, suffix = ' TND', color }) {
 // ════════════════════════════════════════════════════════════════════════════
 function CalendrierModerne({ commissions, onSelectDate, selectedDate }) {
   const today = new Date();
-  const [current, setCurrent]   = useState({ year: today.getFullYear(), month: today.getMonth() });
-  const [animDir, setAnimDir]   = useState(null);
+  const [current, setCurrent] = useState({ year: today.getFullYear(), month: today.getMonth() });
 
   const daysInMonth = new Date(current.year, current.month + 1, 0).getDate();
   const firstDay    = new Date(current.year, current.month, 1).getDay();
@@ -72,22 +71,14 @@ function CalendrierModerne({ commissions, onSelectDate, selectedDate }) {
   const monthName   = new Date(current.year, current.month).toLocaleDateString('fr-CA', { month:'long', year:'numeric' });
   const days        = ['L','M','M','J','V','S','D'];
 
-  const prevMonth = () => {
-    setAnimDir('left');
-    setTimeout(() => setAnimDir(null), 300);
-    setCurrent(c => ({ year: c.month===0?c.year-1:c.year, month: c.month===0?11:c.month-1 }));
-  };
-  const nextMonth = () => {
-    setAnimDir('right');
-    setTimeout(() => setAnimDir(null), 300);
-    setCurrent(c => ({ year: c.month===11?c.year+1:c.year, month: c.month===11?0:c.month+1 }));
-  };
+  const prevMonth = () => setCurrent(c => ({ year: c.month===0?c.year-1:c.year, month: c.month===0?11:c.month-1 }));
+  const nextMonth = () => setCurrent(c => ({ year: c.month===11?c.year+1:c.year, month: c.month===11?0:c.month+1 }));
 
   // Index YYYY-MM-DD → {total, payee, attente, items}
   const byDate = {};
   commissions.forEach(c => {
     const d   = new Date(c.dateVente || c.createdAt);
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
     if (!byDate[key]) byDate[key] = { total:0, payee:0, attente:0, items:[] };
     byDate[key].total += c.commissionTotale||0;
     if (c.commissionPayee) byDate[key].payee  += c.commissionTotale||0;
@@ -105,9 +96,9 @@ function CalendrierModerne({ commissions, onSelectDate, selectedDate }) {
 
       {/* Header gradient vert */}
       <div style={{ padding:'16px 20px', background:'linear-gradient(135deg,rgba(18,183,106,0.12),rgba(18,183,106,0.04))', borderBottom:'1px solid rgba(18,183,106,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <button onClick={prevMonth} style={{ width:32, height:32, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-card)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', transition:'all 0.15s' }}
+        <button onClick={prevMonth} style={{ width:32, height:32, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-card)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#ffffff', transition:'all 0.15s' }}
           onMouseEnter={e => { e.currentTarget.style.background='var(--bg-secondary)'; e.currentTarget.style.color='#12b76a'; }}
-          onMouseLeave={e => { e.currentTarget.style.background='var(--bg-card)'; e.currentTarget.style.color='var(--text-muted)'; }}>
+          onMouseLeave={e => { e.currentTarget.style.background='var(--bg-card)'; e.currentTarget.style.color='#ffffff'; }}>
           <ChevronLeft size={16}/>
         </button>
         <div style={{ textAlign:'center' }}>
@@ -118,19 +109,19 @@ function CalendrierModerne({ commissions, onSelectDate, selectedDate }) {
             </div>
           )}
         </div>
-        <button onClick={nextMonth} style={{ width:32, height:32, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-card)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', transition:'all 0.15s' }}
+        <button onClick={nextMonth} style={{ width:32, height:32, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-card)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#ffffff', transition:'all 0.15s' }}
           onMouseEnter={e => { e.currentTarget.style.background='var(--bg-secondary)'; e.currentTarget.style.color='#12b76a'; }}
-          onMouseLeave={e => { e.currentTarget.style.background='var(--bg-card)'; e.currentTarget.style.color='var(--text-muted)'; }}>
+          onMouseLeave={e => { e.currentTarget.style.background='var(--bg-card)'; e.currentTarget.style.color='#ffffff'; }}>
           <ChevronRight size={16}/>
         </button>
       </div>
 
       {/* Corps calendrier */}
-      <div style={{ padding:'16px', transition:'opacity 0.25s', opacity: animDir ? 0.5 : 1 }}>
+      <div style={{ padding:'16px' }}>
         {/* Jours semaine */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:8 }}>
           {days.map((d,i) => (
-            <div key={i} style={{ textAlign:'center', fontSize:10, color:'var(--text-muted)', fontWeight:700, padding:'4px 0' }}>{d}</div>
+            <div key={i} style={{ textAlign:'center', fontSize:10, color:'#ffffff', fontWeight:700, padding:'4px 0' }}>{d}</div>
           ))}
         </div>
 
@@ -176,7 +167,7 @@ function CalendrierModerne({ commissions, onSelectDate, selectedDate }) {
         </div>
 
         {/* Légende */}
-        <div style={{ display:'flex', gap:12, marginTop:14, paddingTop:12, borderTop:'1px solid var(--border)', fontSize:10, color:'var(--text-muted)', flexWrap:'wrap' }}>
+        <div style={{ display:'flex', gap:12, marginTop:14, paddingTop:12, borderTop:'1px solid var(--border)', fontSize:10, color:'#ffffff', flexWrap:'wrap' }}>
           <span style={{ display:'flex', alignItems:'center', gap:4 }}><span style={{ width:7, height:7, borderRadius:'50%', background:'#12b76a', display:'inline-block' }}/> Payée</span>
           <span style={{ display:'flex', alignItems:'center', gap:4 }}><span style={{ width:7, height:7, borderRadius:'50%', background:'#f79009', display:'inline-block' }}/> En attente</span>
           <span style={{ display:'flex', alignItems:'center', gap:4 }}><span style={{ width:7, height:7, borderRadius:'50%', background:'#3b6cf8', display:'inline-block' }}/> Aujourd'hui</span>
@@ -198,12 +189,15 @@ export default function Commissions() {
   const [annee, setAnnee]                   = useState('tout');
   const [selectedDate, setSelectedDate]     = useState(null);
   const [selectedVentes, setSelectedVentes] = useState([]);
+  const [resumeFiche, setResumeFiche]       = useState(null);
 
   // Fetch commissions
   const fetchFiches = useCallback(async () => {
     try {
       const r = await api.get('/api/solution-express');
-      setFiches((r.data||[]).filter(x => (x.commissionTotale||0) > 0 || (x.commissionFixe||0) > 0));
+      const fresh = (r.data||[]).filter(x => (x.commissionTotale||0) > 0 || (x.commissionFixe||0) > 0);
+      setFiches(fresh);
+      return fresh;
     } catch { toast.error('Erreur chargement'); }
     finally { setLoading(false); }
   }, []);
@@ -219,17 +213,17 @@ export default function Commissions() {
         datePaiementCommission: !fiche.commissionPayee ? new Date().toISOString() : null,
       });
       toast.success(!fiche.commissionPayee ? '✓ Commission payée !' : 'Marquée non payée');
-      setSelectedVentes(prev => prev.map(v => v._id === fiche._id ? {...v, commissionPayee: !fiche.commissionPayee} : v));
-      fetchFiches();
+      const fresh = await fetchFiches();
+      if (fresh) setSelectedVentes(prev => prev.map(v => fresh.find(f => f._id === v._id) || v));
     } catch { toast.error('Erreur'); }
   };
 
   // Années dynamiques — seulement celles qui ont des données
-  const annees = [...new Set(fiches.map(c => new Date(c.dateVente || c.createdAt).getFullYear()))].sort((a,b) => b-a);
+  const annees = [...new Set(fiches.map(c => new Date(c.dateVente || c.createdAt).getUTCFullYear()))].sort((a,b) => b-a);
 
   // Filtrage
   const filtered = fiches.filter(c => {
-    const yr      = new Date(c.dateVente || c.createdAt).getFullYear();
+    const yr      = new Date(c.dateVente || c.createdAt).getUTCFullYear();
     const anneeOk = annee === 'tout' || String(yr) === annee;
     const statOk  = filtre === 'tout' ? true : filtre === 'payee' ? c.commissionPayee : !c.commissionPayee;
     return anneeOk && statOk;
@@ -249,9 +243,10 @@ export default function Commissions() {
   // Graphique par mois
   const MOIS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
   const chartData = MOIS.map((name, idx) => {
-    const total = filtered.filter(c => new Date(c.dateVente || c.createdAt).getMonth() === idx)
-      .reduce((s,c) => s + (c.commissionTotale||0), 0);
-    return { name, total };
+    const moisFiches = filtered.filter(c => new Date(c.dateVente || c.createdAt).getUTCMonth() === idx);
+    const total = moisFiches.reduce((s,c) => s + (c.commissionTotale||0), 0);
+    const count = moisFiches.length;
+    return { name, total, count };
   });
 
   if (loading) return (
@@ -287,7 +282,7 @@ export default function Commissions() {
             </div>
             <div>
               <h1 style={{ margin:0, fontSize: isMobile ? 20 : 24 }}>Commissions</h1>
-              <p style={{ color:'var(--text-muted)', fontSize:13, margin:0, marginTop:2 }}>
+              <p style={{ color:'#ffffff', fontSize:13, margin:0, marginTop:2 }}>
                 Solution Express · <span style={{ color:'#12b76a', fontWeight:700 }}>{fiches.length}</span> vente{fiches.length!==1?'s':''}
               </p>
             </div>
@@ -301,7 +296,7 @@ export default function Commissions() {
                 <button key={k} onClick={() => setFiltre(k)}
                   style={{ padding: isMobile ? '5px 10px' : '5px 14px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'none', transition:'all 0.2s',
                     background: filtre===k ? (k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)') : 'transparent',
-                    color: filtre===k ? '#fff' : 'var(--text-muted)',
+                    color: filtre===k ? '#fff' : '#ffffff',
                     boxShadow: filtre===k ? '0 2px 8px rgba(0,0,0,0.2)' : 'none' }}>
                   {l}
                 </button>
@@ -319,7 +314,7 @@ export default function Commissions() {
         {/* Barre de progression payé seulement */}
         <div style={{ marginTop:20 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-            <span style={{ fontSize:12, color:'var(--text-muted)', fontWeight:600 }}>
+            <span style={{ fontSize:12, color:'#ffffff', fontWeight:600 }}>
               {filtered.filter(c=>c.commissionPayee).length} / {filtered.length} ventes payées
             </span>
             <span style={{ fontSize:14, fontWeight:800, color: pctPaye >= 70 ? '#12b76a' : pctPaye >= 40 ? '#f79009' : '#f04438' }}>
@@ -349,7 +344,7 @@ export default function Commissions() {
           <div>
             <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>Total gagné</div>
             <div style={{ fontSize: isMobile?22:28, fontWeight:800, color:'#12b76a', lineHeight:1 }}><AnimatedNumber value={totalGagne} color="#12b76a"/></div>
-            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>{filtered.length} vente{filtered.length!==1?'s':''} · moy. {fmtMoney(totalGagne/Math.max(filtered.length,1))}</div>
+            <div style={{ fontSize:11, color:'#ffffff', marginTop:6 }}>{filtered.length} vente{filtered.length!==1?'s':''} · moy. {fmtMoney(totalGagne/Math.max(filtered.length,1))}</div>
           </div>
         </div>
         </div>{/* /gradient total */}
@@ -359,7 +354,7 @@ export default function Commissions() {
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#61DAFB', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>✓ Payé</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={totalPaye} color="#61DAFB"/></div>
-          <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>{filtered.filter(c=>c.commissionPayee).length} vente{filtered.filter(c=>c.commissionPayee).length!==1?'s':''}</div>
+          <div style={{ fontSize:10, color:'#ffffff', marginTop:6 }}>{filtered.filter(c=>c.commissionPayee).length} vente{filtered.filter(c=>c.commissionPayee).length!==1?'s':''}</div>
         </div>
         </div>
 
@@ -368,7 +363,7 @@ export default function Commissions() {
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#f79009', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>⏳ Attente</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={enAttente} color="#f79009"/></div>
-          <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>{filtered.filter(c=>!c.commissionPayee).length} vente{filtered.filter(c=>!c.commissionPayee).length!==1?'s':''}</div>
+          <div style={{ fontSize:10, color:'#ffffff', marginTop:6 }}>{filtered.filter(c=>!c.commissionPayee).length} vente{filtered.filter(c=>!c.commissionPayee).length!==1?'s':''}</div>
         </div>
         </div>
 
@@ -377,7 +372,7 @@ export default function Commissions() {
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#a78bfa', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>↑ Max</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={maximum} color="#a78bfa"/></div>
-          <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>meilleure</div>
+          <div style={{ fontSize:10, color:'#ffffff', marginTop:6 }}>meilleure</div>
         </div>
         </div>
 
@@ -386,7 +381,7 @@ export default function Commissions() {
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:15, padding: isMobile?'14px 12px':'20px 18px', backdropFilter:'blur(20px)', textAlign:'center', height:'100%' }}>
           <div style={{ fontSize:10, color:'#8b8b9e', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>↓ Min</div>
           <div style={{ fontSize: isMobile?16:20, fontWeight:800, lineHeight:1 }}><AnimatedNumber value={minimum} color="#8b8b9e"/></div>
-          <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:6 }}>plus petite</div>
+          <div style={{ fontSize:10, color:'#ffffff', marginTop:6 }}>plus petite</div>
         </div>
         </div>
       </div>
@@ -399,7 +394,7 @@ export default function Commissions() {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:8 }}>
           <div>
             <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Commissions par mois</div>
-            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{annee === 'tout' ? 'Toutes les années' : annee}</div>
+            <div style={{ fontSize:11, color:'#ffffff', marginTop:2 }}>{annee === 'tout' ? 'Toutes les années' : annee}</div>
           </div>
           <div style={{ fontSize:12, fontWeight:700, color:'#12b76a', background:'rgba(18,183,106,0.08)', padding:'4px 12px', borderRadius:20, border:'1px solid rgba(18,183,106,0.2)' }}>
             {fmtMoney(totalGagne)} total
@@ -407,10 +402,27 @@ export default function Commissions() {
         </div>
         <ResponsiveContainer width="100%" height={isMobile ? 120 : 160}>
           <BarChart data={chartData} barSize={isMobile ? 14 : 22} margin={{ top:0, right:0, bottom:0, left:0 }}>
-            <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize: isMobile?8:10 }} axisLine={false} tickLine={false}/>
+            <XAxis dataKey="name" tick={{ fill:'#ffffff', fontSize: isMobile?8:10 }} axisLine={false} tickLine={false}/>
             <YAxis hide/>
-            <Tooltip contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, fontSize:12, boxShadow:'0 4px 16px rgba(0,0,0,0.15)' }} formatter={v => [fmtMoney(v), 'Commission']} cursor={{ fill:'rgba(255,255,255,0.04)' }}/>
-            <Bar dataKey="total" radius={[6,6,0,0]}>
+            <Tooltip contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, fontSize:12, boxShadow:'0 4px 16px rgba(0,0,0,0.15)' }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const d = payload[0].payload;
+                if (!d.total) return null;
+                return (
+                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px', fontSize:12 }}>
+                    <div style={{ color:'#12b76a', fontWeight:700, marginBottom:4 }}>{fmtMoney(d.total)}</div>
+                    <div style={{ color:'#ffffff' }}>{d.count} installation{d.count > 1 ? 's' : ''}</div>
+                  </div>
+                );
+              }}
+              cursor={{ fill:'rgba(255,255,255,0.04)' }}/>
+            <Bar dataKey="total" radius={[6,6,0,0]}
+              label={{ content: ({ x, y, width, value, index }) => {
+                const c = chartData[index]?.count;
+                if (!c) return null;
+                return <text x={x + width / 2} y={y - 4} textAnchor="middle" fill="#ffffff" fontSize={10} fontWeight={700}>{c}</text>;
+              }}}>
               {chartData.map((e,i) => <Cell key={i} fill={e.total > 0 ? '#12b76a' : 'var(--bg-secondary)'}/>)}
             </Bar>
           </BarChart>
@@ -437,9 +449,9 @@ export default function Commissions() {
                   <Calendar size={13} color="#12b76a"/>
                   {selectedDate.toLocaleDateString('fr-CA', { weekday:'long', day:'numeric', month:'long' })}
                 </div>
-                <button onClick={() => { setSelectedDate(null); setSelectedVentes([]); }} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:18, lineHeight:1, transition:'color 0.15s' }}
+                <button onClick={() => { setSelectedDate(null); setSelectedVentes([]); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#ffffff', fontSize:18, lineHeight:1, transition:'color 0.15s' }}
                   onMouseEnter={e => e.currentTarget.style.color='var(--danger)'}
-                  onMouseLeave={e => e.currentTarget.style.color='var(--text-muted)'}>×</button>
+                  onMouseLeave={e => e.currentTarget.style.color='#ffffff'}>×</button>
               </div>
               <div style={{ padding:'10px 12px', display:'flex', flexDirection:'column', gap:8 }}>
                 {selectedVentes.map((c, i) => (
@@ -448,7 +460,7 @@ export default function Commissions() {
                       <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         {c.entreprise || `${c.prenom||''} ${c.nom||''}`.trim() || 'Sans nom'}
                       </div>
-                      {c.ville && <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>{c.ville}</div>}
+                      {c.ville && <div style={{ fontSize:10, color:'#ffffff', marginTop:2 }}>{c.ville}</div>}
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
                       <div style={{ fontSize:14, fontWeight:700, color: c.commissionPayee?'#12b76a':'#f79009' }}>{fmtMoney(c.commissionTotale)}</div>
@@ -457,7 +469,7 @@ export default function Commissions() {
                   </div>
                 ))}
                 <div style={{ borderTop:'1px solid var(--border)', paddingTop:8, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <span style={{ fontSize:11, color:'var(--text-muted)' }}>Total du jour</span>
+                  <span style={{ fontSize:11, color:'#ffffff' }}>Total du jour</span>
                   <span style={{ fontSize:16, fontWeight:800, color:'#12b76a' }}>{fmtMoney(selectedVentes.reduce((s,c) => s+(c.commissionTotale||0), 0))}</span>
                 </div>
               </div>
@@ -471,7 +483,7 @@ export default function Commissions() {
           <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.08)', background:'linear-gradient(135deg,rgba(18,183,106,0.08),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Historique des commissions</div>
             {filtered.length > 0 && (
-              <div style={{ fontSize:11, color:'var(--text-muted)', background:'var(--bg-secondary)', padding:'3px 12px', borderRadius:20, border:'1px solid var(--border)', fontWeight:600 }}>
+              <div style={{ fontSize:11, color:'#ffffff', background:'var(--bg-secondary)', padding:'3px 12px', borderRadius:20, border:'1px solid var(--border)', fontWeight:600 }}>
                 <span style={{ color:'var(--text-primary)', fontWeight:800 }}>{filtered.length}</span> vente{filtered.length!==1?'s':''}
               </div>
             )}
@@ -493,11 +505,16 @@ export default function Commissions() {
                   </div>
 
                   {/* Nom + infos */}
-                  <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ flex:1, minWidth:0, cursor:'pointer' }} onClick={() => setResumeFiche(c)}>
                     <div style={{ fontSize: isMobile?13:14, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                       {c.entreprise || `${c.prenom||''} ${c.nom||''}`.trim() || 'Sans nom'}
                     </div>
-                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:3, display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                    {c.typeClient === 'b2b' && c.entreprise && (`${c.prenom||''} ${c.nom||''}`.trim()) && (
+                      <div style={{ fontSize:11, color:'#ffffff', fontWeight:500, marginTop:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {`${c.prenom||''} ${c.nom||''}`.trim()}
+                      </div>
+                    )}
+                    <div style={{ fontSize:11, color:'#ffffff', marginTop:3, display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
                       {c.ville && <span style={{ display:'flex', alignItems:'center', gap:3 }}><MapPin size={9}/>{c.ville}</span>}
                       <span style={{ display:'flex', alignItems:'center', gap:3 }}><Calendar size={9}/>{fmtDate(c.dateVente || c.createdAt)}</span>
                       {c.commissionPayee && c.datePaiementCommission && !isMobile && (
@@ -509,8 +526,8 @@ export default function Commissions() {
                   {/* Détail fixe + extra — caché sur mobile */}
                   {!isMobile && (c.commissionFixe > 0 || c.commissionExtra > 0) && (
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      {c.commissionFixe  > 0 && <div style={{ fontSize:11, color:'var(--text-muted)' }}>Fixe : <strong style={{color:'var(--text-secondary)'}}>{fmtMoney(c.commissionFixe)}</strong></div>}
-                      {c.commissionExtra > 0 && <div style={{ fontSize:11, color:'var(--text-muted)' }}>Extra : <strong style={{color:'var(--text-secondary)'}}>{fmtMoney(c.commissionExtra)}</strong></div>}
+                      {c.commissionFixe  > 0 && <div style={{ fontSize:11, color:'#ffffff' }}>Fixe : <strong style={{color:'#ffffff'}}>{fmtMoney(c.commissionFixe)}</strong></div>}
+                      {c.commissionExtra > 0 && <div style={{ fontSize:11, color:'#ffffff' }}>Extra : <strong style={{color:'#ffffff'}}>{fmtMoney(c.commissionExtra)}</strong></div>}
                     </div>
                   )}
 
@@ -537,11 +554,11 @@ export default function Commissions() {
               ))}
             </div>
           ) : (
-            <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text-muted)' }}>
+            <div style={{ textAlign:'center', padding:'60px 20px', color:'#ffffff' }}>
               <div style={{ width:64, height:64, borderRadius:18, background:'linear-gradient(135deg,rgba(18,183,106,0.08),rgba(18,183,106,0.02))', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', border:'1px solid rgba(18,183,106,0.15)' }}>
                 <Wallet size={30} color="#12b76a" style={{ opacity:0.4 }}/>
               </div>
-              <div style={{ fontSize:14, fontWeight:600, color:'var(--text-secondary)', marginBottom:6 }}>Aucune commission</div>
+              <div style={{ fontSize:14, fontWeight:600, color:'#ffffff', marginBottom:6 }}>Aucune commission</div>
               <div style={{ fontSize:12 }}>Ajoute une commission dans Solution Express</div>
             </div>
           )}
@@ -549,11 +566,91 @@ export default function Commissions() {
         </div>{/* /glassmorphism historique */}
         </div>{/* /gradient border historique */}
 
+      {/* ════ MODAL RÉSUMÉ ════ */}
+      {resumeFiche && (
+        <div onClick={() => setResumeFiche(null)}
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16, backdropFilter:'blur(8px)', animation:'fadeIn 0.15s ease' }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:'var(--bg-card)', borderRadius:20, width:'100%', maxWidth:620, maxHeight:'85vh', display:'flex', flexDirection:'column', border:'1px solid rgba(18,183,106,0.2)', boxShadow:'0 24px 80px rgba(0,0,0,0.6)', animation:'slideUp 0.2s ease' }}>
+
+            {/* Header */}
+            {(() => {
+              const STATUS_LBL = { new:'Nouveau', contacted:'Contacté', proposal:'Soumission', installation_en_cours:'Installation en cours', installe:'Installé', installation_annulee:'Installation annulée' };
+              const STATUS_CLR = { new:'#3b6cf8', contacted:'#f79009', proposal:'#a764f8', installation_en_cours:'#f97316', installe:'#22c55e', installation_annulee:'#be123c' };
+              const COMMERCE_LBL = { restaurant:'Restaurant', pizzeria:'Pizzeria', boulangerie:'Boulangerie', traiteur:'Traiteur', cafe:'Café', bar_resto:'Bar/Resto', salon_coiffure:'Salon coiffure', esthetique:'Esthétique', spa:'Spa', massotherapie:'Massothérapie', barbier:'Barbier', garage_auto:'Garage auto', carrosserie:'Carrosserie', esthetique_auto:'Esthétique auto', lave_auto:'Lave-auto', pneus:'Pneus', concessionnaire:'Concessionnaire', clinique_dentaire:'Clinique dentaire', clinique_privee:'Clinique privée', pharmacie:'Pharmacie', optometrie:'Optométrie', cabinet_infirmier:'Cabinet infirmier', boutique:'Boutique', epicerie:'Épicerie', boucherie:'Boucherie', librairie:'Librairie', quincaillerie:'Quincaillerie', bureau:'Bureau', cabinet_comptable:'Cabinet comptable', agence:'Agence', assurance:'Assurance', immobilier:'Immobilier', garderie:'Garderie', ecole_privee:'École privée', centre_formation:'Centre formation', gym:'Gym', centre_sportif:'Centre sportif', studio_yoga:'Studio yoga', entrepot:'Entrepôt', transport:'Transport', manufacture:'Manufacture', construction:'Construction', veterinaire:'Vétérinaire', animalerie:'Animalerie', autre:'Autre' };
+              const QUALIF_LBL = { pas_de_systeme:'Pas de système', systeme_plus_10_ans:'+10 ans', systeme_non_connecte_nouveau_proprio:'Non connecté (nouveau proprio)', systeme_non_connecte_insatisfait:'Non connecté (insatisfait)', systeme_non_connecte_diy:'Non connecté (DIY)', systeme_moins_5_ans_avec_contrat:'-5 ans avec contrat', systeme_moins_5_ans_sans_contrat:'-5 ans sans contrat', systeme_5_10_ans_panneau_tactile:'5-10 ans (tactile)', systeme_5_10_ans_panneau_boutons:'5-10 ans (boutons)', inconnu:'Inconnu' };
+              const f = resumeFiche;
+              const nomContact = `${f.prenom||''} ${f.nom||''}`.trim();
+              return (
+                <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexShrink:0 }}>
+                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                    {/* Nom */}
+                    <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>
+                      {f.entreprise || nomContact || 'Sans nom'}
+                    </div>
+                    {/* B2B/B2C + commerce + ville */}
+                    <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                      <span style={{ fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, background: f.typeClient==='b2b'?'rgba(59,108,248,0.15)':'rgba(167,139,250,0.15)', color: f.typeClient==='b2b'?'#3b6cf8':'#a78bfa', border:`1px solid ${f.typeClient==='b2b'?'rgba(59,108,248,0.3)':'rgba(167,139,250,0.3)'}` }}>
+                        {f.typeClient==='b2b'?'🏢 B2B':'👤 B2C'}
+                      </span>
+                      {f.typeCommerce && f.typeCommerce !== 'autre' && (
+                        <span style={{ fontSize:11, color:'#ffffff', fontWeight:600 }}>{COMMERCE_LBL[f.typeCommerce]||f.typeCommerce}</span>
+                      )}
+                      {f.ville && <span style={{ fontSize:11, color:'#ffffff' }}>· {f.ville}</span>}
+                    </div>
+                    {/* Pipeline */}
+                    {f.status && (
+                      <div style={{ display:'inline-flex', alignItems:'center' }}>
+                        <span style={{ fontSize:11, fontWeight:700, padding:'2px 10px', borderRadius:20, background:`${STATUS_CLR[f.status]}20`, color:STATUS_CLR[f.status]||'#ffffff', border:`1px solid ${STATUS_CLR[f.status]}40` }}>
+                          {STATUS_LBL[f.status]||f.status}
+                        </span>
+                      </div>
+                    )}
+                    {/* Contact */}
+                    {nomContact && (
+                      <div style={{ fontSize:12, color:'#ffffff' }}>
+                        <span style={{ color:'#ffffff' }}>Contact : </span>{nomContact}
+                      </div>
+                    )}
+                    {/* Qualification système */}
+                    {f.qualificationSysteme && (
+                      <div style={{ fontSize:11, color:'#ffffff' }}>
+                        <span style={{ fontWeight:600 }}>Système : </span>{QUALIF_LBL[f.qualificationSysteme]||f.qualificationSysteme}
+                      </div>
+                    )}
+                    {/* Date de vente */}
+                    {f.dateVente && (
+                      <div style={{ fontSize:11, color:'#ffffff' }}>
+                        <span style={{ fontWeight:600 }}>Date de vente : </span>{fmtDate(f.dateVente)}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => setResumeFiche(null)}
+                    style={{ background:'none', border:'none', cursor:'pointer', color:'#ffffff', fontSize:22, lineHeight:1, transition:'color 0.15s', flexShrink:0 }}
+                    onMouseEnter={e => e.currentTarget.style.color='#f04438'}
+                    onMouseLeave={e => e.currentTarget.style.color='#ffffff'}>×</button>
+                </div>
+              );
+            })()}
+
+            {/* Résumé */}
+            <div style={{ overflowY:'auto', flex:1, padding:'20px' }}>
+              {resumeFiche.summary
+                ? <pre style={{ fontFamily:'inherit', fontSize:13, color:'#ffffff', lineHeight:1.75, whiteSpace:'pre-wrap', wordBreak:'break-word', margin:0 }}>{resumeFiche.summary}</pre>
+                : <div style={{ textAlign:'center', color:'#ffffff', fontSize:13, padding:'40px 0' }}>Aucun résumé</div>
+              }
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes fadeSlideUp {
           from { opacity:0; transform:translateY(20px); }
           to   { opacity:1; transform:translateY(0); }
         }
+        @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
         @keyframes spin { to { transform:rotate(360deg); } }
       `}</style>
     </div>

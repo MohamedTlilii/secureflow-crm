@@ -9,7 +9,7 @@
 // API         : GET /api/stats?periode=tout + GET /api/solution-express
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import api from '../api';
 import {
   Users, TrendingUp, CheckCircle, AlertCircle, Clock,
@@ -125,10 +125,10 @@ function ScoreRing({ value, max, color, label, sublabel }) {
         </svg>
         <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', textAlign:'center' }}>
           <div style={{ fontSize:18, fontWeight:800, color, lineHeight:1 }}>{value}</div>
-          <div style={{ fontSize:8, color:'rgba(255,255,255,0.5)', fontWeight:600, textTransform:'uppercase', lineHeight:1.2 }}>{label}</div>
+          <div style={{ fontSize:8, color:'#ffffff', fontWeight:600, textTransform:'uppercase', lineHeight:1.2 }}>{label}</div>
         </div>
       </div>
-      <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', textAlign:'center' }}>{sublabel}</div>
+      <div style={{ fontSize:11, color:'#ffffff', textAlign:'center' }}>{sublabel}</div>
     </div>
   );
 }
@@ -147,18 +147,22 @@ export default function Dashboard() {
   const [commFiltre, setCommFiltre]   = useState('tout');
 
   // ── Fetch données ─────────────────────────────────────────────────────
-  useEffect(() => {
-    // Stats globales (pour commissions déjà calculées côté backend)
+  const fetchAll = useCallback(() => {
     api.get('/api/stats?periode=tout')
       .then(r => setStats(r.data))
       .catch(err => console.error('Dashboard stats error:', err))
       .finally(() => setLoading(false));
-
-    // Toutes les fiches SE — pour filtrage dynamique côté frontend
     api.get('/api/solution-express')
-      .then(r => setSeFiches(r.data||[]))
+      .then(r => setSeFiches(Array.isArray(r.data) ? r.data : []))
       .catch(err => console.error('SE fetch error:', err));
   }, []);
+
+  useEffect(() => {
+    fetchAll();
+    const onVisible = () => { if (!document.hidden) fetchAll(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [fetchAll]);
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', flexDirection:'column', gap:16 }}>
@@ -170,15 +174,15 @@ export default function Dashboard() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-  if (!stats) return <div style={{ textAlign:'center', padding:60, color:'var(--text-muted)' }}>Erreur chargement</div>;
+  if (!stats) return <div style={{ textAlign:'center', padding:60, color:'#ffffff' }}>Erreur chargement</div>;
 
   // ── Années disponibles selon données réelles ──────────────────────────
-  const annees = [...new Set(seFiches.map(f => new Date(f.dateVente||f.createdAt).getFullYear()))].sort((a,b) => b-a);
+  const annees = [...new Set(seFiches.map(f => new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()))].sort((a,b) => b-a);
 
   // ── Fiches filtrées par année globale ─────────────────────────────────
   const fiches = anneeGlobal === 'tout'
     ? seFiches
-    : seFiches.filter(f => String(new Date(f.dateVente||f.createdAt).getFullYear()) === anneeGlobal);
+    : seFiches.filter(f => String(new Date(f.dateVente||f.createdAt).getUTCFullYear()) === anneeGlobal);
 
   // ── Stats calculées depuis fiches filtrées ────────────────────────────
 
@@ -205,7 +209,7 @@ export default function Dashboard() {
   // Top villes
   const cityMap = {};
   fiches.forEach(f => { if(f.ville) cityMap[f.ville] = (cityMap[f.ville]||0) + 1; });
-  const byCity = Object.entries(cityMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count).slice(0,8);
+  const byCity = Object.entries(cityMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
 
   // Produits
   const produitMap = {};
@@ -215,16 +219,16 @@ export default function Dashboard() {
   // Qualification
   const qualifMap = {};
   fiches.forEach(f => { if(f.qualificationSysteme && f.qualificationSysteme !== 'inconnu' && f.qualificationSysteme !== '') qualifMap[f.qualificationSysteme] = (qualifMap[f.qualificationSysteme]||0) + 1; });
-  const byQualif = Object.entries(qualifMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count).slice(0,6);
+  const byQualif = Object.entries(qualifMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
 
-  // Fournisseurs
+  // Fournisseurs proposés (nouveaux)
   const fournMap = {};
   fiches.forEach(f => {
-    [f.fournisseurAlarme, f.fournisseurInternet, f.fournisseurMobile].forEach(fo => {
+    [f.fournisseurProposeAlarme, f.fournisseurProposeInternet, f.fournisseurProposeMobile].forEach(fo => {
       if(fo && !['inconnu','aucun',''].includes(fo)) fournMap[fo] = (fournMap[fo]||0) + 1;
     });
   });
-  const byFourn = Object.entries(fournMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count).slice(0,6);
+  const byFourn = Object.entries(fournMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
 
   // Types de lead
   const leadMap = {};
@@ -239,7 +243,7 @@ export default function Dashboard() {
     { name:'Nouveau',          value:seStatuts.new,                   color:'#3b6cf8' },
     { name:'Contacté',         value:seStatuts.contacted,             color:'#f79009' },
     { name:'Soumission',       value:seStatuts.proposal,              color:'#a764f8' },
-    { name:'Installation...',  value:seStatuts.installation_en_cours, color:'#f97316' },
+    { name:`En cours (${seStatuts.installation_en_cours})`, value:seStatuts.installation_en_cours, color:'#f97316' },
     { name:'Installé',         value:seStatuts.installe,              color:'#22c55e' },
     { name:'Install. annulée', value:seStatuts.installation_annulee,  color:'#be123c' },
   ].filter(x => x.value > 0);
@@ -247,7 +251,7 @@ export default function Dashboard() {
   // Commissions filtrées par année
   const commissions = stats.commissions;
   const commFiches = (commissions?.historique||[]).filter(c => {
-    const yr = new Date(c.dateVente||c.createdAt).getFullYear();
+    const yr = new Date(c.dateVente||c.createdAt).getUTCFullYear();
     const yearOk   = anneeGlobal === 'tout' || String(yr) === anneeGlobal;
     const statutOk = commFiltre === 'tout' ? true : commFiltre === 'payee' ? c.commissionPayee : !c.commissionPayee;
     return yearOk && statutOk;
@@ -288,7 +292,7 @@ export default function Dashboard() {
             <div>
               <h1 style={{ margin:0, fontSize: isMobile?20:24 }}>Dashboard</h1>
               <p style={{ color: 'white', fontSize: 13, margin: 0, marginTop: 2 }}>
-  Solution Express · <span style={{ color: '#2a99de', fontWeight: 700 }}>{totalSE}</span> Fiche{totalSE !== 1 ? 's' : ''}
+  Solution Express · <span style={{ color: '#2a99de', fontWeight: 700 }}>{totalSE}</span> Fiche{totalSE > 1 ? 's' : ''}
   {anneeGlobal !== 'tout' && <span style={{ color: '#2a99de', fontWeight: 700 }}> · {anneeGlobal}</span>}
 </p>
             </div>
@@ -302,7 +306,7 @@ export default function Dashboard() {
 </div>
             )}
             <select value={anneeGlobal} onChange={e => setAnneeGlobal(e.target.value)}
-              style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#cfd1d2', cursor:'pointer', outline:'none', fontWeight:700 }}>
+              style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
               <option value="tout">Toutes les années</option>
               {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}
             </select>
@@ -333,9 +337,9 @@ export default function Dashboard() {
           {/* ScoreRings — cachés sur mobile */}
           {!isMobile && (
             <div style={{ display:'flex', gap:28, flexShrink:0 }}>
-              <ScoreRing value={won}        max={totalSE||1} color="#12b76a" label="Installés" sublabel={`sur ${totalSE}`}/>
-              <ScoreRing value={enPipeline} max={totalSE||1} color="#f79009" label="Pipeline"  sublabel={`${seStatuts.proposal} soumissions`}/>
-              <ScoreRing value={urgent}     max={totalSE||1} color="#f04438" label="Urgents"   sublabel="score ≥7"/>
+              <ScoreRing value={won}                             max={totalSE||1} color="#22c55e" label="Installés"    sublabel={`sur ${totalSE}`}/>
+              <ScoreRing value={seStatuts.installation_en_cours} max={totalSE||1} color="#f97316" label="En cours"     sublabel="installation"/>
+              <ScoreRing value={seStatuts.proposal}              max={totalSE||1} color="#a764f8" label="Soumissions"  sublabel={`${seStatuts.proposal} fiches`}/>
             </div>
           )}
         </div>
@@ -350,10 +354,10 @@ export default function Dashboard() {
           ════════════════════════════════════════════════════════════════ */}
       <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(4,1fr)', gap: isMobile?10:14, marginBottom:24 }}>
         {[
-          { label:'Total fiches',  value:totalSE,    sub:`${b2b} B2B · ${b2c} B2C`,              icon:Users,       color:'#3b6cf8'  },
-          { label:'Urgents',       value:urgent,     sub:`Score ≥7 · Moy. ${avgUrgence}/10`,      icon:AlertCircle, color:'#f04438'  },
-          { label:'En pipeline',   value:enPipeline, sub:`${seStatuts.proposal} soumissions`,      icon:Clock,       color:'#f79009'  },
-          { label:'Installés',     value:won,        sub:`Taux d'installation ${convRate}%`,       icon:CheckCircle, color:'#12b76a'  },
+          { label:'Total fiches',          value:totalSE,                         sub:`${b2b} B2B · ${b2c} B2C`,                    icon:Users,       color:'#3b6cf8'  },
+          { label:'Installés',             value:won,                             sub:`Taux d'installation ${convRate}%`,             icon:CheckCircle, color:'#22c55e'  },
+          { label:'Installation en cours', value:seStatuts.installation_en_cours, sub:`${seStatuts.installation_en_cours} en cours`, icon:AlertCircle, color:'#f97316'  },
+          { label:'Soumissions',           value:seStatuts.proposal,              sub:`${seStatuts.proposal} fiches`,                icon:Clock,       color:'#a764f8'  },
         ].map((s,i) => (
           <div key={i} style={{ padding:'1px', borderRadius:14, background:`linear-gradient(135deg,${s.color}60,${s.color}20)`, animation:`fadeSlideUp 0.4s ${i*0.07}s ease both` }}>
             <div className="stat-card" style={{ background:'rgba(2,8,16,0.97)', borderRadius:13, height:'100%', transition:'transform 0.2s,box-shadow 0.2s' }}
@@ -387,7 +391,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div style={{ fontSize:15, fontWeight:700 }}>Solution Express</div>
-            <div style={{ fontSize:12, color:'var(--text-muted)' }}>{totalSE} fiches · {b2b} B2B · {b2c} B2C</div>
+            <div style={{ fontSize:12, color:'#ffffff' }}>{totalSE} fiches · {b2b} B2B · {b2c} B2C</div>
           </div>
           <div style={{ marginLeft:'auto', fontSize:28, fontWeight:800, color:'#12b76a', textShadow:'0 0 20px rgba(18,183,106,0.5)' }}>{totalSE}</div>
         </div>
@@ -405,7 +409,7 @@ export default function Dashboard() {
               onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}>
               <div style={{ position:'absolute', bottom:-8, right:-4, fontSize:36, fontWeight:900, color:s.color, opacity:0.05, lineHeight:1 }}>{s.value}</div>
               <div style={{ fontSize: isMobile?20:24, fontWeight:800, color:s.color }}>{s.value}</div>
-              <div style={{ fontSize: isMobile?9:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginTop:2 }}>{s.label}</div>
+              <div style={{ fontSize: isMobile?9:10, color:'#ffffff', fontWeight:600, textTransform:'uppercase', marginTop:2 }}>{s.label}</div>
               <div style={{ marginTop:6, height:3, borderRadius:2, background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
                 <div style={{ height:'100%', borderRadius:2, background:s.color, width:`${totalSE>0?Math.round((s.value/totalSE)*100):0}%`, transition:'width 1s ease', boxShadow:`0 0 8px ${s.color}80` }}/>
               </div>
@@ -428,7 +432,7 @@ export default function Dashboard() {
             </div>
             <div>
               <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>Mes commissions</div>
-              <div style={{ fontSize:11, color:'var(--text-muted)' }}>
+              <div style={{ fontSize:11, color:'#ffffff' }}>
                 Solution Express · {anneeGlobal === 'tout' ? 'historique complet' : anneeGlobal}
               </div>
             </div>
@@ -446,7 +450,7 @@ export default function Dashboard() {
                 onMouseLeave={e => e.currentTarget.style.transform='translateY(0)'}>
                 <div style={{ fontSize:10, color:s.color, fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>{s.label}</div>
                 <div style={{ fontSize:22, fontWeight:700, color:s.color, lineHeight:1 }}>{s.value}</div>
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>{s.sub}</div>
+                <div style={{ fontSize:11, color:'#ffffff', marginTop:6 }}>{s.sub}</div>
               </div>
             ))}
           </div>
@@ -462,8 +466,8 @@ export default function Dashboard() {
             </div>
             <div style={{ background:'rgba(139,139,158,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(139,139,158,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div>
-                <div style={{ fontSize:10, color:'#8b8b9e', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Minimum</div>
-                <div style={{ fontSize:20, fontWeight:700, color:'#8b8b9e' }}>{commMin.toFixed(2)} TND</div>
+                <div style={{ fontSize:10, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Minimum</div>
+                <div style={{ fontSize:20, fontWeight:700, color:'#ffffff' }}>{commMin.toFixed(2)} TND</div>
               </div>
               <div style={{ fontSize:28, opacity:0.15 }}>↓</div>
             </div>
@@ -471,7 +475,7 @@ export default function Dashboard() {
               <div>
                 <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Commissions</div>
                 <div style={{ fontSize:20, fontWeight:700, color:'#12b76a' }}>{commFiches.length}</div>
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Solution Express</div>
+                <div style={{ fontSize:11, color:'#ffffff', marginTop:4 }}>Solution Express</div>
               </div>
               <div style={{ fontSize:24, opacity:0.2 }}>✅</div>
             </div>
@@ -485,11 +489,11 @@ export default function Dashboard() {
                   style={{ padding:'4px 14px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
                     border:`1px solid ${commFiltre===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)'):'var(--border)'}`,
                     background: commFiltre===k?(k==='payee'?'rgba(18,183,106,0.1)':k==='non_payee'?'rgba(247,144,9,0.1)':'rgba(59,108,248,0.1)'):'transparent',
-                    color: commFiltre===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)'):'var(--text-muted)' }}>
+                    color: commFiltre===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)'):'#ffffff' }}>
                   {l}
                 </button>
               ))}
-              <div style={{ marginLeft:'auto', fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center' }}>
+              <div style={{ marginLeft:'auto', fontSize:11, color:'#ffffff', display:'flex', alignItems:'center' }}>
                 {commFiches.length} entrée{commFiches.length!==1?'s':''}
               </div>
             </div>
@@ -505,14 +509,14 @@ export default function Dashboard() {
                     <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                       {c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'Sans nom'}
                     </div>
-                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>
-                      {c.ville||'—'} · {c.dateVente?new Date(c.dateVente).toLocaleDateString('fr-CA'):new Date(c.createdAt).toLocaleDateString('fr-CA')}
+                    <div style={{ fontSize:11, color:'#ffffff', marginTop:1 }}>
+                      {c.ville||'—'} · {c.dateVente?new Date(c.dateVente).toLocaleDateString('fr-CA',{timeZone:'UTC'}):new Date(c.createdAt).toLocaleDateString('fr-CA',{timeZone:'UTC'})}
                     </div>
                   </div>
                   {!isMobile && c.commissionFixe > 0 && (
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontSize:11, color:'var(--text-muted)' }}>Fixe : {(c.commissionFixe||0).toFixed(2)} TND</div>
-                      {c.commissionExtra > 0 && <div style={{ fontSize:11, color:'var(--text-muted)' }}>Extra : {(c.commissionExtra||0).toFixed(2)} TND</div>}
+                      <div style={{ fontSize:11, color:'#ffffff' }}>Fixe : {(c.commissionFixe||0).toFixed(2)} TND</div>
+                      {c.commissionExtra > 0 && <div style={{ fontSize:11, color:'#ffffff' }}>Extra : {(c.commissionExtra||0).toFixed(2)} TND</div>}
                     </div>
                   )}
                   <div style={{ textAlign:'right', flexShrink:0, minWidth: isMobile?80:90 }}>
@@ -527,7 +531,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               )) : (
-                <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text-muted)', fontSize:13 }}>
+                <div style={{ textAlign:'center', padding:'24px 0', color:'#ffffff', fontSize:13 }}>
                   Aucune commission pour cette période
                 </div>
               )}
@@ -546,14 +550,15 @@ export default function Dashboard() {
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', height:'100%' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <h3 style={{ fontSize:15, margin:0 }}>Pipeline global</h3>
-            <span style={{ fontSize:12, color:'var(--text-muted)' }}>{totalSE} fiches</span>
+            <span style={{ fontSize:12, color:'#ffffff' }}>{totalSE} fiches</span>
           </div>
           <ResponsiveContainer width="100%" height={isMobile?140:200}>
-            <BarChart data={pipelineData} barSize={isMobile?18:30}>
-              <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize: isMobile?9:10 }} axisLine={false} tickLine={false}/>
-              <YAxis tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false}/>
+            <BarChart data={pipelineData} barSize={isMobile?18:30} margin={{ top:20, right:0, left:0, bottom:0 }}>
+              <XAxis dataKey="name" tick={{ fill:'#ffffff', fontSize: isMobile?9:10 }} axisLine={false} tickLine={false}/>
+              <YAxis tick={{ fill:'#ffffff', fontSize:11 }} axisLine={false} tickLine={false}/>
               <Tooltip contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, fontSize:12 }} cursor={{ fill:'rgba(255,255,255,0.03)' }}/>
-              <Bar dataKey="value" radius={[6,6,0,0]}>
+              <Bar dataKey="value" radius={[6,6,0,0]}
+                label={{ position:'top', fill:'#ffffff', fontSize:13, fontWeight:700 }}>
                 {pipelineData.map((e,i) => <Cell key={i} fill={e.color}/>)}
               </Bar>
             </BarChart>
@@ -578,7 +583,7 @@ export default function Dashboard() {
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                        <span style={{ fontSize:13, color:'var(--text-secondary)' }}>{PRODUIT_LABELS[s._id]||s._id}</span>
+                        <span style={{ fontSize:13, color:'#ffffff' }}>{PRODUIT_LABELS[s._id]||s._id}</span>
                         <span style={{ fontSize:13, fontWeight:700, color }}>{s.count}</span>
                       </div>
                       <ProgressBar value={s.count} max={totalSE} color={color}/>
@@ -587,7 +592,7 @@ export default function Dashboard() {
                 );
               })}
             </div>
-          ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun produit</div>}
+          ) : <div style={{ color:'#ffffff', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun produit</div>}
         </div>
         </div>{/* /gradient border produits */}
       </div>
@@ -613,33 +618,33 @@ export default function Dashboard() {
                     onMouseEnter={e => e.currentTarget.style.transform='translateX(3px)'}
                     onMouseLeave={e => e.currentTarget.style.transform='translateX(0)'}>
                     <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }}/>
-                    <span style={{ flex:1, fontSize:12, color:'var(--text-secondary)' }}>🔒 {QUALIF_LABELS[q._id]||q._id}</span>
+                    <span style={{ flex:1, fontSize:12, color:'#ffffff' }}>🔒 {QUALIF_LABELS[q._id]||q._id}</span>
                     <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{q.count}</span>
                   </div>
                 );
               })}
             </div>
-          ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune qualification</div>}
+          ) : <div style={{ color:'#ffffff', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune qualification</div>}
         </div>
         </div>{/* /gradient border qualif */}
         <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#3b6cf840,#61DAFB20)' }}>
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', height:'100%' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-            <h3 style={{ fontSize:15, margin:0 }}>Top fournisseurs actuels</h3>
+            <h3 style={{ fontSize:15, margin:0 }}>Top fournisseurs proposés</h3>
             <TrendingUp size={14} color="#61DAFB"/>
           </div>
           {byFourn.length ? (
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               {byFourn.map((f,i) => (
                 <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:22, height:22, borderRadius:6, background:'var(--bg-hover)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'var(--text-muted)', flexShrink:0 }}>{i+1}</div>
-                  <span style={{ flex:1, fontSize:13, color:'var(--text-secondary)' }}>{FOURN_LABELS[f._id]||f._id}</span>
+                  <div style={{ width:22, height:22, borderRadius:6, background:'var(--bg-hover)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#ffffff', flexShrink:0 }}>{i+1}</div>
+                  <span style={{ flex:1, fontSize:13, color:'#ffffff' }}>{FOURN_LABELS[f._id]||f._id}</span>
                   <span style={{ fontSize:13, fontWeight:700 }}>{f.count}</span>
                   <ProgressBar value={f.count} max={Math.max(...byFourn.map(x=>x.count),1)} color="var(--accent)"/>
                 </div>
               ))}
             </div>
-          ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun fournisseur</div>}
+          ) : <div style={{ color:'#ffffff', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun fournisseur</div>}
         </div>
         </div>{/* /gradient border fournisseurs */}
       </div>
@@ -662,14 +667,14 @@ export default function Dashboard() {
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
                     <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0, boxShadow:`0 0 6px ${color}80` }}/>
-                    <span style={{ flex:1, fontSize:13, color:'var(--text-secondary)' }}>{LEAD_TYPE_LABELS[l._id]||l._id}</span>
+                    <span style={{ flex:1, fontSize:13, color:'#ffffff' }}>{LEAD_TYPE_LABELS[l._id]||l._id}</span>
                     <span style={{ fontSize:13, fontWeight:700, color }}>{l.count}</span>
                     <ProgressBar value={l.count} max={totalSE} color={color}/>
                   </div>
                 );
               })}
             </div>
-          ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun type</div>}
+          ) : <div style={{ color:'#ffffff', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun type</div>}
         </div>
         </div>{/* /gradient border lead types */}
         <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#61DAFB40,#a78bfa20)' }}>
@@ -685,13 +690,13 @@ export default function Dashboard() {
                   onMouseEnter={e => e.currentTarget.style.transform='translateX(3px)'}
                   onMouseLeave={e => e.currentTarget.style.transform='translateX(0)'}>
                   <div style={{ width:22, height:22, borderRadius:6, background:'rgba(97,218,251,0.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#61DAFB', flexShrink:0 }}>{i+1}</div>
-                  <span style={{ flex:1, fontSize:13, color:'var(--text-secondary)' }}>{c._id}</span>
+                  <span style={{ flex:1, fontSize:13, color:'#ffffff' }}>{c._id}</span>
                   <span style={{ fontSize:13, fontWeight:700 }}>{c.count}</span>
                   <ProgressBar value={c.count} max={totalSE} color="#61DAFB"/>
                 </div>
               ))}
             </div>
-          ) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune ville</div>}
+          ) : <div style={{ color:'#ffffff', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune ville</div>}
         </div>
         </div>{/* /gradient border villes */}
       </div>
@@ -704,7 +709,7 @@ export default function Dashboard() {
       <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
           <h3 style={{ fontSize:15, margin:0 }}>Leads récents</h3>
-          <TrendingUp size={14} color="var(--text-muted)"/>
+          <TrendingUp size={14} color="#ffffff"/>
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
           {recentProspects.length ? recentProspects.map((p,i) => {
@@ -719,13 +724,13 @@ export default function Dashboard() {
                 <div className={`avatar ${avs[i%avs.length]}`} style={{ width:36, height:36, fontSize:13, flexShrink:0 }}>{ini}</div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:13, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{name}</div>
-                  <div style={{ fontSize:11, color:'var(--text-muted)' }}>{p.ville||'—'} · {new Date(p.createdAt).toLocaleDateString('fr-CA')}</div>
+                  <div style={{ fontSize:11, color:'#ffffff' }}>{p.ville||'—'} · {new Date(p.createdAt).toLocaleDateString('fr-CA')}</div>
                 </div>
                 <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'rgba(18,183,106,0.1)', color:'#12b76a', flexShrink:0 }}>🏢</span>
                 <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:`${statColor}15`, color:statColor, flexShrink:0 }}>{STATUS_LABELS_FR[p.status]||p.status}</span>
               </div>
             );
-          }) : <div style={{ color:'var(--text-muted)', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun lead</div>}
+          }) : <div style={{ color:'#ffffff', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun lead</div>}
         </div>
       </div>
       </div>{/* /gradient border recent leads */}

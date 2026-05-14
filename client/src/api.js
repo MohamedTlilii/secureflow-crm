@@ -11,7 +11,18 @@ const api = axios.create({
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('sf_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config; // Always return config to proceed with the request
+  return config;
 });
+
+api.interceptors.response.use(
+  res => res,
+  err => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem('sf_token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(err);
+  }
+);
 
 export default api; // Export for use across the app

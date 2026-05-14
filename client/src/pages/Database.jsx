@@ -138,7 +138,7 @@ export default function Database() {
     : dbStats.storagePercent >= 50 ? '#f79009' : '#12b76a';
 
   // ── Style colonnes tableau ────────────────────────────────────────────
-  const thStyle = { padding:'12px 16px', textAlign:'left', color:'var(--text-secondary)', fontSize:11, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', background:'rgba(2,8,16,0.95)', borderBottom:'1px solid rgba(255,255,255,0.08)' };
+  const thStyle = { padding:'12px 16px', textAlign:'left', color:'#ffffff', fontSize:11, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', background:'rgba(2,8,16,0.95)', borderBottom:'1px solid rgba(255,255,255,0.08)' };
   const tdStyle = { padding:'13px 16px', borderTop:'1px solid rgba(255,255,255,0.06)', fontSize:13, color:'var(--text-primary)' };
 
   return (
@@ -160,13 +160,13 @@ export default function Database() {
             </div>
             <div>
               <h1 style={{ margin:0, fontSize: isMobile?20:24 }}>Base de Données</h1>
-              <p style={{ color:'var(--text-muted)', fontSize:13, margin:0, marginTop:2 }}>
+              <p style={{ color:'#ffffff', fontSize:13, margin:0, marginTop:2 }}>
                 Solution Express · <span style={{ color:'#12b76a', fontWeight:700 }}>{leads.length}</span> enregistrement{leads.length!==1?'s':''}
               </p>
             </div>
           </div>
           {!isMobile && (
-            <div style={{ fontSize:12, color:'var(--text-muted)', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)' }}>
+            <div style={{ fontSize:12, color:'#ffffff', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)' }}>
               {new Date().toLocaleDateString('fr-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
             </div>
           )}
@@ -205,7 +205,7 @@ export default function Database() {
             </div>
             <div>
               <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Stockage MongoDB</div>
-              <div style={{ fontSize:11, color:'var(--text-muted)' }}>Free tier — 512 MB</div>
+              <div style={{ fontSize:11, color:'#ffffff' }}>Free tier — 512 MB</div>
             </div>
             <div style={{ marginLeft:'auto', fontSize:20, fontWeight:800, color:storageColor }}>
               {dbStats.storagePercent}%
@@ -215,7 +215,7 @@ export default function Database() {
           {/* Barre de progression animée */}
           <div style={{ marginBottom:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8, fontSize:12 }}>
-              <span style={{ color:'var(--text-secondary)' }}>{dbStats.storageMB} MB utilisés</span>
+              <span style={{ color:'#ffffff' }}>{dbStats.storageMB} MB utilisés</span>
               <span style={{ fontWeight:600, color:storageColor }}>{dbStats.storagePercent}% / 512 MB</span>
             </div>
             <div style={{ height:10, borderRadius:6, background:'var(--border)', overflow:'hidden' }}>
@@ -243,12 +243,12 @@ export default function Database() {
                 <Building2 size={18} color="#12b76a"/>
               </div>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>Solution Express</div>
+                <div style={{ fontSize:11, color:'#ffffff', fontWeight:600, textTransform:'uppercase', letterSpacing:0.8 }}>Solution Express</div>
                 <div style={{ fontSize:22, fontWeight:800, color:'#12b76a', lineHeight:1.2 }}>
                   <AnimatedNumber value={dbStats.collections?.solutionexpress || leads.length} decimals={0} color="#12b76a"/>
                 </div>
               </div>
-              <div style={{ fontSize:11, color:'var(--text-muted)', textAlign:'right' }}>
+              <div style={{ fontSize:11, color:'#ffffff', textAlign:'right' }}>
                 <div style={{ fontWeight:600 }}>{dbStats.totalDocs} docs</div>
                 <div>au total</div>
               </div>
@@ -268,7 +268,7 @@ export default function Database() {
         {/* Header tableau */}
         <div style={{ padding:'14px 20px', borderBottom:'1px solid var(--border)', background:'linear-gradient(135deg,rgba(59,108,248,0.06),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <Filter size={13} color="var(--text-muted)"/>
+            <Filter size={13} color="#ffffff"/>
             <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>
               Tous les enregistrements
             </span>
@@ -347,7 +347,7 @@ export default function Database() {
                 /* Loading state */
                 <tr>
                   <td colSpan="7" style={{ padding:60, textAlign:'center' }}>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'var(--text-muted)' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, color:'#ffffff' }}>
                       <div style={{ position:'relative', width:28, height:28 }}>
                         <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#f472b6', animation:'spin 0.9s linear infinite' }}/>
                         <div style={{ position:'absolute', inset:3, borderRadius:'50%', border:'1.5px solid transparent', borderBottomColor:'rgba(167,100,248,0.5)', animation:'spin 1.4s linear infinite reverse' }}/>
@@ -375,14 +375,14 @@ export default function Database() {
 
                   {/* Email */}
                   <td style={tdStyle}>
-                    <div style={{ fontSize:12, color:'var(--text-secondary)', maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    <div style={{ fontSize:12, color:'#ffffff', maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                       {item.email || '—'}
                     </div>
                   </td>
 
                   {/* Téléphone */}
                   <td style={tdStyle}>
-                    <div style={{ fontSize:12, color:'var(--text-secondary)' }}>{item.telephone || '—'}</div>
+                    <div style={{ fontSize:12, color:'#ffffff' }}>{item.telephone || '—'}</div>
                   </td>
 
                   {/* Entreprise */}
@@ -394,14 +394,14 @@ export default function Database() {
                           <span style={{ color:'var(--text-primary)' }}>{item.entreprise}</span>
                         </>
                       ) : (
-                        <span style={{ color:'var(--text-muted)' }}>Particulier</span>
+                        <span style={{ color:'#ffffff' }}>Particulier</span>
                       )}
                     </div>
                   </td>
 
                   {/* Ville */}
                   <td style={tdStyle}>
-                    <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:12, color:'var(--text-secondary)' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:12, color:'#ffffff' }}>
                       <MapPin size={11} color="#3b6cf8"/>{item.ville || '—'}
                     </div>
                   </td>
@@ -412,7 +412,7 @@ export default function Database() {
                       onClick={() => handleDelete(item)}
                       style={{ width:32, height:32, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s', margin:'0 auto' }}
                       onMouseEnter={e => { e.currentTarget.style.background='rgba(240,68,56,0.1)'; e.currentTarget.style.borderColor='rgba(240,68,56,0.4)'; e.currentTarget.style.color='#f04438'; e.currentTarget.style.transform='scale(1.1)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background='var(--bg-secondary)'; e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--text-muted)'; e.currentTarget.style.transform='scale(1)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background='var(--bg-secondary)'; e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='#ffffff'; e.currentTarget.style.transform='scale(1)'; }}
                       title="Supprimer">
                       <Trash2 size={13} color="currentColor"/>
                     </button>
@@ -421,11 +421,11 @@ export default function Database() {
               )) : (
                 /* État vide */
                 <tr>
-                  <td colSpan="7" style={{ padding:'48px 0', textAlign:'center', color:'var(--text-muted)' }}>
+                  <td colSpan="7" style={{ padding:'48px 0', textAlign:'center', color:'#ffffff' }}>
                     <div style={{ width:52, height:52, borderRadius:14, background:'rgba(59,108,248,0.06)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px', border:'1px solid rgba(59,108,248,0.1)' }}>
                       <DbIcon size={24} color="#3b6cf8" style={{ opacity:0.4 }}/>
                     </div>
-                    <div style={{ fontSize:14, fontWeight:600, color:'var(--text-secondary)', marginBottom:4 }}>
+                    <div style={{ fontSize:14, fontWeight:600, color:'#ffffff', marginBottom:4 }}>
                       {hasFilters ? 'Aucun résultat' : 'Aucun enregistrement'}
                     </div>
                     <div style={{ fontSize:12 }}>
@@ -441,7 +441,7 @@ export default function Database() {
         {/* Footer tableau — compteur */}
         {displayData.length > 0 && (
           <div style={{ padding:'10px 20px', borderTop:'1px solid var(--border)', background:'var(--bg-secondary)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <span style={{ fontSize:11, color:'var(--text-muted)' }}>
+            <span style={{ fontSize:11, color:'#ffffff' }}>
               <span style={{ fontWeight:700, color:'var(--text-primary)' }}>{displayData.length}</span> enregistrement{displayData.length!==1?'s':''} affichés sur <span style={{ fontWeight:700 }}>{leads.length}</span> au total
             </span>
             {hasFilters && (

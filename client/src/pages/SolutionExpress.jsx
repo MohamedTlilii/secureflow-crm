@@ -91,8 +91,9 @@ function MiniScoreRing({ score, size = 32 }) {
 // ════════════════════════════════════════════════════════════════════════════
 function DatePicker({ value, onChange, placeholder = 'Sélectionner une date' }) {
   const [open, setOpen] = useState(false);
+  const safeVal  = typeof value === 'string' ? value : '';
   const today    = new Date();
-  const initDate = value ? new Date(value + 'T12:00:00') : today;
+  const initDate = safeVal ? new Date(safeVal + 'T12:00:00') : today;
   const [current, setCurrent] = useState({ year: initDate.getFullYear(), month: initDate.getMonth() });
 
   const daysInMonth = new Date(current.year, current.month + 1, 0).getDate();
@@ -110,34 +111,34 @@ function DatePicker({ value, onChange, placeholder = 'Sélectionner une date' })
     setOpen(false);
   };
 
-  const displayValue = value ? new Date(value + 'T12:00:00').toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' }) : '';
+  const displayValue = safeVal ? new Date(safeVal + 'T12:00:00').toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' }) : '';
 
   return (
     <div style={{ position:'relative' }}>
       <button type="button" onClick={() => setOpen(o => !o)}
-        style={{ width:'100%', padding:'8px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', color: value ? 'var(--text-primary)' : 'var(--text-muted)', fontSize:13, textAlign:'left', cursor:'pointer', display:'flex', alignItems:'center', gap:8, transition:'border-color 0.15s' }}
+        style={{ width:'100%', padding:'8px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', color: value ? 'var(--text-primary)' : '#ffffff', fontSize:13, textAlign:'left', cursor:'pointer', display:'flex', alignItems:'center', gap:8, transition:'border-color 0.15s' }}
         onFocus={e => e.currentTarget.style.borderColor='#12b76a'}
         onBlur={e => e.currentTarget.style.borderColor='var(--border)'}>
-        <Calendar size={14} color={value ? '#12b76a' : 'var(--text-muted)'}/>
+        <Calendar size={14} color={safeVal ? '#12b76a' : '#ffffff'}/>
         {displayValue || placeholder}
-        {value && <button type="button" onClick={e => { e.stopPropagation(); onChange(''); }} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:0, fontSize:14, lineHeight:1 }}>×</button>}
+        {safeVal && <button type="button" onClick={e => { e.stopPropagation(); onChange(''); }} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:'#ffffff', padding:0, fontSize:14, lineHeight:1 }}>×</button>}
       </button>
 
       {open && (
         <div style={{ position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:1000, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', padding:14, minWidth:260 }}>
           {/* Navigation mois */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
-            <button type="button" onClick={prevM} style={{ width:28, height:28, borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)' }}>
+            <button type="button" onClick={prevM} style={{ width:28, height:28, borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#ffffff' }}>
               <ChevronLeft size={14}/>
             </button>
             <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', textTransform:'capitalize' }}>{monthName}</span>
-            <button type="button" onClick={nextM} style={{ width:28, height:28, borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)' }}>
+            <button type="button" onClick={nextM} style={{ width:28, height:28, borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#ffffff' }}>
               <ChevronRight size={14}/>
             </button>
           </div>
           {/* Jours semaine */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
-            {days.map((d,i) => <div key={i} style={{ textAlign:'center', fontSize:9, color:'var(--text-muted)', fontWeight:700, padding:'3px 0' }}>{d}</div>)}
+            {days.map((d,i) => <div key={i} style={{ textAlign:'center', fontSize:9, color:'#ffffff', fontWeight:700, padding:'3px 0' }}>{d}</div>)}
           </div>
           {/* Grille jours */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
@@ -146,7 +147,7 @@ function DatePicker({ value, onChange, placeholder = 'Sélectionner une date' })
               const day     = i + 1;
               const y       = current.year, m = String(current.month+1).padStart(2,'0'), d = String(day).padStart(2,'0');
               const dateStr = `${y}-${m}-${d}`;
-              const isSel   = value === dateStr;
+              const isSel   = safeVal === dateStr;
               const isToday = new Date(current.year, current.month, day).toDateString() === today.toDateString();
               return (
                 <button key={day} type="button" onClick={() => selectDay(day)}
@@ -172,12 +173,59 @@ function DatePicker({ value, onChange, placeholder = 'Sélectionner une date' })
 const AV_COLORS = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
 
 const VILLES = [
-  '','Montreal','Laval','Longueuil','Boucherville','Repentigny',
-  'Vaudreuil-Dorion','Terrebonne','Saint-Jean-sur-Richelieu',
-  'Saint-Jerome','Saint-Sauveur','Salaberry-de-Valleyfield',
-  'Sorel-Tracy','Granby','Trois-Rivieres','Shawinigan',
-  'Louiseville','Drummondville','Victoriaville',
-  'Ottawa','Gatineau','Ville de Quebec'
+  'Montréal','Trois-Rivières','Ottawa','Québec',
+  'Laval','Shawinigan','Gatineau','Lévis',
+  'Longueuil','Drummondville','Wakefield','Wendake',
+  'Brossard','Victoriaville','Thurso','L\'Ancienne-Lorette',
+  'Mirabel','Plessisville','Barrhaven','Stoneham',
+  'Saint-Jérôme','Louiseville','Nepean','Tewkesbury',
+  'Saint-Sauveur','Saint-Tite','Kanata','Shannon',
+  'Terrebonne','Donnacona','Gloucester','Saint-Gabriel-de-Valcartier',
+  'Repentigny','Cap-de-la-Madeleine','Masson-Angers','Lac-Delage',
+  'Boucherville','Bécancour','Orléans','L\'Île-Enchanteresse',
+  'Vaudreuil-Dorion','Nicolet','Clarence-Rockland','Sainte-Brigitte-de-Laval',
+  'Salaberry-de-Valleyfield','Saint-Célestin','Aylmer','La Branche',
+  'Saint-Jean-sur-Richelieu','Sainte-Perpétue','Hull','Château-Richer',
+  'Saint-Hyacinthe','Saint-Léonard-d\'Aston','Buckingham','Saint-Pierre',
+  'Sorel-Tracy','Saint-Wenceslas','Cumberland','Le Grand-Village',
+  'Granby','Sainte-Monique','Osgoode','Neuville',
+  'Blainville','Saint-Bonaventure','Greely','Saint-Henri',
+  'Boisbriand','Saint-Guillaume','Metcalfe','Beauport',
+  'Sainte-Thérèse','Wickham','Embrun','Charlesbourg',
+  'Rosemère','Saint-Germain-de-Grantham','Russell','Sainte-Foy',
+  'Lachute','Saint-Cyrille-de-Wendover','Vars','Sillery',
+  'Sainte-Julie','Notre-Dame-du-Bon-Conseil','Navan','Cap-Rouge',
+  'Châteauguay','Saint-Pie-de-Guire','Carlsbad Springs','Saint-Augustin-de-Desmaures',
+  'Mont-Royal','Sainte-Brigitte-des-Saults','Blackburn Hamlet','Loretteville',
+  'Deux-Montagnes','Pierreville','Beacon Hill','Val-Bélair',
+  'Saint-Eustache','Saint-François-du-Lac','Vanier','Lac-Saint-Charles',
+  'Chambly','Yamaska','Chelsea','Boischatel',
+  'Carignan','Saint-David','Old Chelsea','L\'Ange-Gardien',
+  'Beloeil','Saint-Liboire','Cantley','Sainte-Anne-de-Beaupré',
+  'McMasterville','Saint-Simon','Templeton','Pintendre',
+  'Varennes','Saint-Barnabé','Angers','Saint-Romuald',
+  'Contrecœur','Saint-Paulin','Lochaber','Breakeyville',
+  'Mascouche','Sainte-Ursule','Casselman','Saint-Jean-Chrysostome',
+  'L\'Assomption','Maskinongé','Limoges','Bernières',
+  'Joliette','Saint-Justin','Wendover','Saint-Nicolas',
+  'Saint-Charles-Borromée','Saint-Étienne-des-Grès','Stittsville','Saint-Rédempteur',
+  'Lanoraie','Saint-Maurice','Richmond','Charny',
+  'Saint-Constant','Grand-Mère','Manotick','Saint-Lambert-de-Lauzon',
+  'Delson','Saint-Georges-de-Champlain','Fitzroy Harbour','Fossambault-sur-le-Lac',
+  'Candiac','Notre-Dame-du-Mont-Carmel','Quyon','Sainte-Catherine-de-la-Jacques-Cartier',
+  'La Prairie','Sainte-Geneviève-de-Batiscan','Aylmer-Est','Pont-Rouge',
+  'Saint-Bruno-de-Montarville','Batiscan','Pontiac',
+  'Saint-Basile-le-Grand','Sainte-Anne-de-la-Pérade','Shawville','Portneuf',
+  'Otterburn Park','Champlain','Bristol','Saint-Marc-des-Carrières',
+  'Saint-Lambert','Grondines','Luskville',
+  'Mont-Saint-Hilaire','Saint-Luc-de-Vincennes','Breckenridge','Baie-Saint-Paul',
+  'Mercier','Sainte-Marie-de-Blandford','Carp','Saint-Ferréol-les-Neiges',
+  'Sainte-Catherine','Warwick','Bells Corners','Saint-Tite-des-Caps',
+  'Coteau-du-Lac','Kingsey Falls','Constance Bay',
+  'Hudson','Sainte-Élizabeth-de-Warwick','Munster','Scott',
+  'Rigaud','Pointe-Claire','Dollard-des-Ormeaux','Kirkland',
+  'Beaconsfield','Baie-d\'Urfé','Sainte-Anne-de-Bellevue','Westmount',
+  'Sainte-Agathe-des-Monts','Côte-Saint-Luc','Sherbrooke',
 ];
 
 const TYPE_COMMERCE_LABELS = {
@@ -267,7 +315,7 @@ const EMPTY_FORM = {
   entreprise:'', typeCommerce:'autre', typeClient:'b2b',
   ancienneAdresse:'',
   prenom:'', nom:'', sexe:'inconnu', telephone:'', email:'',
-  adresse:'', ville:'Montreal', region:'',
+  adresse:'', ville:'Montréal', region:'',
   leadType:'nouvelle_entreprise',
   qualificationSysteme:'inconnu',
   produits:[],
@@ -302,7 +350,7 @@ const iSt = {
 function FicheSection({ title, children }) {
   return (
     <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', border:'1px solid rgba(255,255,255,0.05)' }}>
-      <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>{title}</div>
+      <div style={{ fontSize:10, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>{title}</div>
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>{children}</div>
     </div>
   );
@@ -313,9 +361,9 @@ function InfoRow({ icon, label, val }) {
   if (!val || val === 'inconnu' || val === 'aucun') return null;
   return (
     <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
-      <span style={{ color:'var(--text-muted)', marginTop:2, flexShrink:0 }}>{icon}</span>
+      <span style={{ color:'#ffffff', marginTop:2, flexShrink:0 }}>{icon}</span>
       <div>
-        <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase' }}>{label}</div>
+        <div style={{ fontSize:10, color:'#ffffff', fontWeight:600, textTransform:'uppercase' }}>{label}</div>
         <div style={{ fontSize:13, color:'var(--text-primary)', wordBreak:'break-word' }}>{val}</div>
       </div>
     </div>
@@ -349,9 +397,9 @@ function FournisseurRow({ icon, color, label, actuel, propose }) {
       onMouseEnter={e => e.currentTarget.style.transform='translateX(3px)'}
       onMouseLeave={e => e.currentTarget.style.transform='translateX(0)'}>
       <span style={{ flexShrink:0 }}>{icon}</span>
-      <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', minWidth:52 }}>{label}</span>
+      <span style={{ fontSize:11, color:'#ffffff', fontWeight:600, textTransform:'uppercase', minWidth:52 }}>{label}</span>
       {actuel  && <span style={{ fontSize:12, color:'var(--text-primary)', background:'var(--bg-secondary)', padding:'2px 8px', borderRadius:6 }}>{actuel}</span>}
-      {actuel && propose && <span style={{ fontSize:12, color:'var(--text-muted)' }}>→</span>}
+      {actuel && propose && <span style={{ fontSize:12, color:'#ffffff' }}>→</span>}
       {propose && <span style={{ fontSize:12, color, background:`${color}15`, padding:'2px 8px', borderRadius:6, fontWeight:600 }}>{propose}</span>}
     </div>
   );
@@ -401,20 +449,24 @@ export default function SolutionExpress() {
   const [search, setSearch]           = useState('');
   const [filters, setFilters]         = useState(EMPTY_FILTERS);
   const [sortBy, setSortBy]           = useState('date_desc');
-  const [showFilters, setShowFilters] = useState(!false); // ouvert par défaut desktop
+  const [showFilters, setShowFilters] = useState(true);
   const [modal, setModal]             = useState(null);
   const [selected, setSelected]       = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
   const [noteText, setNoteText]       = useState('');
   const [activeTab, setActiveTab]     = useState(0);
-  const [searchFocused, setSearchFocused] = useState(false); // pour glow focus
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [fetchError, setFetchError]       = useState(false);
 
   // ── Fetch toutes les fiches ───────────────────────────────────────────
   const fetchFiches = useCallback(async () => {
     try {
       const r = await api.get('/api/solution-express');
-      setFiches(r.data);
-    } catch { toast.error('Erreur chargement'); }
+      const data = Array.isArray(r.data) ? r.data : [];
+      setFiches(data);
+      setFetchError(false);
+      return data;
+    } catch { toast.error('Erreur chargement'); setFetchError(true); }
     finally { setLoading(false); }
   }, []);
 
@@ -424,7 +476,7 @@ export default function SolutionExpress() {
   const setF    = (k, v) => setFilters(f => ({ ...f, [k]: v }));
   const setFld  = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const ini     = p => ((p.prenom?.[0] || p.entreprise?.[0] || 'S')).toUpperCase();
-  const fmtDate = d => d ? new Date(d).toLocaleDateString('fr-CA', { year:'numeric', month:'short', day:'numeric' }) : '—';
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('fr-CA', { year:'numeric', month:'short', day:'numeric', timeZone:'UTC' }) : '—';
   const hasFilters = Object.values(filters).some(v => v !== '');
   const dernNote   = p => p.notes?.length > 0 ? p.notes[p.notes.length - 1] : null;
 
@@ -445,9 +497,10 @@ export default function SolutionExpress() {
       };
       await api.put(`/api/solution-express/${p._id}`, updated);
       toast.success(!p.commissionPayee ? '✓ Commission marquée payée !' : 'Commission marquée non payée');
-      fetchFiches();
-      if (selected?._id === p._id) {
-        setSelected(prev => ({ ...prev, commissionPayee: !p.commissionPayee, datePaiementCommission: updated.datePaiementCommission }));
+      const fresh = await fetchFiches();
+      if (fresh && selected?._id === p._id) {
+        const freshFiche = fresh.find(x => x._id === p._id);
+        if (freshFiche) setSelected(freshFiche);
       }
     } catch { toast.error('Erreur mise à jour commission'); }
   };
@@ -509,6 +562,13 @@ export default function SolutionExpress() {
 
   // ── Soumettre formulaire add/edit ─────────────────────────────────────
   const handleSubmit = async () => {
+    if (!form.prenom?.trim())    { toast.error('Prénom requis');               return; }
+    if (!form.nom?.trim())       { toast.error('Nom requis');                  return; }
+    if (!form.telephone?.trim()) { toast.error('Téléphone requis');            return; }
+    if (!form.email?.trim())     { toast.error('Email requis');                return; }
+    if (!form.adresse?.trim())   { toast.error('Adresse requise');             return; }
+    if (!form.entreprise?.trim()){ toast.error('Nom de l\'entreprise requis'); return; }
+    if (!form.dateVente)         { toast.error('Date de vente requise');       return; }
     try {
       const payload = {
         ...form,
@@ -594,7 +654,7 @@ export default function SolutionExpress() {
             </div>
             <div>
               <h1 style={{ margin:0, fontSize: isMobile?20:24 }}>Solution Express</h1>
-              <p style={{ color:'var(--text-muted)', fontSize:13, margin:0, marginTop:2 }}>
+              <p style={{ color:'#ffffff', fontSize:13, margin:0, marginTop:2 }}>
                 CRM personnel · <span style={{ color:'#12b76a', fontWeight:700 }}>{totalFiches}</span> fiche{totalFiches!==1?'s':''}
               </p>
             </div>
@@ -626,7 +686,7 @@ export default function SolutionExpress() {
 
         {/* Barre de conversion animée */}
         <div>
-          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:11, color:'var(--text-muted)' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:11, color:'#ffffff' }}>
             <span>Taux d'installation</span>
             <span style={{ fontWeight:700, color:'#12b76a' }}>{convRate}%</span>
           </div>
@@ -646,8 +706,8 @@ export default function SolutionExpress() {
       <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding:14, backdropFilter:'blur(20px)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: showFilters ? 14 : 0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <Filter size={13} color="var(--text-muted)"/>
-            <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Filtres</span>
+            <Filter size={13} color="#ffffff"/>
+            <span style={{ fontSize:11, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Filtres</span>
             {hasFilters && (
               <span style={{ fontSize:10, background:'rgba(18,183,106,0.1)', color:'#12b76a', padding:'2px 8px', borderRadius:20, fontWeight:700 }}>
                 Actifs
@@ -662,7 +722,7 @@ export default function SolutionExpress() {
               </button>
             )}
             <button onClick={() => setShowFilters(s => !s)}
-              style={{ background:'var(--bg-secondary)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', color:'var(--text-muted)', padding:'5px 8px', display:'flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600 }}>
+              style={{ background:'var(--bg-secondary)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', color:'#ffffff', padding:'5px 8px', display:'flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600 }}>
               {showFilters ? <><ChevronUp size={14}/> Cacher</> : <><ChevronDown size={14}/> Afficher</>}
             </button>
           </div>
@@ -680,7 +740,7 @@ export default function SolutionExpress() {
                 ['ville',     'Ville',       Object.fromEntries(VILLES.filter(v=>v).map(v=>[v,v]))],
               ].map(([k, l, opts]) => (
                 <div key={k}>
-                  <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>{l}</div>
+                  <div style={{ fontSize:10, color:'#ffffff', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>{l}</div>
                   <select style={iSt} value={filters[k]} onChange={e => setF(k, e.target.value)}>
                     <option value="">Tous</option>
                     {Object.entries(opts).map(([ov,ol]) => <option key={ov} value={ov}>{ol}</option>)}
@@ -688,7 +748,7 @@ export default function SolutionExpress() {
                 </div>
               ))}
               <div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Trier par</div>
+                <div style={{ fontSize:10, color:'#ffffff', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Trier par</div>
                 <select style={iSt} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                   <option value="date_desc">Date ↓ récent</option>
                   <option value="date_asc">Date ↑ ancien</option>
@@ -703,24 +763,10 @@ export default function SolutionExpress() {
             {/* Ligne 2 — 4 filtres secondaires */}
             <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(4,minmax(0,1fr))', gap:10, marginBottom:10 }}>
               <div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Type commerce</div>
+                <div style={{ fontSize:10, color:'#ffffff', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Type commerce</div>
                 <select style={iSt} value={filters.typeCommerce} onChange={e => setF('typeCommerce', e.target.value)}>
                   <option value="">Tous</option>
                   {Object.entries(TYPE_COMMERCE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </div>
-              <div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Produit</div>
-                <select style={iSt} value={filters.produit} onChange={e => setF('produit', e.target.value)}>
-                  <option value="">Tous</option>
-                  {Object.entries(PRODUIT_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </div>
-              <div>
-                <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Qualification</div>
-                <select style={iSt} value={filters.qualificationSysteme} onChange={e => setF('qualificationSysteme', e.target.value)}>
-                  <option value="">Toutes</option>
-                  {Object.entries(QUALIF_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div>
@@ -736,24 +782,6 @@ export default function SolutionExpress() {
               </div>
             </div>
 
-            {/* Ligne 3 — fournisseurs */}
-            <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'repeat(3,minmax(0,1fr))', gap:10 }}>
-              {[
-                ['fournisseurAlarme',   <Shield size={10} color="#f04438"/>,     'Fournisseur alarme',   FOURN_ALARME  ],
-                ['fournisseurInternet', <Wifi size={10} color="#3b6cf8"/>,       'Fournisseur internet', FOURN_INTERNET],
-                ['fournisseurMobile',   <Smartphone size={10} color="#12b76a"/>,'Fournisseur mobile',   FOURN_MOBILE  ],
-              ].map(([k, icon, label, opts]) => (
-                <div key={k}>
-                  <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, fontWeight:600, textTransform:'uppercase', display:'flex', alignItems:'center', gap:5 }}>
-                    {icon} {label}
-                  </div>
-                  <select style={iSt} value={filters[k]} onChange={e => setF(k, e.target.value)}>
-                    <option value="">Tous</option>
-                    {Object.entries(opts).map(([ov,ol]) => <option key={ov} value={ov}>{ol}</option>)}
-                  </select>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>
@@ -763,7 +791,7 @@ export default function SolutionExpress() {
           BARRE DE RECHERCHE — glow vert au focus
           ════════════════════════════════════════════════════════════════ */}
       <div style={{ position:'relative', marginBottom:16 }}>
-        <Search size={15} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color: searchFocused ? '#12b76a' : 'var(--text-muted)', transition:'color 0.2s' }}/>
+        <Search size={15} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color: searchFocused ? '#12b76a' : '#ffffff', transition:'color 0.2s' }}/>
         <input
           style={{ ...iSt, paddingLeft:40, paddingRight:search?40:14, fontSize:14, height:46, borderRadius:12,
             borderColor: searchFocused ? '#12b76a' : 'var(--border)',
@@ -777,7 +805,7 @@ export default function SolutionExpress() {
         />
         {search && (
           <button onClick={() => setSearch('')}
-            style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'var(--bg-secondary)', border:'1px solid var(--border)', borderRadius:6, cursor:'pointer', color:'var(--text-muted)', padding:'3px 6px', display:'flex', alignItems:'center' }}>
+            style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'var(--bg-secondary)', border:'1px solid var(--border)', borderRadius:6, cursor:'pointer', color:'#ffffff', padding:'3px 6px', display:'flex', alignItems:'center' }}>
             <X size={12}/>
           </button>
         )}
@@ -785,7 +813,7 @@ export default function SolutionExpress() {
 
       {/* ── Compteur résultats ─────────────────────────────────────────── */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-        <div style={{ fontSize:12, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+        <div style={{ fontSize:12, color:'#ffffff', display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
           <span style={{ fontWeight:700, color:'var(--text-primary)', fontSize:15 }}>{sorted.length}</span>
           <span>fiche{sorted.length !== 1 ? 's' : ''}{(search||hasFilters) ? ' trouvée' : ' au total'}</span>
           {(search||hasFilters) && (
@@ -809,6 +837,12 @@ export default function SolutionExpress() {
             <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#818cf8', animation:'spin 0.9s linear infinite' }}/>
             <div style={{ position:'absolute', inset:4, borderRadius:'50%', border:'2px solid transparent', borderBottomColor:'rgba(16,185,129,0.5)', animation:'spin 1.5s linear infinite reverse' }}/>
           </div>
+        </div>
+      ) : fetchError ? (
+        <div className="empty-state">
+          <AlertTriangle size={40} color="#f04438"/>
+          <p style={{ color:'#ffffff' }}>Erreur de chargement</p>
+          <button className="btn btn-primary" onClick={fetchFiches} style={{ marginTop:16 }}>Réessayer</button>
         </div>
       ) : sorted.length === 0 ? (
         <div className="empty-state">
@@ -851,9 +885,14 @@ export default function SolutionExpress() {
                   <div className={`avatar ${AV_COLORS[i%AV_COLORS.length]}`} style={{ width:44, height:44, fontSize:15, flexShrink:0 }}>{ini(p)}</div>
                   <div style={{ minWidth:0, flex:1 }}>
                     <div style={{ fontWeight:700, fontSize:14, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', color:'var(--text-primary)' }}>
-                      {p.entreprise || `${p.prenom} ${p.nom}`.trim() || 'Sans nom'}
+                      {p.typeClient === 'b2c' ? `${p.prenom||''} ${p.nom||''}`.trim() || 'Sans nom' : p.entreprise || `${p.prenom||''} ${p.nom||''}`.trim() || 'Sans nom'}
                     </div>
-                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
+                    {p.typeClient === 'b2b' && (`${p.prenom||''} ${p.nom||''}`.trim()) && (
+                      <div style={{ fontSize:11, color:'#ffffff', marginTop:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {`${p.prenom||''} ${p.nom||''}`.trim()}
+                      </div>
+                    )}
+                    <div style={{ fontSize:11, color:'#ffffff', marginTop:2 }}>
                       {p.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'}{p.typeCommerce && p.typeCommerce!=='autre' ? ` · ${TYPE_COMMERCE_LABELS[p.typeCommerce]||p.typeCommerce}` : ''}
                     </div>
                   </div>
@@ -879,53 +918,53 @@ export default function SolutionExpress() {
                 {/* ── Fournisseurs actuel ── */}
                 <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:8 }}>
                   {p.fournisseurAlarme && !['inconnu','aucun'].includes(p.fournisseurAlarme) && (
-                    <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:5 }}>
-                      <Shield size={10} color="#f04438"/> {FOURN_ALARME[p.fournisseurAlarme]}
-                      {p.fournisseurProposeAlarme && !['aucun'].includes(p.fournisseurProposeAlarme) && <span style={{ color:'#f04438', fontWeight:600 }}>→ {FOURN_ALARME[p.fournisseurProposeAlarme]}</span>}
+                    <span style={{ fontSize:11, color:'#ffffff', display:'flex', alignItems:'center', gap:5 }}>
+                      <Shield size={10} color="#f04438"/> {FOURN_ALARME[p.fournisseurAlarme] || p.fournisseurAlarme}
+                      {p.fournisseurProposeAlarme && !['aucun'].includes(p.fournisseurProposeAlarme) && <span style={{ color:'#f04438', fontWeight:600 }}>→ {FOURN_ALARME[p.fournisseurProposeAlarme] || p.fournisseurProposeAlarme}</span>}
                     </span>
                   )}
                   {p.fournisseurInternet && !['inconnu','aucun'].includes(p.fournisseurInternet) && (
-                    <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:5 }}>
-                      <Wifi size={10} color="#3b6cf8"/> {FOURN_INTERNET[p.fournisseurInternet]}
-                      {p.fournisseurProposeInternet && !['aucun'].includes(p.fournisseurProposeInternet) && <span style={{ color:'#3b6cf8', fontWeight:600 }}>→ {FOURN_INTERNET[p.fournisseurProposeInternet]}</span>}
+                    <span style={{ fontSize:11, color:'#ffffff', display:'flex', alignItems:'center', gap:5 }}>
+                      <Wifi size={10} color="#3b6cf8"/> {FOURN_INTERNET[p.fournisseurInternet] || p.fournisseurInternet}
+                      {p.fournisseurProposeInternet && !['aucun'].includes(p.fournisseurProposeInternet) && <span style={{ color:'#3b6cf8', fontWeight:600 }}>→ {FOURN_INTERNET[p.fournisseurProposeInternet] || p.fournisseurProposeInternet}</span>}
                     </span>
                   )}
                   {p.fournisseurMobile && !['inconnu','aucun'].includes(p.fournisseurMobile) && (
-                    <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:5 }}>
-                      <Smartphone size={10} color="#12b76a"/> {FOURN_MOBILE[p.fournisseurMobile]}
-                      {p.fournisseurProposeMobile && !['aucun'].includes(p.fournisseurProposeMobile) && <span style={{ color:'#12b76a', fontWeight:600 }}>→ {FOURN_MOBILE[p.fournisseurProposeMobile]}</span>}
+                    <span style={{ fontSize:11, color:'#ffffff', display:'flex', alignItems:'center', gap:5 }}>
+                      <Smartphone size={10} color="#12b76a"/> {FOURN_MOBILE[p.fournisseurMobile] || p.fournisseurMobile}
+                      {p.fournisseurProposeMobile && !['aucun'].includes(p.fournisseurProposeMobile) && <span style={{ color:'#12b76a', fontWeight:600 }}>→ {FOURN_MOBILE[p.fournisseurProposeMobile] || p.fournisseurProposeMobile}</span>}
                     </span>
                   )}
                 </div>
 
                 {/* ── Qualification système ── */}
                 {p.qualificationSysteme && p.qualificationSysteme!=='inconnu' && (
-                  <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8, background:'var(--bg-secondary)', padding:'4px 8px', borderRadius:6, display:'inline-block' }}>
+                  <div style={{ fontSize:11, color:'#ffffff', marginBottom:8, background:'var(--bg-secondary)', padding:'4px 8px', borderRadius:6, display:'inline-block' }}>
                     🔒 {QUALIF_LABELS[p.qualificationSysteme]}
                   </div>
                 )}
 
                 {/* ── Résumé tronqué ── */}
                 {p.summary && (
-                  <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:8, lineHeight:1.5, background:'var(--bg-secondary)', padding:'8px 10px', borderRadius:8, borderLeft:`3px solid ${leadColor}`, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                  <div style={{ fontSize:12, color:'#ffffff', marginBottom:8, lineHeight:1.5, background:'var(--bg-secondary)', padding:'8px 10px', borderRadius:8, borderLeft:`3px solid ${leadColor}`, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                     {p.summary}
                   </div>
                 )}
 
                 {/* ── Dernière note ── */}
                 {lastNote && (
-                  <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8, background:'var(--bg-secondary)', padding:'6px 10px', borderRadius:8, borderLeft:'3px solid #12b76a', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', fontStyle:'italic' }}>
+                  <div style={{ fontSize:11, color:'#ffffff', marginBottom:8, background:'var(--bg-secondary)', padding:'6px 10px', borderRadius:8, borderLeft:'3px solid #12b76a', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', fontStyle:'italic' }}>
                     💬 {lastNote}
                   </div>
                 )}
 
                 {/* ── Contact ── */}
                 <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:8 }}>
-                  {p.telephone && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}><Phone size={11}/>{p.telephone}</span>}
-                  {p.email     && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Mail size={11}/>{p.email}</span>}
-                  {p.ville     && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}><MapPin size={11}/>{p.ville}</span>}
-                  {(p.prenom||p.nom) && <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}><User size={11}/>{p.prenom} {p.nom}</span>}
-                  <span style={{ fontSize:11, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:6 }}><Clock size={10}/>{fmtDate(p.createdAt)}</span>
+                  {p.telephone && <span style={{ fontSize:12, color:'#ffffff', display:'flex', alignItems:'center', gap:6 }}><Phone size={11}/>{p.telephone}</span>}
+                  {p.email     && <span style={{ fontSize:12, color:'#ffffff', display:'flex', alignItems:'center', gap:6, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Mail size={11}/>{p.email}</span>}
+                  {p.ville     && <span style={{ fontSize:12, color:'#ffffff', display:'flex', alignItems:'center', gap:6 }}><MapPin size={11}/>{p.ville}</span>}
+                  {(p.prenom||p.nom) && <span style={{ fontSize:12, color:'#ffffff', display:'flex', alignItems:'center', gap:6 }}><User size={11}/>{p.prenom} {p.nom}</span>}
+                  {p.dateVente && <span style={{ fontSize:11, color:'#ffffff', display:'flex', alignItems:'center', gap:6 }}><Calendar size={10}/>{fmtDate(p.dateVente)}</span>}
                 </div>
 
                 {/* ── Badge commission ── */}
@@ -936,15 +975,15 @@ export default function SolutionExpress() {
                 {/* ── Actions rapides ── */}
                 <div style={{ display:'flex', gap:6, marginTop:10, paddingTop:10, borderTop:'1px solid var(--border)' }} onClick={e => e.stopPropagation()}>
                   <button onClick={e => openEdit(p,e)}
-                    style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'6px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', fontSize:11, color:'var(--text-muted)', transition:'all 0.15s' }}
+                    style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'6px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', fontSize:11, color:'#ffffff', transition:'all 0.15s' }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor='#3b6cf8'; e.currentTarget.style.color='#3b6cf8'; e.currentTarget.style.background='rgba(59,108,248,0.06)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--text-muted)'; e.currentTarget.style.background='var(--bg-secondary)'; }}>
+                    onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='#ffffff'; e.currentTarget.style.background='var(--bg-secondary)'; }}>
                     <Edit2 size={12}/> Modifier
                   </button>
                   <button onClick={e => handleDelete(p,e)}
-                    style={{ width:34, display:'flex', alignItems:'center', justifyContent:'center', padding:'6px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', fontSize:11, color:'var(--text-muted)', transition:'all 0.15s' }}
+                    style={{ width:34, display:'flex', alignItems:'center', justifyContent:'center', padding:'6px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-secondary)', cursor:'pointer', fontSize:11, color:'#ffffff', transition:'all 0.15s' }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor='#f04438'; e.currentTarget.style.color='#f04438'; e.currentTarget.style.background='rgba(240,68,56,0.06)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--text-muted)'; e.currentTarget.style.background='var(--bg-secondary)'; }}>
+                    onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='#ffffff'; e.currentTarget.style.background='var(--bg-secondary)'; }}>
                     <Trash2 size={12}/>
                   </button>
                 </div>
@@ -967,8 +1006,8 @@ export default function SolutionExpress() {
                 <div style={{ display:'flex', alignItems:'center', gap:14 }}>
                   <div className={`avatar ${AV_COLORS[0]}`} style={{ width: isMobile?48:64, height: isMobile?48:64, fontSize: isMobile?18:22, flexShrink:0 }}>{ini(selected)}</div>
                   <div>
-                    <h2 style={{ margin:'0 0 4px', fontSize: isMobile?18:22 }}>{selected.entreprise || `${selected.prenom} ${selected.nom}`.trim() || 'Sans nom'}</h2>
-                    <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:8 }}>
+                    <h2 style={{ margin:'0 0 4px', fontSize: isMobile?18:22 }}>{selected.typeClient === 'b2c' ? `${selected.prenom||''} ${selected.nom||''}`.trim() || 'Sans nom' : selected.entreprise || `${selected.prenom||''} ${selected.nom||''}`.trim() || 'Sans nom'}</h2>
+                    <div style={{ fontSize:13, color:'#ffffff', marginBottom:8 }}>
                       {selected.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'} · {TYPE_COMMERCE_LABELS[selected.typeCommerce]||''} {selected.ville?`· ${selected.ville}`:''}
                     </div>
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
@@ -986,14 +1025,14 @@ export default function SolutionExpress() {
 
               {/* ── Pipeline stepper horizontal ── */}
               <div style={{ marginBottom:24 }}>
-                <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Pipeline</div>
+                <div style={{ fontSize:11, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Pipeline</div>
                 <div style={{ display:'flex', gap: isMobile?4:8, flexWrap:'wrap' }}>
                   {Object.entries(STATUS_LABELS).map(([k,v]) => (
                     <button key={k} onClick={() => changeStatus(selected,k)}
                       style={{ padding: isMobile?'5px 10px':'6px 14px', borderRadius:20, fontSize: isMobile?11:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
                         border:`2px solid ${selected.status===k?STATUS_COLORS[k]:'var(--border)'}`,
                         background:selected.status===k?STATUS_COLORS[k]:'rgba(5,12,32,0.9)',
-                        color:selected.status===k?'#fff':'var(--text-secondary)' }}>
+                        color:selected.status===k?'#fff':'#ffffff' }}>
                       {v}
                     </button>
                   ))}
@@ -1027,17 +1066,11 @@ export default function SolutionExpress() {
                       <div key={s.label} style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'10px 14px', textAlign:'center', border:'1px solid rgba(255,255,255,0.05)', transition:'transform 0.15s' }}
                         onMouseEnter={e => e.currentTarget.style.transform='translateY(-2px)'}
                         onMouseLeave={e => e.currentTarget.style.transform='translateY(0)'}>
-                        <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>{s.label}</div>
+                        <div style={{ fontSize:10, color:'#ffffff', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>{s.label}</div>
                         <div style={{ fontSize: isMobile?16:18, fontWeight:700, color:s.color }}>{s.value}</div>
                       </div>
                     ))}
                   </div>
-                  {selected.dateVente && (
-                    <div style={{ fontSize:11, color:'var(--text-muted)' }}>
-                      📅 Date de vente : {fmtDate(selected.dateVente)}
-                      {selected.datePaiementCommission && ` · Payée le : ${fmtDate(selected.datePaiementCommission)}`}
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -1064,7 +1097,7 @@ export default function SolutionExpress() {
 
               {/* ── Fournisseurs avec hover slide ── */}
               <div style={{ marginBottom:20 }}>
-                <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Fournisseurs — Actuel → Proposé</div>
+                <div style={{ fontSize:11, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Fournisseurs — Actuel → Proposé</div>
                 <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'16px', border:'1px solid rgba(255,255,255,0.05)', display:'flex', flexDirection:'column', gap:12 }}>
                   <FournisseurRow icon={<Shield size={13} color="#f04438"/>}     color="#f04438" label="Alarme"   actuel={getFournLabel('alarme',   selected.fournisseurAlarme)}   propose={getFournLabel('alarme',   selected.fournisseurProposeAlarme)}/>
                   <FournisseurRow icon={<Wifi size={13} color="#3b6cf8"/>}       color="#3b6cf8" label="Internet" actuel={getFournLabel('internet', selected.fournisseurInternet)} propose={getFournLabel('internet', selected.fournisseurProposeInternet)}/>
@@ -1075,22 +1108,33 @@ export default function SolutionExpress() {
               {/* ── Résumé ── */}
               {selected.summary && (
                 <div style={{ marginBottom:20 }}>
-                  <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Résumé</div>
-                  <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.7, borderLeft:'3px solid #12b76a', border:'1px solid rgba(255,255,255,0.05)', borderLeftWidth:3, whiteSpace:'pre-wrap' }}>{selected.summary}</div>
+                  <div style={{ fontSize:11, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Résumé</div>
+                  <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', fontSize:13, color:'#ffffff', lineHeight:1.7, borderLeft:'3px solid #12b76a', border:'1px solid rgba(255,255,255,0.05)', borderLeftWidth:3, whiteSpace:'pre-wrap' }}>{selected.summary}</div>
+                </div>
+              )}
+
+              {/* ── URL source ── */}
+              {selected.sourceUrl && (
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:11, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>URL source</div>
+                  <a href={selected.sourceUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize:12, color:'#3b6cf8', wordBreak:'break-all', display:'block', background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'10px 14px', border:'1px solid rgba(255,255,255,0.05)' }}>
+                    {selected.sourceUrl}
+                  </a>
                 </div>
               )}
 
               {/* ── Texte source ── */}
               {selected.sourceText && (
                 <div style={{ marginBottom:20 }}>
-                  <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Texte source</div>
-                  <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', fontSize:12, color:'var(--text-secondary)', lineHeight:1.6, borderLeft:'3px solid rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.05)', borderLeftWidth:3, whiteSpace:'pre-wrap', maxHeight:160, overflowY:'auto' }}>{selected.sourceText}</div>
+                  <div style={{ fontSize:11, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>Texte source</div>
+                  <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', fontSize:12, color:'#ffffff', lineHeight:1.6, borderLeft:'3px solid rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.05)', borderLeftWidth:3, whiteSpace:'pre-wrap', maxHeight:160, overflowY:'auto' }}>{selected.sourceText}</div>
                 </div>
               )}
 
               {/* ── Notes avec timeline ── */}
               <div>
-                <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:12 }}>
+                <div style={{ fontSize:11, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:12 }}>
                   Notes ({selected.notes?.length||0})
                 </div>
                 {selected.notes?.length > 0 ? (
@@ -1098,19 +1142,19 @@ export default function SolutionExpress() {
                     {[...selected.notes].reverse().map((n, idx) => {
                       const realIdx = (selected.notes.length-1) - idx;
                       return (
-                        <div key={idx} style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'10px 14px', fontSize:13, color:'var(--text-secondary)', lineHeight:1.5, borderLeft:'3px solid #12b76a', border:'1px solid rgba(255,255,255,0.05)', borderLeftWidth:3, display:'flex', alignItems:'flex-start', gap:10, transition:'transform 0.15s' }}
+                        <div key={realIdx} style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#ffffff', lineHeight:1.5, borderLeft:'3px solid #12b76a', border:'1px solid rgba(255,255,255,0.05)', borderLeftWidth:3, display:'flex', alignItems:'flex-start', gap:10, transition:'transform 0.15s' }}
                           onMouseEnter={e => e.currentTarget.style.transform='translateX(3px)'}
                           onMouseLeave={e => e.currentTarget.style.transform='translateX(0)'}>
                           <span style={{ flex:1 }}>{n}</span>
                           <button onClick={() => deleteNote(selected, realIdx)}
-                            style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', flexShrink:0, padding:'2px', borderRadius:4, transition:'color 0.15s' }}
+                            style={{ background:'none', border:'none', cursor:'pointer', color:'#ffffff', flexShrink:0, padding:'2px', borderRadius:4, transition:'color 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.color='var(--danger)'}
-                            onMouseLeave={e => e.currentTarget.style.color='var(--text-muted)'}><Trash2 size={13}/></button>
+                            onMouseLeave={e => e.currentTarget.style.color='#ffffff'}><Trash2 size={13}/></button>
                         </div>
                       );
                     })}
                   </div>
-                ) : <div style={{ color:'var(--text-muted)', fontSize:13, padding:'12px 0', marginBottom:12 }}>Aucune note pour l'instant</div>}
+                ) : <div style={{ color:'#ffffff', fontSize:13, padding:'12px 0', marginBottom:12 }}>Aucune note pour l'instant</div>}
                 <textarea className="input" style={{ resize:'vertical', minHeight:80, marginBottom:8 }} placeholder="Ajouter une note..." value={noteText} onChange={e => setNoteText(e.target.value)}/>
                 <button className="btn btn-primary" onClick={() => addNote(selected)} style={{ width:'100%' }}>
                   <Plus size={13}/> Ajouter la note
@@ -1146,7 +1190,7 @@ export default function SolutionExpress() {
                     <h2 style={{ margin:0, fontSize:17 }}>
                       {modal==='add' ? 'Nouvelle fiche' : (form.entreprise || `${form.prenom} ${form.nom}`.trim() || 'Modifier')}
                     </h2>
-                    <div style={{ fontSize:12, color:'var(--text-muted)' }}>
+                    <div style={{ fontSize:12, color:'#ffffff' }}>
                       {modal==='add' ? 'Remplis les informations ci-dessous' : 'Modification de la fiche'}
                     </div>
                   </div>
@@ -1160,7 +1204,7 @@ export default function SolutionExpress() {
                     style={{ padding:'10px 14px', fontSize: isMobile?11:12, fontWeight:600, cursor:'pointer', border:'none',
                       borderBottom: activeTab===idx ? `2px solid ${STATUS_COLORS[form.status]||'#12b76a'}` : '2px solid transparent',
                       background:'transparent',
-                      color: activeTab===idx ? (STATUS_COLORS[form.status]||'#12b76a') : 'var(--text-muted)',
+                      color: activeTab===idx ? (STATUS_COLORS[form.status]||'#12b76a') : '#ffffff',
                       transition:'all 0.15s', whiteSpace:'nowrap' }}>
                     {tab.label}
                   </button>
@@ -1243,7 +1287,7 @@ export default function SolutionExpress() {
                             style={{ padding:'8px 14px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
                               border:`2px solid ${sel?color:'var(--border)'}`,
                               background:sel?`${color}18`:'var(--bg-secondary)',
-                              color:sel?color:'var(--text-muted)',
+                              color:sel?color:'#ffffff',
                               display:'flex', alignItems:'center', gap:6,
                               transform: sel ? 'scale(1.05)' : 'scale(1)' }}>
                             <Icon size={13}/> {v}
@@ -1273,12 +1317,12 @@ export default function SolutionExpress() {
                       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>{icon}<span style={{ fontSize:13, fontWeight:600 }}>{label}</span></div>
                       <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr auto 1fr', gap:10, alignItems:'center' }}>
                         <div>
-                          <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Actuel</div>
+                          <div style={{ fontSize:10, color:'#ffffff', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Actuel</div>
                           <select className="select" value={form[aKey]} onChange={e => setFld(aKey,e.target.value)}>
                             {Object.entries(list).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                           </select>
                         </div>
-                        {!isMobile && <div style={{ textAlign:'center', color:'var(--text-muted)', fontSize:20, paddingTop:16 }}>→</div>}
+                        {!isMobile && <div style={{ textAlign:'center', color:'#ffffff', fontSize:20, paddingTop:16 }}>→</div>}
                         <div>
                           <div style={{ fontSize:10, color, fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Proposé</div>
                           <select className="select" value={form[pKey]} onChange={e => setFld(pKey,e.target.value)} style={{ borderColor:`${color}40` }}>
@@ -1297,11 +1341,11 @@ export default function SolutionExpress() {
 
                   {/* Preview total animé */}
                   <div style={{ background: form.commissionPayee ? 'rgba(18,183,106,0.08)' : 'rgba(247,144,9,0.08)', borderRadius:14, padding:'22px', border:`2px solid ${form.commissionPayee ? '#12b76a' : '#f79009'}30`, textAlign:'center' }}>
-                    <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:6 }}>Total commission</div>
+                    <div style={{ fontSize:11, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:6 }}>Total commission</div>
                     <div style={{ fontSize:36, fontWeight:800, color: form.commissionPayee ? '#12b76a' : '#f79009', lineHeight:1 }}>
                       {((parseFloat(form.commissionFixe)||0) + (parseFloat(form.commissionExtra)||0)).toFixed(2)} TND
                     </div>
-                    <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:8, display:'flex', justifyContent:'center', gap:16 }}>
+                    <div style={{ fontSize:12, color:'#ffffff', marginTop:8, display:'flex', justifyContent:'center', gap:16 }}>
                       {(parseFloat(form.commissionFixe)||0) > 0 && <span>Fixe : <strong style={{color:'var(--text-primary)'}}>{(parseFloat(form.commissionFixe)||0).toFixed(2)} TND</strong></span>}
                       {(parseFloat(form.commissionExtra)||0) > 0 && <span>Extra : <strong style={{color:'var(--text-primary)'}}>{(parseFloat(form.commissionExtra)||0).toFixed(2)} TND</strong></span>}
                     </div>
@@ -1319,7 +1363,7 @@ export default function SolutionExpress() {
                           const v = parseFloat(e.target.value)||0;
                           setForm(f => ({ ...f, commissionFixe:v, commissionTotale:(v + (parseFloat(f.commissionExtra)||0)) }));
                         }}/>
-                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Ta commission de base</div>
+                      <div style={{ fontSize:11, color:'#ffffff', marginTop:4 }}>Ta commission de base</div>
                     </div>
                     <div className="form-group">
                       <label className="form-label" style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -1331,7 +1375,7 @@ export default function SolutionExpress() {
                           const v = parseFloat(e.target.value)||0;
                           setForm(f => ({ ...f, commissionExtra:v, commissionTotale:((parseFloat(f.commissionFixe)||0) + v) }));
                         }}/>
-                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Pour équipements additionnels</div>
+                      <div style={{ fontSize:11, color:'#ffffff', marginTop:4 }}>Pour équipements additionnels</div>
                     </div>
                   </div>
 
@@ -1345,7 +1389,7 @@ export default function SolutionExpress() {
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(4,10,24,0.95)', borderRadius:12, padding:'16px 18px', border:'1px solid rgba(255,255,255,0.05)' }}>
                     <div>
                       <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Statut du paiement</div>
-                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:3 }}>
+                      <div style={{ fontSize:11, color:'#ffffff', marginTop:3 }}>
                         {form.commissionPayee ? `✓ Payée${form.datePaiementCommission ? ` le ${fmtDate(form.datePaiementCommission)}` : ''}` : '⏳ En attente de paiement'}
                       </div>
                     </div>
