@@ -109,16 +109,15 @@ router.put('/:id', auth, async (req, res) => {
 
     // ── Si décembre reçu → supprimer toute l'année et passer à l'année suivante
     if (doc.recu && doc.mois === 11) {
-      const nextAnnee   = doc.annee + 1;
-      const allMonths   = await Essence.find({ annee: doc.annee });
-      const allReceived = allMonths.every(m => m.recu);
+      const nextAnnee  = doc.annee + 1;
+      const unreceived = await Essence.countDocuments({ annee: doc.annee, recu: false });
 
-      if (allReceived) {
+      if (unreceived === 0) {
         await Essence.deleteMany({ annee: doc.annee });
         await ensureYear(nextAnnee);
       }
 
-      return res.json({ ...doc.toObject(), nextAnnee: allReceived ? nextAnnee : null });
+      return res.json({ ...doc.toObject(), nextAnnee: unreceived === 0 ? nextAnnee : null });
     }
 
     res.json(doc);

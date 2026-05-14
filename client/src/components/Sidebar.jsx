@@ -162,10 +162,7 @@ export default function Sidebar() {
             background:'linear-gradient(135deg,#e8fff5 0%,#12b76a 30%,#61DAFB 70%,#a78bfa 100%)',
             WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text'
           }}>
-            SecureFlow CRM
-          </div>
-          <div style={{ fontSize:9.5, color:'var(--text-muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:1 }}>
-            Québec · Sécurité
+            SecureFlow
           </div>
         </div>
       </div>

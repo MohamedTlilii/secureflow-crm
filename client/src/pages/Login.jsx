@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════════════════
 // client/src/pages/Login.jsx — V4 · COMMISSIONS & CARBURANT · ULTRA DESIGN
-// ════════════════════════════════════════════════════════════════════════════
+/// ════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -246,7 +246,7 @@ export default function Login() {
           {/* Titre */}
           <div style={{ marginTop:20, marginBottom:5 }}>
             <div style={{ fontSize:27, fontWeight:900, letterSpacing:'-0.5px', fontFamily:'var(--font-display)', background:'linear-gradient(135deg,#e8fff5 0%,#12b76a 25%,#61DAFB 65%,#a78bfa 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
-              SecureFlow CRM
+              SecureFlow
             </div>
           </div>
 

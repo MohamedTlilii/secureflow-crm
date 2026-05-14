@@ -21,11 +21,11 @@ app.use(cors({
 app.use(express.json());
 
 // ── RATE LIMITING ─────────────────────────────────────────────────────────
-// Auth — 50 tentatives max (login/register) par 15 minutes
+// Auth — 200 tentatives max (login/register) par 5 minutes
 app.use('/api/auth', rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
-  message: { message: 'Trop de tentatives, réessayez dans 15 minutes' }
+  windowMs: 5 * 60 * 1000,
+  max: 200,
+  message: { message: 'Trop de tentatives, réessayez dans 5 minutes' }
 }));
 
 // Toutes les autres routes API — 1000 requêtes par 15 minutes

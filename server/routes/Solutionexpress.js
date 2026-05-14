@@ -18,12 +18,18 @@ const router  = express.Router();
 const SolutionExpress = require('../models/Solutionexpress');
 const auth    = require('../middleware/auth');  // middleware JWT existant
 
+const VALID_STATUS   = ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'];
+const VALID_LEADTYPE = ['nouvelle_entreprise','demenagement','reouverture','commerce_existant','autre'];
+
 // ── GET ALL ──────────────────────────────────────────────────────────────────
-// Retourne toutes les fiches triées par date décroissante
-// Supporte filtres query optionnels : ?status=new&leadType=ouverture&ville=Montreal
 router.get('/', auth, async (req, res) => {
   try {
     const { status, leadType, ville, region } = req.query;
+    if (status   && !VALID_STATUS.includes(status))    return res.status(400).json({ message: 'Statut invalide' });
+    if (leadType && !VALID_LEADTYPE.includes(leadType)) return res.status(400).json({ message: 'Type invalide' });
+    if (ville  && (typeof ville  !== 'string' || ville.length  > 100)) return res.status(400).json({ message: 'Ville invalide' });
+    if (region && (typeof region !== 'string' || region.length > 100)) return res.status(400).json({ message: 'Région invalide' });
+
     let query = {};
     if (status)   query.status   = status;
     if (leadType) query.leadType = leadType;
@@ -58,10 +64,10 @@ router.post('/', auth, async (req, res) => {
 //   • Ajout de note (addNote → notes: [...existing, newNote])
 router.put('/:id', auth, async (req, res) => {
   try {
-    // { new: true } → retourne le document mis à jour
+    const { createdBy, ...updateFields } = req.body; // createdBy immuable
     const fiche = await SolutionExpress.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, updatedAt: Date.now() },
+      { ...updateFields, updatedAt: Date.now() },
       { new: true }
     );
     if (!fiche) return res.status(404).json({ message: 'Fiche introuvable' });
@@ -75,7 +81,8 @@ router.put('/:id', auth, async (req, res) => {
 // Supprime définitivement une fiche
 router.delete('/:id', auth, async (req, res) => {
   try {
-    await SolutionExpress.findByIdAndDelete(req.params.id);
+    const fiche = await SolutionExpress.findByIdAndDelete(req.params.id);
+    if (!fiche) return res.status(404).json({ message: 'Fiche introuvable' });
     res.json({ message: 'Fiche supprimée' });
   } catch (err) {
     res.status(500).json({ message: err.message });

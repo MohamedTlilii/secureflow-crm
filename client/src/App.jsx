@@ -25,9 +25,35 @@ const ProtectedLayout = ({ children }) => {
       {/* Gradient logo */}
       <div style={{ position:'relative', width:64, height:64, marginBottom:4 }}>
         <div style={{ position:'absolute', inset:0, borderRadius:18, background:'linear-gradient(135deg,#10b981,#3b82f6)', opacity:0.15, filter:'blur(20px)' }}/>
-        <div style={{ position:'absolute', inset:0, borderRadius:18, background:'linear-gradient(135deg,#10b981,#3b82f6)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 40px rgba(16,185,129,0.4)' }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <div style={{ position:'absolute', inset:0, borderRadius:18, background:'linear-gradient(145deg,#041612 0%,#073322 55%,#041612 100%)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 40px rgba(16,185,129,0.4)' }}>
+          <svg viewBox="0 0 100 100" width="44" height="44" style={{ overflow:'visible' }}>
+            <defs>
+              <linearGradient id="spl1" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#12b76a"/>
+                <stop offset="100%" stopColor="#61DAFB"/>
+              </linearGradient>
+              <linearGradient id="spl2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#61DAFB" stopOpacity="0.95"/>
+                <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.75"/>
+              </linearGradient>
+              <linearGradient id="spl3" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#12b76a" stopOpacity="0.18"/>
+                <stop offset="100%" stopColor="#12b76a" stopOpacity="0.02"/>
+              </linearGradient>
+              <filter id="spgw" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="1.8" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <polygon points="94,50 72,88 28,88 6,50 28,12 72,12" fill="none" stroke="url(#spl1)" strokeWidth="1.6" filter="url(#spgw)"/>
+            <polygon points="80,50 65,76 35,76 20,50 35,24 65,24" fill="none" stroke="rgba(18,183,106,0.13)" strokeWidth="0.8"/>
+            <polygon points="22,80 22,76 36,61 50,49 64,37 77,24 77,80" fill="url(#spl3)"/>
+            <polyline points="22,76 36,61 50,49 64,37 77,24" fill="none" stroke="url(#spl1)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" filter="url(#spgw)"/>
+            {[[22,76],[36,61],[50,49],[64,37]].map(([x,y], i) => (
+              <circle key={i} cx={x} cy={y} r="3" fill="#12b76a" filter="url(#spgw)"/>
+            ))}
+            <path d="M77,14 C77,14 70,22 70,27 C70,30.9 73.1,34 77,34 C80.9,34 84,30.9 84,27 C84,22 77,14 77,14Z" fill="url(#spl2)" filter="url(#spgw)"/>
+            <path d="M74,17.5 C74,17.5 72.5,22 72.5,25" fill="none" stroke="rgba(255,255,255,0.42)" strokeWidth="1.2" strokeLinecap="round"/>
           </svg>
         </div>
         {/* Orbit ring */}
@@ -35,8 +61,7 @@ const ProtectedLayout = ({ children }) => {
         <div style={{ position:'absolute', inset:-18, borderRadius:'50%', border:'1px solid transparent', borderBottomColor:'rgba(59,130,246,0.4)', borderLeftColor:'rgba(16,185,129,0.2)', animation:'spin 2s linear infinite reverse' }}/>
       </div>
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontFamily:'var(--font-display)', fontSize:17, fontWeight:800, letterSpacing:'-0.4px', color:'var(--text-primary)' }}>QC</div>
-        <div style={{ fontSize:11, color:'var(--text-muted)', letterSpacing:'0.14em', textTransform:'uppercase', marginTop:4, fontWeight:600 }}>Chargement…</div>
+<div style={{ fontSize:11, color:'var(--text-muted)', letterSpacing:'0.14em', textTransform:'uppercase', marginTop:4, fontWeight:600 }}>Chargement…</div>
       </div>
       <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
     </div>
