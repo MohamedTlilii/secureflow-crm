@@ -8,12 +8,13 @@
 // API         : GET/POST/PUT/DELETE /api/solution-express
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import api from '../api';
 import {
   Plus, MapPin, Phone, X, Edit2, Trash2,
   AlertTriangle, Mail, Calendar, Clock, Tag, Search,
-  User, Building2, Shield, Wifi, Video, Smartphone,
+  User, Building2, Shield, Wifi, Smartphone,
+  Tv, Camera, Receipt,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, Lock,
   DollarSign, CheckCircle, XCircle, TrendingUp, Filter, Wallet
 } from 'lucide-react';
@@ -172,61 +173,6 @@ function DatePicker({ value, onChange, placeholder = 'Sélectionner une date' })
 // ════════════════════════════════════════════════════════════════════════════
 const AV_COLORS = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
 
-const VILLES = [
-  'Montréal','Trois-Rivières','Ottawa','Québec',
-  'Laval','Shawinigan','Gatineau','Lévis',
-  'Longueuil','Drummondville','Wakefield','Wendake',
-  'Brossard','Victoriaville','Thurso','L\'Ancienne-Lorette',
-  'Mirabel','Plessisville','Barrhaven','Stoneham',
-  'Saint-Jérôme','Louiseville','Nepean','Tewkesbury',
-  'Saint-Sauveur','Saint-Tite','Kanata','Shannon',
-  'Terrebonne','Donnacona','Gloucester','Saint-Gabriel-de-Valcartier',
-  'Repentigny','Cap-de-la-Madeleine','Masson-Angers','Lac-Delage',
-  'Boucherville','Bécancour','Orléans','L\'Île-Enchanteresse',
-  'Vaudreuil-Dorion','Nicolet','Clarence-Rockland','Sainte-Brigitte-de-Laval',
-  'Salaberry-de-Valleyfield','Saint-Célestin','Aylmer','La Branche',
-  'Saint-Jean-sur-Richelieu','Sainte-Perpétue','Hull','Château-Richer',
-  'Saint-Hyacinthe','Saint-Léonard-d\'Aston','Buckingham','Saint-Pierre',
-  'Sorel-Tracy','Saint-Wenceslas','Cumberland','Le Grand-Village',
-  'Granby','Sainte-Monique','Osgoode','Neuville',
-  'Blainville','Saint-Bonaventure','Greely','Saint-Henri',
-  'Boisbriand','Saint-Guillaume','Metcalfe','Beauport',
-  'Sainte-Thérèse','Wickham','Embrun','Charlesbourg',
-  'Rosemère','Saint-Germain-de-Grantham','Russell','Sainte-Foy',
-  'Lachute','Saint-Cyrille-de-Wendover','Vars','Sillery',
-  'Sainte-Julie','Notre-Dame-du-Bon-Conseil','Navan','Cap-Rouge',
-  'Châteauguay','Saint-Pie-de-Guire','Carlsbad Springs','Saint-Augustin-de-Desmaures',
-  'Mont-Royal','Sainte-Brigitte-des-Saults','Blackburn Hamlet','Loretteville',
-  'Deux-Montagnes','Pierreville','Beacon Hill','Val-Bélair',
-  'Saint-Eustache','Saint-François-du-Lac','Vanier','Lac-Saint-Charles',
-  'Chambly','Yamaska','Chelsea','Boischatel',
-  'Carignan','Saint-David','Old Chelsea','L\'Ange-Gardien',
-  'Beloeil','Saint-Liboire','Cantley','Sainte-Anne-de-Beaupré',
-  'McMasterville','Saint-Simon','Templeton','Pintendre',
-  'Varennes','Saint-Barnabé','Angers','Saint-Romuald',
-  'Contrecœur','Saint-Paulin','Lochaber','Breakeyville',
-  'Mascouche','Sainte-Ursule','Casselman','Saint-Jean-Chrysostome',
-  'L\'Assomption','Maskinongé','Limoges','Bernières',
-  'Joliette','Saint-Justin','Wendover','Saint-Nicolas',
-  'Saint-Charles-Borromée','Saint-Étienne-des-Grès','Stittsville','Saint-Rédempteur',
-  'Lanoraie','Saint-Maurice','Richmond','Charny',
-  'Saint-Constant','Grand-Mère','Manotick','Saint-Lambert-de-Lauzon',
-  'Delson','Saint-Georges-de-Champlain','Fitzroy Harbour','Fossambault-sur-le-Lac',
-  'Candiac','Notre-Dame-du-Mont-Carmel','Quyon','Sainte-Catherine-de-la-Jacques-Cartier',
-  'La Prairie','Sainte-Geneviève-de-Batiscan','Aylmer-Est','Pont-Rouge',
-  'Saint-Bruno-de-Montarville','Batiscan','Pontiac',
-  'Saint-Basile-le-Grand','Sainte-Anne-de-la-Pérade','Shawville','Portneuf',
-  'Otterburn Park','Champlain','Bristol','Saint-Marc-des-Carrières',
-  'Saint-Lambert','Grondines','Luskville',
-  'Mont-Saint-Hilaire','Saint-Luc-de-Vincennes','Breckenridge','Baie-Saint-Paul',
-  'Mercier','Sainte-Marie-de-Blandford','Carp','Saint-Ferréol-les-Neiges',
-  'Sainte-Catherine','Warwick','Bells Corners','Saint-Tite-des-Caps',
-  'Coteau-du-Lac','Kingsey Falls','Constance Bay',
-  'Hudson','Sainte-Élizabeth-de-Warwick','Munster','Scott',
-  'Rigaud','Pointe-Claire','Dollard-des-Ormeaux','Kirkland',
-  'Beaconsfield','Baie-d\'Urfé','Sainte-Anne-de-Bellevue','Westmount',
-  'Sainte-Agathe-des-Monts','Côte-Saint-Luc','Sherbrooke',
-];
 
 const TYPE_COMMERCE_LABELS = {
   restaurant:'Restaurant', pizzeria:'Pizzeria', boulangerie:'Boulangerie',
@@ -287,40 +233,44 @@ const QUALIF_LABELS = {
   inconnu:'Inconnu'
 };
 
-const PRODUIT_LABELS = { alarme:'Alarme', cameras:'Caméras', internet:'Internet', mobile:'Mobile', controle_acces:'Contrôle accès', autre:'Autre' };
-const PRODUIT_COLORS = { alarme:'#f04438', cameras:'#a764f8', internet:'#3b6cf8', mobile:'#12b76a', controle_acces:'#f79009', autre:'#8b8b9e' };
-const PRODUIT_ICONS  = { alarme:Shield, cameras:Video, internet:Wifi, mobile:Smartphone, controle_acces:Shield, autre:Tag };
+const fromArr = arr => arr ? Object.fromEntries(arr.map(({key,label}) => [key,label])) : {};
 
-const FOURN_ALARME = {
-  adt:'ADT', bell_alarme:'Bell Alarme', telus_alarme:'Telus Alarme',
-  gardaworld:'GardaWorld', api_alarm:'API Alarm', securitas:'Securitas',
-  alarme_mirabel:'Alarme Mirabel', alarme_signal_teck:'Signal Teck', allo_alarme:'AlloAlarme',
-  protection_incendie_laval:'Protection Incendie Laval', multialarme:'MultiAlarme', alarme_expert:'Alarme Expert',
-  autre:'Autre', inconnu:'Inconnu', aucun:'Aucun'
+const ICON_MAP = {
+  shield: Shield, wifi: Wifi, smartphone: Smartphone,
+  tv: Tv, camera: Camera, receipt: Receipt,
 };
-const FOURN_INTERNET = {
-  videotron:'Vidéotron', bell_internet:'Bell Internet', cogeco:'Cogeco',
-  distributel:'Distributel', teksavvy:'TekSavvy', ebox:'EBox',
-  autre:'Autre', inconnu:'Inconnu', aucun:'Aucun'
-};
-const FOURN_MOBILE = {
-  bell_mobile:'Bell Mobile', telus_mobile:'Telus Mobile', rogers:'Rogers',
-  fizz:'Fizz', koodo:'Koodo', public_mobile:'Public Mobile',
-  fido:'Fido', chatr:'Chatr', virgin_plus:'Virgin Plus',
-  autre:'Autre', inconnu:'Inconnu', aucun:'Aucun'
-};
+
+// Fallback statique si l'API settings est indisponible
+const FOURN_ALARME          = { inconnu:'Inconnu', protectron:'Protectron', adt:'ADT', telus_alarme:'Telus', bell_alarme:'Bell', api_alarm:'API', stanley:'Stanley', securitas:'Securitas', gardaworld:'GardaWorld', alarme_mirabel:'Alarme Mirabel', alarme_signal_teck:'Signal Teck', bigbrothers:'Bigbrothers', allo_alarme:'Alloo Alarme', protection_incendie_laval:'Protection Incendie Laval', multialarme:'MultiAlarme', alarme_expert:'Alarme Expert', autre:'Autre' };
+const FOURN_ALARME_PROPOSE  = { aucun:'Aucun', gardaworld:'GardaWorld', telus_alarme:'Telus', autre:'Autre' };
+const FOURN_INTERNET        = { inconnu:'Inconnu', bell_internet:'Bell', virgin:'Virgin', lucky_mobile:'Lucky Mobile', telus_internet:'Telus', koodo:'Koodo', public_mobile:'Public Mobile', rogers:'Rogers', fido:'Fido', chatr:'Chatr', videotron:'Vidéotron', fizz:'Fizz', cogeco:'Cogeco', distributel:'Distributel', teksavvy:'TekSavvy', ebox:'EBox', autre:'Autre' };
+const FOURN_INTERNET_PROPOSE = { aucun:'Aucun', rogers_comwave:'Rogers ComeWave', rogers_5g:'Rogers 5G', ebox:'EBox' };
+const FOURN_MOBILE          = { inconnu:'Inconnu', bell_mobile:'Bell', virgin_plus:'Virgin', lucky_mobile:'Lucky Mobile', telus_mobile:'Telus', koodo:'Koodo', public_mobile:'Public Mobile', rogers:'Rogers', fido:'Fido', chatr:'Chatr', videotron:'Vidéotron', fizz:'Fizz', autre:'Autre' };
+const FOURN_MOBILE_PROPOSE  = { aucun:'Aucun', rogers:'Rogers' };
+
+const DEFAULT_SERVICES = [
+  { id:'alarme',   label:'Alarme',   color:'#f04438', icon:'shield',
+    actuel:  Object.entries(FOURN_ALARME).map(([key,label])=>({key,label})),
+    propose: Object.entries(FOURN_ALARME_PROPOSE).map(([key,label])=>({key,label})) },
+  { id:'internet', label:'Internet', color:'#3b6cf8', icon:'wifi',
+    actuel:  Object.entries(FOURN_INTERNET).map(([key,label])=>({key,label})),
+    propose: Object.entries(FOURN_INTERNET_PROPOSE).map(([key,label])=>({key,label})) },
+  { id:'mobile',   label:'Mobile',   color:'#12b76a', icon:'smartphone',
+    actuel:  Object.entries(FOURN_MOBILE).map(([key,label])=>({key,label})),
+    propose: Object.entries(FOURN_MOBILE_PROPOSE).map(([key,label])=>({key,label})) },
+];
 
 const EMPTY_FORM = {
   sourceText:'', sourceUrl:'',
   entreprise:'', typeCommerce:'autre', typeClient:'b2b',
   ancienneAdresse:'',
   prenom:'', nom:'', sexe:'inconnu', telephone:'', email:'',
-  adresse:'', ville:'Montréal', region:'',
+  adresse:'', ville:'', region:'',
   leadType:'nouvelle_entreprise',
   qualificationSysteme:'inconnu',
   produits:[],
-  fournisseurAlarme:'inconnu', fournisseurInternet:'inconnu', fournisseurMobile:'inconnu',
-  fournisseurProposeAlarme:'aucun', fournisseurProposeInternet:'aucun', fournisseurProposeMobile:'aucun',
+  fournisseurs: {},
+  equipements:  {},
   status:'new', urgencyScore:0, summary:'',
   commissionFixe:0, commissionExtra:0,
   commissionTotale:0, commissionPayee:false,
@@ -330,7 +280,6 @@ const EMPTY_FORM = {
 const EMPTY_FILTERS = {
   status:'', typeClient:'', typeCommerce:'', ville:'',
   produit:'', qualificationSysteme:'', leadType:'',
-  fournisseurAlarme:'', fournisseurInternet:'', fournisseurMobile:'',
   commissionPayee:''
 };
 
@@ -368,25 +317,6 @@ function InfoRow({ icon, label, val }) {
       </div>
     </div>
   );
-}
-
-// Badge produit coloré avec icône
-function ProduitBadge({ code }) {
-  const Icon  = PRODUIT_ICONS[code]  || Tag;
-  const color = PRODUIT_COLORS[code] || '#8b8b9e';
-  return (
-    <span style={{ fontSize:10, fontWeight:600, padding:'3px 9px', borderRadius:20, background:`${color}18`, color, display:'inline-flex', alignItems:'center', gap:4, border:`1px solid ${color}30` }}>
-      <Icon size={9}/> {PRODUIT_LABELS[code]}
-    </span>
-  );
-}
-
-function getFournLabel(field, val) {
-  if (!val || val === 'inconnu' || val === 'aucun') return null;
-  if (field === 'alarme')   return FOURN_ALARME[val]   || val;
-  if (field === 'internet') return FOURN_INTERNET[val] || val;
-  if (field === 'mobile')   return FOURN_MOBILE[val]   || val;
-  return val;
 }
 
 // Ligne fournisseur actuel → proposé
@@ -457,6 +387,36 @@ export default function SolutionExpress() {
   const [activeTab, setActiveTab]     = useState(0);
   const [searchFocused, setSearchFocused] = useState(false);
   const [fetchError, setFetchError]       = useState(false);
+  const [settings, setSettings]           = useState(null);
+  const [anneeFiltre, setAnneeFiltre]     = useState(String(new Date().getFullYear()));
+
+  // ── Chargement settings dynamiques ───────────────────────────────────
+  useEffect(() => {
+    api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
+  }, []);
+
+  const dVilles   = useMemo(() => settings?.villes || [], [settings]);
+  const dCommerce = useMemo(() => settings ? fromArr(settings.typeCommerce) : TYPE_COMMERCE_LABELS, [settings]);
+  const dLead     = useMemo(() => settings ? fromArr(settings.typeLead) : LEAD_TYPES, [settings]);
+  const dQualif   = useMemo(() => settings ? fromArr(settings.qualificationSysteme) : QUALIF_LABELS, [settings]);
+  const dServices = useMemo(() => {
+    const svcs = settings?.services || DEFAULT_SERVICES;
+    return svcs.map(s => ({
+      ...s,
+      actuelMap:          fromArr(s.actuel),
+      proposeMap:         fromArr(s.propose),
+      equipementsMap:     fromArr(s.equipements || []),
+      equipementsDetails: Object.fromEntries((s.equipements||[]).map(e => [e.key, e])),
+    }));
+  }, [settings]);
+
+  // eslint-disable-next-line no-inner-declarations
+  function getFournLabel(svcId, val) {
+    if (!val || val === 'inconnu' || val === 'aucun') return null;
+    const svc = dServices.find(s => s.id === svcId);
+    if (!svc) return val;
+    return svc.actuelMap[val] || svc.proposeMap[val] || val;
+  }
 
   // ── Fetch toutes les fiches ───────────────────────────────────────────
   const fetchFiches = useCallback(async () => {
@@ -486,6 +446,20 @@ export default function SolutionExpress() {
     setFld('produits', list.includes(code) ? list.filter(x => x !== code) : [...list, code]);
   };
 
+  // ── Toggle équipement dans le formulaire ─────────────────────────────
+  const toggleEquipement = (svcId, key) => {
+    setForm(prev => {
+      const list = prev.equipements?.[svcId] || [];
+      return {
+        ...prev,
+        equipements: {
+          ...prev.equipements,
+          [svcId]: list.includes(key) ? list.filter(x => x !== key) : [...list, key]
+        }
+      };
+    });
+  };
+
   // ── Toggle payé/non payé depuis la card ──────────────────────────────
   const togglePaiement = async (p) => {
     try {
@@ -505,8 +479,18 @@ export default function SolutionExpress() {
     } catch { toast.error('Erreur mise à jour commission'); }
   };
 
+  // ── Années disponibles + filtre par année ────────────────────────────
+  const annees = useMemo(() =>
+    [...new Set(fiches.map(f => new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()))].sort((a,b) => b-a),
+    [fiches]
+  );
+  const fichesByAnnee = useMemo(() =>
+    anneeFiltre === 'tout' ? fiches : fiches.filter(f => String(new Date(f.dateVente||f.createdAt).getUTCFullYear()) === anneeFiltre),
+    [fiches, anneeFiltre]
+  );
+
   // ── Filtrage + recherche ──────────────────────────────────────────────
-  const afterSearch = fiches.filter(p => {
+  const afterSearch = fichesByAnnee.filter(p => {
     if (!search.trim()) return true;
     const s = search.toLowerCase();
     return (
@@ -527,9 +511,6 @@ export default function SolutionExpress() {
     if (filters.leadType             && p.leadType              !== filters.leadType)             return false;
     if (filters.qualificationSysteme && p.qualificationSysteme !== filters.qualificationSysteme) return false;
     if (filters.produit              && !(p.produits||[]).includes(filters.produit))              return false;
-    if (filters.fournisseurAlarme    && p.fournisseurAlarme    !== filters.fournisseurAlarme)    return false;
-    if (filters.fournisseurInternet  && p.fournisseurInternet  !== filters.fournisseurInternet)  return false;
-    if (filters.fournisseurMobile    && p.fournisseurMobile    !== filters.fournisseurMobile)    return false;
     if (filters.commissionPayee === 'payee'     && !p.commissionPayee)  return false;
     if (filters.commissionPayee === 'non_payee' && p.commissionPayee)   return false;
     if (filters.commissionPayee === 'avec'      && !p.commissionTotale) return false;
@@ -550,14 +531,27 @@ export default function SolutionExpress() {
   });
 
   // ── Stats pour le header glassmorphism ────────────────────────────────
-  const totalFiches  = fiches.length;
-  const totalInstalle  = fiches.filter(f => f.status === 'installe').length;
-  const totalPipeline  = fiches.filter(f => ['contacted','proposal','installation_en_cours'].includes(f.status)).length;
+  const totalFiches    = fichesByAnnee.length;
+  const totalInstalle  = fichesByAnnee.filter(f => f.status === 'installe').length;
+  const totalPipeline  = fichesByAnnee.filter(f => ['contacted','proposal','installation_en_cours'].includes(f.status)).length;
   const convRate       = totalFiches > 0 ? Math.round((totalInstalle / totalFiches) * 100) : 0;
 
   // ── Ouvrir modals ─────────────────────────────────────────────────────
-  const openAdd   = ()     => { setForm(EMPTY_FORM); setActiveTab(0); setModal('add'); };
-  const openEdit  = (p, e) => { if(e) e.stopPropagation(); setForm({...p}); setSelected(p); setActiveTab(0); setModal('edit'); };
+  const openAdd = () => {
+    const fournisseurs = Object.fromEntries(dServices.map(s => [s.id, { actuel: 'inconnu', propose: 'aucun' }]));
+    const equipements  = Object.fromEntries(dServices.map(s => [s.id, []]));
+    setForm({ ...EMPTY_FORM, fournisseurs, equipements });
+    setActiveTab(0); setModal('add');
+  };
+  const openEdit = (p, e) => {
+    if (e) e.stopPropagation();
+    const base      = p.fournisseurs || {};
+    const baseEquip = p.equipements  || {};
+    const fournisseurs = Object.fromEntries(dServices.map(s => [s.id, base[s.id]      || { actuel: 'inconnu', propose: 'aucun' }]));
+    const equipements  = Object.fromEntries(dServices.map(s => [s.id, baseEquip[s.id] || []]));
+    setForm({ ...p, fournisseurs, equipements });
+    setSelected(p); setActiveTab(0); setModal('edit');
+  };
   const openFiche = (p, e) => { if(e) e.stopPropagation(); setSelected(p); setModal('fiche'); };
 
   // ── Soumettre formulaire add/edit ─────────────────────────────────────
@@ -659,12 +653,24 @@ export default function SolutionExpress() {
               </p>
             </div>
           </div>
-          <button className="btn btn-primary" onClick={openAdd}
-            style={{ display:'flex', alignItems:'center', gap:8, padding: isMobile?'9px 16px':'10px 20px', fontSize:13, fontWeight:700, borderRadius:12, boxShadow:'0 4px 14px rgba(18,183,106,0.35)', transition:'all 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.transform='scale(1.03)'}
-            onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}>
-            <Plus size={16}/> Nouvelle fiche
-          </button>
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            {!isMobile && (
+              <div style={{ fontSize:12, color:'#efefef', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)', textTransform:'capitalize', whiteSpace:'nowrap' }}>
+                {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+              </div>
+            )}
+            <select value={anneeFiltre} onChange={e => setAnneeFiltre(e.target.value)}
+              style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
+              <option value="tout">Toutes les années</option>
+              {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}
+            </select>
+            <button className="btn btn-primary" onClick={openAdd}
+              style={{ display:'flex', alignItems:'center', gap:8, padding: isMobile?'9px 16px':'10px 20px', fontSize:13, fontWeight:700, borderRadius:12, boxShadow:'0 4px 14px rgba(18,183,106,0.35)', transition:'all 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.transform='scale(1.03)'}
+              onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}>
+              <Plus size={16}/> Nouvelle fiche
+            </button>
+          </div>
         </div>
 
         {/* Ligne 2 : Stats rapides + barre conversion */}
@@ -736,8 +742,8 @@ export default function SolutionExpress() {
               {[
                 ['status',    'Statut',      STATUS_LABELS],
                 ['typeClient','Type client', {'b2b':'🏢 B2B','b2c':'🏠 B2C'}],
-                ['leadType',  'Type lead',   LEAD_TYPES],
-                ['ville',     'Ville',       Object.fromEntries(VILLES.filter(v=>v).map(v=>[v,v]))],
+                ['leadType',  'Type lead',   dLead],
+                ['ville',     'Ville',       Object.fromEntries(dVilles.filter(v=>v).map(v=>[v,v]))],
               ].map(([k, l, opts]) => (
                 <div key={k}>
                   <div style={{ fontSize:10, color:'#ffffff', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>{l}</div>
@@ -766,7 +772,7 @@ export default function SolutionExpress() {
                 <div style={{ fontSize:10, color:'#ffffff', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>Type commerce</div>
                 <select style={iSt} value={filters.typeCommerce} onChange={e => setF('typeCommerce', e.target.value)}>
                   <option value="">Tous</option>
-                  {Object.entries(TYPE_COMMERCE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                  {Object.entries(dCommerce).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div>
@@ -780,6 +786,22 @@ export default function SolutionExpress() {
                   <option value="non_payee">⏳ En attente</option>
                 </select>
               </div>
+            </div>
+
+            {/* Ligne 3 — Filtre rapide par type de service */}
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              <div style={{ fontSize:10, color:'#ffffff', fontWeight:700, textTransform:'uppercase', display:'flex', alignItems:'center', marginRight:4 }}>Service :</div>
+              {dServices.map(svc => {
+                const SvcIcon = ICON_MAP[svc.icon] || Shield;
+                const active  = filters.produit === svc.id;
+                return (
+                  <button key={svc.id}
+                    onClick={() => setF('produit', active ? '' : svc.id)}
+                    style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 13px', borderRadius:20, border:`1px solid ${active ? svc.color : 'rgba(255,255,255,0.15)'}`, background: active ? `${svc.color}22` : 'transparent', color: active ? svc.color : '#ffffff', fontSize:12, fontWeight: active ? 700 : 500, cursor:'pointer', transition:'all 0.15s' }}>
+                    <SvcIcon size={11}/> {svc.label}
+                  </button>
+                );
+              })}
             </div>
 
           </div>
@@ -893,7 +915,7 @@ export default function SolutionExpress() {
                       </div>
                     )}
                     <div style={{ fontSize:11, color:'#ffffff', marginTop:2 }}>
-                      {p.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'}{p.typeCommerce && p.typeCommerce!=='autre' ? ` · ${TYPE_COMMERCE_LABELS[p.typeCommerce]||p.typeCommerce}` : ''}
+                      {p.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'}{p.typeCommerce && p.typeCommerce!=='autre' ? ` · ${dCommerce[p.typeCommerce]||p.typeCommerce}` : ''}
                     </div>
                   </div>
                   {/* Mini ScoreRing urgence — affiché seulement si > 0 */}
@@ -904,43 +926,69 @@ export default function SolutionExpress() {
                 <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
                   <span className={`badge ${STATUS_CLASS[p.status]||'badge-p0'}`}>{STATUS_LABELS[p.status]}</span>
                   <span style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:`${leadColor}18`, color:leadColor, border:`1px solid ${leadColor}30` }}>
-                    {LEAD_TYPES[p.leadType]||p.leadType}
+                    {dLead[p.leadType]||p.leadType}
                   </span>
                 </div>
 
                 {/* ── Produits ── */}
                 {(p.produits||[]).length > 0 && (
                   <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
-                    {p.produits.map(code => <ProduitBadge key={code} code={code}/>)}
+                    {p.produits.map(code => {
+                      const svc = dServices.find(s => s.id === code);
+                      if (!svc) return null;
+                      const SvcIcon = ICON_MAP[svc.icon] || Tag;
+                      return (
+                        <span key={code} style={{ fontSize:10, fontWeight:600, padding:'3px 9px', borderRadius:20, background:`${svc.color}18`, color:svc.color, display:'inline-flex', alignItems:'center', gap:4, border:`1px solid ${svc.color}30` }}>
+                          <SvcIcon size={9}/> {svc.label}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
 
                 {/* ── Fournisseurs actuel ── */}
                 <div style={{ display:'flex', flexDirection:'column', gap:3, marginBottom:8 }}>
-                  {p.fournisseurAlarme && !['inconnu','aucun'].includes(p.fournisseurAlarme) && (
-                    <span style={{ fontSize:11, color:'#ffffff', display:'flex', alignItems:'center', gap:5 }}>
-                      <Shield size={10} color="#f04438"/> {FOURN_ALARME[p.fournisseurAlarme] || p.fournisseurAlarme}
-                      {p.fournisseurProposeAlarme && !['aucun'].includes(p.fournisseurProposeAlarme) && <span style={{ color:'#f04438', fontWeight:600 }}>→ {FOURN_ALARME[p.fournisseurProposeAlarme] || p.fournisseurProposeAlarme}</span>}
-                    </span>
-                  )}
-                  {p.fournisseurInternet && !['inconnu','aucun'].includes(p.fournisseurInternet) && (
-                    <span style={{ fontSize:11, color:'#ffffff', display:'flex', alignItems:'center', gap:5 }}>
-                      <Wifi size={10} color="#3b6cf8"/> {FOURN_INTERNET[p.fournisseurInternet] || p.fournisseurInternet}
-                      {p.fournisseurProposeInternet && !['aucun'].includes(p.fournisseurProposeInternet) && <span style={{ color:'#3b6cf8', fontWeight:600 }}>→ {FOURN_INTERNET[p.fournisseurProposeInternet] || p.fournisseurProposeInternet}</span>}
-                    </span>
-                  )}
-                  {p.fournisseurMobile && !['inconnu','aucun'].includes(p.fournisseurMobile) && (
-                    <span style={{ fontSize:11, color:'#ffffff', display:'flex', alignItems:'center', gap:5 }}>
-                      <Smartphone size={10} color="#12b76a"/> {FOURN_MOBILE[p.fournisseurMobile] || p.fournisseurMobile}
-                      {p.fournisseurProposeMobile && !['aucun'].includes(p.fournisseurProposeMobile) && <span style={{ color:'#12b76a', fontWeight:600 }}>→ {FOURN_MOBILE[p.fournisseurProposeMobile] || p.fournisseurProposeMobile}</span>}
-                    </span>
-                  )}
+                  {dServices.map(svc => {
+                    const f = p.fournisseurs?.[svc.id];
+                    if (!f) return null;
+                    const actuelLabel  = f.actuel  !== 'inconnu' ? (svc.actuelMap[f.actuel]   || f.actuel)  : null;
+                    const proposeLabel = f.propose !== 'aucun'   ? (svc.proposeMap[f.propose] || f.propose) : null;
+                    if (!actuelLabel && !proposeLabel) return null;
+                    const SvcIcon = ICON_MAP[svc.icon] || Shield;
+                    return (
+                      <span key={svc.id} style={{ fontSize:11, color:'#ffffff', display:'flex', alignItems:'center', gap:5 }}>
+                        <SvcIcon size={10} color={svc.color}/>
+                        {actuelLabel && <span>{actuelLabel}</span>}
+                        {actuelLabel && proposeLabel && <span style={{ color:svc.color, fontWeight:600 }}>→ {proposeLabel}</span>}
+                        {!actuelLabel && proposeLabel && <span style={{ color:svc.color, fontWeight:600 }}>→ {proposeLabel}</span>}
+                      </span>
+                    );
+                  })}
                 </div>
+
+                {/* ── Équipements ── */}
+                {dServices.some(svc => (p.equipements?.[svc.id]||[]).length > 0) && (
+                  <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:8 }}>
+                    {dServices.flatMap(svc =>
+                      (p.equipements?.[svc.id]||[]).map(eqKey => {
+                        const detail = svc.equipementsDetails?.[eqKey];
+                        const label  = detail?.label || svc.equipementsMap[eqKey];
+                        if (!label) return null;
+                        const color  = detail?.color || (detail?.category === 'extra' ? '#f79009' : svc.color);
+                        return (
+                          <span key={`${svc.id}:${eqKey}`} style={{ fontSize:9, padding:'2px 7px', borderRadius:10, background:`${color}12`, color, border:`1px solid ${color}25`, fontWeight:600 }}>
+                            {label}
+                          </span>
+                        );
+                      }).filter(Boolean)
+                    )}
+                  </div>
+                )}
 
                 {/* ── Qualification système ── */}
                 {p.qualificationSysteme && p.qualificationSysteme!=='inconnu' && (
                   <div style={{ fontSize:11, color:'#ffffff', marginBottom:8, background:'var(--bg-secondary)', padding:'4px 8px', borderRadius:6, display:'inline-block' }}>
-                    🔒 {QUALIF_LABELS[p.qualificationSysteme]}
+                    🔒 {dQualif[p.qualificationSysteme]||p.qualificationSysteme}
                   </div>
                 )}
 
@@ -1008,12 +1056,21 @@ export default function SolutionExpress() {
                   <div>
                     <h2 style={{ margin:'0 0 4px', fontSize: isMobile?18:22 }}>{selected.typeClient === 'b2c' ? `${selected.prenom||''} ${selected.nom||''}`.trim() || 'Sans nom' : selected.entreprise || `${selected.prenom||''} ${selected.nom||''}`.trim() || 'Sans nom'}</h2>
                     <div style={{ fontSize:13, color:'#ffffff', marginBottom:8 }}>
-                      {selected.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'} · {TYPE_COMMERCE_LABELS[selected.typeCommerce]||''} {selected.ville?`· ${selected.ville}`:''}
+                      {selected.typeClient==='b2b'?'🏢 B2B':'🏠 B2C'} · {dCommerce[selected.typeCommerce]||''} {selected.ville?`· ${selected.ville}`:''}
                     </div>
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                       <span className={`badge ${STATUS_CLASS[selected.status]||'badge-p0'}`}>{STATUS_LABELS[selected.status]}</span>
-                      <span style={{ fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:20, background:`${LEAD_COLORS[selected.leadType]||'#8b8b9e'}20`, color:LEAD_COLORS[selected.leadType]||'#8b8b9e' }}>{LEAD_TYPES[selected.leadType]}</span>
-                      {(selected.produits||[]).map(c => <ProduitBadge key={c} code={c}/>)}
+                      <span style={{ fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:20, background:`${LEAD_COLORS[selected.leadType]||'#8b8b9e'}20`, color:LEAD_COLORS[selected.leadType]||'#8b8b9e' }}>{dLead[selected.leadType]||selected.leadType}</span>
+                      {(selected.produits||[]).map(code => {
+                        const svc = dServices.find(s => s.id === code);
+                        if (!svc) return null;
+                        const SvcIcon = ICON_MAP[svc.icon] || Tag;
+                        return (
+                          <span key={code} style={{ fontSize:10, fontWeight:600, padding:'3px 9px', borderRadius:20, background:`${svc.color}18`, color:svc.color, display:'inline-flex', alignItems:'center', gap:4, border:`1px solid ${svc.color}30` }}>
+                            <SvcIcon size={9}/> {svc.label}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1090,7 +1147,7 @@ export default function SolutionExpress() {
                   <InfoRow icon={<Tag size={12}/>}    label="Région"           val={selected.region}          />
                 </FicheSection>
                 <FicheSection title="Système">
-                  <InfoRow icon={<Shield size={12}/>}   label="Qualification" val={QUALIF_LABELS[selected.qualificationSysteme]} />
+                  <InfoRow icon={<Shield size={12}/>}   label="Qualification" val={dQualif[selected.qualificationSysteme]} />
                   <InfoRow icon={<Calendar size={12}/>} label="Ajouté le"     val={fmtDate(selected.createdAt)} />
                 </FicheSection>
               </div>
@@ -1099,9 +1156,35 @@ export default function SolutionExpress() {
               <div style={{ marginBottom:20 }}>
                 <div style={{ fontSize:11, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:10 }}>Fournisseurs — Actuel → Proposé</div>
                 <div style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'16px', border:'1px solid rgba(255,255,255,0.05)', display:'flex', flexDirection:'column', gap:12 }}>
-                  <FournisseurRow icon={<Shield size={13} color="#f04438"/>}     color="#f04438" label="Alarme"   actuel={getFournLabel('alarme',   selected.fournisseurAlarme)}   propose={getFournLabel('alarme',   selected.fournisseurProposeAlarme)}/>
-                  <FournisseurRow icon={<Wifi size={13} color="#3b6cf8"/>}       color="#3b6cf8" label="Internet" actuel={getFournLabel('internet', selected.fournisseurInternet)} propose={getFournLabel('internet', selected.fournisseurProposeInternet)}/>
-                  <FournisseurRow icon={<Smartphone size={13} color="#12b76a"/>} color="#12b76a" label="Mobile"  actuel={getFournLabel('mobile',   selected.fournisseurMobile)}   propose={getFournLabel('mobile',   selected.fournisseurProposeMobile)}/>
+                  {dServices.map(svc => {
+                    const SvcIcon = ICON_MAP[svc.icon] || Shield;
+                    const f      = selected.fournisseurs?.[svc.id];
+                    const equips = (selected.equipements?.[svc.id] || [])
+                      .map(k => ({ detail: svc.equipementsDetails?.[k], label: svc.equipementsMap[k] }))
+                      .filter(e => e.label);
+                    return (
+                      <div key={svc.id}>
+                        <FournisseurRow
+                          icon={<SvcIcon size={13} color={svc.color}/>}
+                          color={svc.color} label={svc.label}
+                          actuel={getFournLabel(svc.id, f?.actuel)}
+                          propose={getFournLabel(svc.id, f?.propose)}
+                        />
+                        {equips.length > 0 && (
+                          <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:6, paddingLeft:22 }}>
+                            {equips.map(({ detail, label }) => {
+                              const color = detail?.color || (detail?.category === 'extra' ? '#f79009' : svc.color);
+                              return (
+                                <span key={label} style={{ fontSize:10, padding:'2px 8px', borderRadius:10, background:`${color}12`, color, border:`1px solid ${color}25`, fontWeight:600 }}>
+                                  {label}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1243,7 +1326,7 @@ export default function SolutionExpress() {
                     <div className="form-group"><label className="form-label">Ancienne adresse</label><input className="input" placeholder="Ancienne adresse..." value={form.ancienneAdresse||''} onChange={e => setFld('ancienneAdresse',e.target.value)}/></div>
                     <div className="form-group"><label className="form-label">Ville</label>
                       <select className="select" value={form.ville} onChange={e => setFld('ville',e.target.value)}>
-                        {VILLES.filter(v=>v).map(v => <option key={v}>{v}</option>)}
+                        {dVilles.filter(v=>v).map(v => <option key={v}>{v}</option>)}
                       </select>
                     </div>
                     <div className="form-group"><label className="form-label">Urgence (0-10)</label>
@@ -1265,12 +1348,12 @@ export default function SolutionExpress() {
                     </div>
                     <div className="form-group"><label className="form-label">Type de commerce</label>
                       <select className="select" value={form.typeCommerce} onChange={e => setFld('typeCommerce',e.target.value)}>
-                        {Object.entries(TYPE_COMMERCE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                        {Object.entries(dCommerce).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                       </select>
                     </div>
                     <div className="form-group"><label className="form-label">Type de lead</label>
                       <select className="select" value={form.leadType} onChange={e => setFld('leadType',e.target.value)}>
-                        {Object.entries(LEAD_TYPES).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                        {Object.entries(dLead).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                       </select>
                     </div>
                     <div className="form-group"><label className="form-label">URL source</label><input className="input" placeholder="https://..." value={form.sourceUrl||''} onChange={e => setFld('sourceUrl',e.target.value)}/></div>
@@ -1278,19 +1361,18 @@ export default function SolutionExpress() {
                   <div>
                     <label className="form-label" style={{ marginBottom:8, display:'block' }}>Produits d'intérêt</label>
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                      {Object.entries(PRODUIT_LABELS).map(([k,v]) => {
-                        const sel   = (form.produits||[]).includes(k);
-                        const color = PRODUIT_COLORS[k]||'#8b8b9e';
-                        const Icon  = PRODUIT_ICONS[k]||Tag;
+                      {dServices.map(svc => {
+                        const sel     = (form.produits||[]).includes(svc.id);
+                        const SvcIcon = ICON_MAP[svc.icon] || Tag;
                         return (
-                          <button key={k} type="button" onClick={() => toggleProduit(k)}
+                          <button key={svc.id} type="button" onClick={() => toggleProduit(svc.id)}
                             style={{ padding:'8px 14px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
-                              border:`2px solid ${sel?color:'var(--border)'}`,
-                              background:sel?`${color}18`:'var(--bg-secondary)',
-                              color:sel?color:'#ffffff',
+                              border:`2px solid ${sel ? svc.color : 'var(--border)'}`,
+                              background: sel ? `${svc.color}18` : 'var(--bg-secondary)',
+                              color: sel ? svc.color : '#ffffff',
                               display:'flex', alignItems:'center', gap:6,
                               transform: sel ? 'scale(1.05)' : 'scale(1)' }}>
-                            <Icon size={13}/> {v}
+                            <SvcIcon size={13}/> {svc.label}
                           </button>
                         );
                       })}
@@ -1305,33 +1387,115 @@ export default function SolutionExpress() {
                   <div className="form-group">
                     <label className="form-label">Qualification du système existant</label>
                     <select className="select" value={form.qualificationSysteme} onChange={e => setFld('qualificationSysteme',e.target.value)}>
-                      {Object.entries(QUALIF_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+                      {Object.entries(dQualif).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                   </div>
-                  {[
-                    { label:'Alarme / Sécurité', icon:<Shield size={14} color="#f04438"/>, color:'#f04438', aKey:'fournisseurAlarme',   pKey:'fournisseurProposeAlarme',   list:FOURN_ALARME   },
-                    { label:'Internet',           icon:<Wifi size={14} color="#3b6cf8"/>,   color:'#3b6cf8', aKey:'fournisseurInternet', pKey:'fournisseurProposeInternet', list:FOURN_INTERNET },
-                    { label:'Mobile',             icon:<Smartphone size={14} color="#12b76a"/>, color:'#12b76a', aKey:'fournisseurMobile', pKey:'fournisseurProposeMobile', list:FOURN_MOBILE },
-                  ].map(({ label, icon, color, aKey, pKey, list }) => (
-                    <div key={label} style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', border:'1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>{icon}<span style={{ fontSize:13, fontWeight:600 }}>{label}</span></div>
-                      <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr auto 1fr', gap:10, alignItems:'center' }}>
-                        <div>
-                          <div style={{ fontSize:10, color:'#ffffff', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Actuel</div>
-                          <select className="select" value={form[aKey]} onChange={e => setFld(aKey,e.target.value)}>
-                            {Object.entries(list).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
-                          </select>
+                  {dServices.map(svc => {
+                    const SvcIcon = ICON_MAP[svc.icon] || Shield;
+                    const f = form.fournisseurs?.[svc.id] || { actuel: 'inconnu', propose: 'aucun' };
+                    const setFourn = (k, v) => setForm(prev => ({
+                      ...prev,
+                      fournisseurs: { ...prev.fournisseurs, [svc.id]: { ...(prev.fournisseurs?.[svc.id]||{}), [k]: v } }
+                    }));
+                    return (
+                      <div key={svc.id} style={{ background:'rgba(4,10,24,0.95)', borderRadius:10, padding:'14px 16px', border:'1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+                          <SvcIcon size={14} color={svc.color}/><span style={{ fontSize:13, fontWeight:600 }}>{svc.label}</span>
                         </div>
-                        {!isMobile && <div style={{ textAlign:'center', color:'#ffffff', fontSize:20, paddingTop:16 }}>→</div>}
-                        <div>
-                          <div style={{ fontSize:10, color, fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Proposé</div>
-                          <select className="select" value={form[pKey]} onChange={e => setFld(pKey,e.target.value)} style={{ borderColor:`${color}40` }}>
-                            {Object.entries(list).filter(([k]) => k!=='inconnu').map(([k,v]) => <option key={k} value={k}>{v}</option>)}
-                          </select>
+                        <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr auto 1fr', gap:10, alignItems:'center' }}>
+                          <div>
+                            <div style={{ fontSize:10, color:'#ffffff', fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Actuel</div>
+                            <select className="select" value={f.actuel} onChange={e => setFourn('actuel', e.target.value)}>
+                              {(svc.actuel||[]).map(({key,label}) => <option key={key} value={key}>{label}</option>)}
+                            </select>
+                          </div>
+                          {!isMobile && <div style={{ textAlign:'center', color:'#ffffff', fontSize:20, paddingTop:16 }}>→</div>}
+                          <div>
+                            <div style={{ fontSize:10, color:svc.color, fontWeight:600, textTransform:'uppercase', marginBottom:4 }}>Proposé</div>
+                            <select className="select" value={f.propose} onChange={e => setFourn('propose', e.target.value)} style={{ borderColor:`${svc.color}40` }}>
+                              {(svc.propose||[]).map(({key,label}) => <option key={key} value={key}>{label}</option>)}
+                            </select>
+                          </div>
                         </div>
+                        {/* ── Équipements : 2 sections indépendantes ── */}
+                        {(svc.equipements||[]).length > 0 && (
+                          <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid rgba(255,255,255,0.07)', display:'flex', flexDirection:'column', gap:14 }}>
+
+                            {/* Pack de base */}
+                            {(svc.equipements||[]).some(e => e.category === 'base') && (
+                              <div>
+                                <div style={{ fontSize:10, fontWeight:700, color:svc.color, textTransform:'uppercase', letterSpacing:0.6, marginBottom:8, padding:'3px 10px', background:`${svc.color}15`, borderRadius:5, display:'inline-block' }}>
+                                  Pack de base
+                                </div>
+                                <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                                  {(svc.equipements||[])
+                                    .filter(e => e.category === 'base')
+                                    .map(eq => {
+                                      const sel   = (form.equipements?.[svc.id]||[]).includes(eq.key);
+                                      const color = eq.color || svc.color;
+                                      return (
+                                        <button
+                                          key={eq.key}
+                                          type="button"
+                                          onClick={() => toggleEquipement(svc.id, eq.key)}
+                                          style={{
+                                            padding:'6px 13px', borderRadius:20, fontSize:12, fontWeight:600,
+                                            cursor:'pointer', transition:'all 0.15s', userSelect:'none',
+                                            border:`2px solid ${sel ? color : 'rgba(255,255,255,0.1)'}`,
+                                            background: sel ? `${color}22` : 'rgba(255,255,255,0.03)',
+                                            color: sel ? color : 'rgba(255,255,255,0.5)',
+                                            boxShadow: sel ? `0 0 10px ${color}40` : 'none',
+                                            transform: sel ? 'scale(1.05)' : 'scale(1)'
+                                          }}
+                                        >
+                                          {sel ? '✓ ' : ''}{eq.label}
+                                        </button>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Équipements extra */}
+                            {(svc.equipements||[]).some(e => e.category === 'extra') && (
+                              <div>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#f79009', textTransform:'uppercase', letterSpacing:0.6, marginBottom:8, padding:'3px 10px', background:'rgba(247,144,9,0.12)', borderRadius:5, display:'inline-block' }}>
+                                  Équipements extra
+                                </div>
+                                <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                                  {(svc.equipements||[])
+                                    .filter(e => e.category === 'extra')
+                                    .map(eq => {
+                                      const sel   = (form.equipements?.[svc.id]||[]).includes(eq.key);
+                                      const color = eq.color || '#f79009';
+                                      return (
+                                        <button
+                                          key={eq.key}
+                                          type="button"
+                                          onClick={() => toggleEquipement(svc.id, eq.key)}
+                                          style={{
+                                            padding:'6px 13px', borderRadius:20, fontSize:12, fontWeight:600,
+                                            cursor:'pointer', transition:'all 0.15s', userSelect:'none',
+                                            border:`2px solid ${sel ? color : 'rgba(255,255,255,0.1)'}`,
+                                            background: sel ? `${color}22` : 'rgba(255,255,255,0.03)',
+                                            color: sel ? color : 'rgba(255,255,255,0.5)',
+                                            boxShadow: sel ? `0 0 10px ${color}40` : 'none',
+                                            transform: sel ? 'scale(1.05)' : 'scale(1)'
+                                          }}
+                                        >
+                                          {sel ? '✓ ' : ''}{eq.label}
+                                        </button>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            )}
+
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 

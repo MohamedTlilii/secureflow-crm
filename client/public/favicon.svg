@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#041612"/>
+      <stop offset="55%" stop-color="#073322"/>
+      <stop offset="100%" stop-color="#041612"/>
+    </linearGradient>
+    <linearGradient id="lg1" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#12b76a"/>
+      <stop offset="100%" stop-color="#61DAFB"/>
+    </linearGradient>
+    <linearGradient id="lg2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#61DAFB" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.75"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="20" fill="url(#bg)"/>
+  <polygon points="94,50 72,88 28,88 6,50 28,12 72,12"
+    fill="none" stroke="url(#lg1)" stroke-width="3.5" stroke-linejoin="round"/>
+  <polyline points="22,76 36,61 50,49 64,37 77,24"
+    fill="none" stroke="url(#lg1)" stroke-width="4"
+    stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M77,14 C77,14 70,22 70,27 C70,30.9 73.1,34 77,34 C80.9,34 84,30.9 84,27 C84,22 77,14 77,14Z"
+    fill="url(#lg2)"/>
+</svg>

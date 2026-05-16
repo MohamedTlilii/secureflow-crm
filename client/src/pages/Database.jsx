@@ -8,7 +8,7 @@
 // API         : GET /api/solution-express + GET /api/database/stats
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Trash2, Database as DbIcon, MapPin, HardDrive,
   Building2, Filter
@@ -55,13 +55,6 @@ function AnimatedNumber({ value, decimals = 0, color }) {
 // ════════════════════════════════════════════════════════════════════════════
 // CONSTANTES
 // ════════════════════════════════════════════════════════════════════════════
-const VILLES = [
-  '','Montreal','Laval','Longueuil','Boucherville','Repentigny',
-  'Vaudreuil-Dorion','Terrebonne','Saint-Jerome','Granby',
-  'Trois-Rivieres','Drummondville','Victoriaville',
-  'Ottawa','Gatineau','Ville de Quebec'
-];
-
 // Style de base pour les inputs filtres
 const inputSt = {
   width:'100%', padding:'6px 10px', borderRadius:8,
@@ -77,12 +70,15 @@ export default function Database() {
   const isMobile = useIsMobile();
 
   // ── États ─────────────────────────────────────────────────────────────
-  const [leads, setLeads]     = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [dbStats, setDbStats] = useState(null);
+  const [leads, setLeads]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [dbStats, setDbStats]     = useState(null);
+  const [settings, setSettings]   = useState(null);
+  const [anneeFiltre, setAnneeFiltre] = useState(String(new Date().getFullYear()));
   const [filters, setFilters] = useState({
     prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:''
   });
+
   // ── Fetch fiches Solution Express ─────────────────────────────────────
   const fetchLeads = async () => {
     try {
@@ -104,7 +100,18 @@ export default function Database() {
   useEffect(() => {
     fetchLeads();
     fetchDbStats();
+    api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
   }, []);
+
+  const dVilles = useMemo(() => settings?.villes || [], [settings]);
+  const annees  = useMemo(() =>
+    [...new Set(leads.map(f => new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()))].sort((a,b) => b-a),
+    [leads]
+  );
+  const fichesByAnnee = useMemo(() =>
+    anneeFiltre === 'tout' ? leads : leads.filter(f => String(new Date(f.dateVente||f.createdAt).getUTCFullYear()) === anneeFiltre),
+    [leads, anneeFiltre]
+  );
 
   const setF = (k, v) => setFilters(f => ({ ...f, [k]: v }));
 
@@ -129,7 +136,7 @@ export default function Database() {
     (!filters.ville || item.ville === filters.ville)
   );
 
-  const displayData = applyFilters(leads);
+  const displayData = applyFilters(fichesByAnnee);
   const hasFilters  = Object.values(filters).some(v => v);
 
   // ── Couleur barre storage ─────────────────────────────────────────────
@@ -161,23 +168,30 @@ export default function Database() {
             <div>
               <h1 style={{ margin:0, fontSize: isMobile?20:24 }}>Base de Données</h1>
               <p style={{ color:'#ffffff', fontSize:13, margin:0, marginTop:2 }}>
-                Solution Express · <span style={{ color:'#12b76a', fontWeight:700 }}>{leads.length}</span> enregistrement{leads.length!==1?'s':''}
+                Solution Express · <span style={{ color:'#12b76a', fontWeight:700 }}>{fichesByAnnee.length}</span> enregistrement{fichesByAnnee.length!==1?'s':''}
               </p>
             </div>
           </div>
-          {!isMobile && (
-            <div style={{ fontSize:12, color:'#ffffff', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)' }}>
-              {new Date().toLocaleDateString('fr-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
-            </div>
-          )}
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            {!isMobile && (
+              <div style={{ fontSize:12, color:'#efefef', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)', textTransform:'capitalize', whiteSpace:'nowrap' }}>
+                {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+              </div>
+            )}
+            <select value={anneeFiltre} onChange={e => setAnneeFiltre(e.target.value)}
+              style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
+              <option value="tout">Toutes les années</option>
+              {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* Stats rapides */}
         <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(3,1fr)', gap:10 }}>
           {[
-            { label:'Total fiches',   value:leads.length,                       color:'#e2287f' },
-            { label:'Résultats',      value:displayData.length,                 color:'#12b76a' },
-            { label:'Filtrés',        value:leads.length - displayData.length,  color:'#f79009' },
+            { label:'Total fiches',   value:fichesByAnnee.length,                          color:'#e2287f' },
+            { label:'Résultats',      value:displayData.length,                            color:'#12b76a' },
+            { label:'Filtrés',        value:fichesByAnnee.length - displayData.length,     color:'#f79009' },
           ].map((s,i) => (
             <div key={i} style={{ background:`${s.color}12`, borderRadius:10, padding:'10px 14px', border:`1px solid ${s.color}25`, animation:`fadeSlideUp 0.4s ${i*0.05}s ease both` }}>
               <div style={{ fontSize:10, color:s.color, fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
@@ -333,7 +347,8 @@ export default function Database() {
                 <th style={thStyle}>
                   <div style={{ fontSize:10, marginBottom:5, letterSpacing:0.8 }}>VILLE</div>
                   <select style={inputSt} value={filters.ville} onChange={e => setF('ville', e.target.value)}>
-                    {VILLES.map(v => <option key={v} value={v}>{v || 'Toutes'}</option>)}
+                    <option value="">Toutes</option>
+                    {dVilles.filter(v=>v).map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </th>
                 {/* Actions */}
@@ -442,7 +457,7 @@ export default function Database() {
         {displayData.length > 0 && (
           <div style={{ padding:'10px 20px', borderTop:'1px solid var(--border)', background:'var(--bg-secondary)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <span style={{ fontSize:11, color:'#ffffff' }}>
-              <span style={{ fontWeight:700, color:'var(--text-primary)' }}>{displayData.length}</span> enregistrement{displayData.length!==1?'s':''} affichés sur <span style={{ fontWeight:700 }}>{leads.length}</span> au total
+              <span style={{ fontWeight:700, color:'var(--text-primary)' }}>{displayData.length}</span> enregistrement{displayData.length!==1?'s':''} affichés sur <span style={{ fontWeight:700 }}>{fichesByAnnee.length}</span> au total
             </span>
             {hasFilters && (
               <span style={{ fontSize:11, background:'rgba(247,144,9,0.1)', color:'#f79009', padding:'2px 10px', borderRadius:20, fontWeight:600 }}>

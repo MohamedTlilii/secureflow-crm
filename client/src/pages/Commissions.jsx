@@ -7,7 +7,7 @@
 // API        : GET /api/solution-express — filtre commissionTotale > 0
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import api from '../api';
 import {
   CheckCircle, XCircle, ChevronLeft, ChevronRight,
@@ -190,6 +190,7 @@ export default function Commissions() {
   const [selectedDate, setSelectedDate]     = useState(null);
   const [selectedVentes, setSelectedVentes] = useState([]);
   const [resumeFiche, setResumeFiche]       = useState(null);
+  const [settings, setSettings]             = useState({});
 
   // Fetch commissions
   const fetchFiches = useCallback(async () => {
@@ -202,7 +203,20 @@ export default function Commissions() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchFiches(); }, [fetchFiches]);
+  useEffect(() => {
+    fetchFiches();
+    api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
+  }, [fetchFiches]);
+
+  const commerceLbl = useMemo(() =>
+    Object.fromEntries((settings.typeCommerce||[]).map(t => [t.key, t.label])),
+    [settings.typeCommerce]
+  );
+
+  const qualifLbl = useMemo(() =>
+    Object.fromEntries((settings.qualificationSysteme||[]).map(q => [q.key, q.label])),
+    [settings.qualificationSysteme]
+  );
 
   // Toggle payée / non payée
   const togglePaiement = async (fiche) => {
@@ -577,8 +591,6 @@ export default function Commissions() {
             {(() => {
               const STATUS_LBL = { new:'Nouveau', contacted:'Contacté', proposal:'Soumission', installation_en_cours:'Installation en cours', installe:'Installé', installation_annulee:'Installation annulée' };
               const STATUS_CLR = { new:'#3b6cf8', contacted:'#f79009', proposal:'#a764f8', installation_en_cours:'#f97316', installe:'#22c55e', installation_annulee:'#be123c' };
-              const COMMERCE_LBL = { restaurant:'Restaurant', pizzeria:'Pizzeria', boulangerie:'Boulangerie', traiteur:'Traiteur', cafe:'Café', bar_resto:'Bar/Resto', salon_coiffure:'Salon coiffure', esthetique:'Esthétique', spa:'Spa', massotherapie:'Massothérapie', barbier:'Barbier', garage_auto:'Garage auto', carrosserie:'Carrosserie', esthetique_auto:'Esthétique auto', lave_auto:'Lave-auto', pneus:'Pneus', concessionnaire:'Concessionnaire', clinique_dentaire:'Clinique dentaire', clinique_privee:'Clinique privée', pharmacie:'Pharmacie', optometrie:'Optométrie', cabinet_infirmier:'Cabinet infirmier', boutique:'Boutique', epicerie:'Épicerie', boucherie:'Boucherie', librairie:'Librairie', quincaillerie:'Quincaillerie', bureau:'Bureau', cabinet_comptable:'Cabinet comptable', agence:'Agence', assurance:'Assurance', immobilier:'Immobilier', garderie:'Garderie', ecole_privee:'École privée', centre_formation:'Centre formation', gym:'Gym', centre_sportif:'Centre sportif', studio_yoga:'Studio yoga', entrepot:'Entrepôt', transport:'Transport', manufacture:'Manufacture', construction:'Construction', veterinaire:'Vétérinaire', animalerie:'Animalerie', autre:'Autre' };
-              const QUALIF_LBL = { pas_de_systeme:'Pas de système', systeme_plus_10_ans:'+10 ans', systeme_non_connecte_nouveau_proprio:'Non connecté (nouveau proprio)', systeme_non_connecte_insatisfait:'Non connecté (insatisfait)', systeme_non_connecte_diy:'Non connecté (DIY)', systeme_moins_5_ans_avec_contrat:'-5 ans avec contrat', systeme_moins_5_ans_sans_contrat:'-5 ans sans contrat', systeme_5_10_ans_panneau_tactile:'5-10 ans (tactile)', systeme_5_10_ans_panneau_boutons:'5-10 ans (boutons)', inconnu:'Inconnu' };
               const f = resumeFiche;
               const nomContact = `${f.prenom||''} ${f.nom||''}`.trim();
               return (
@@ -594,7 +606,7 @@ export default function Commissions() {
                         {f.typeClient==='b2b'?'🏢 B2B':'👤 B2C'}
                       </span>
                       {f.typeCommerce && f.typeCommerce !== 'autre' && (
-                        <span style={{ fontSize:11, color:'#ffffff', fontWeight:600 }}>{COMMERCE_LBL[f.typeCommerce]||f.typeCommerce}</span>
+                        <span style={{ fontSize:11, color:'#ffffff', fontWeight:600 }}>{commerceLbl[f.typeCommerce]||f.typeCommerce}</span>
                       )}
                       {f.ville && <span style={{ fontSize:11, color:'#ffffff' }}>· {f.ville}</span>}
                     </div>
@@ -615,7 +627,7 @@ export default function Commissions() {
                     {/* Qualification système */}
                     {f.qualificationSysteme && (
                       <div style={{ fontSize:11, color:'#ffffff' }}>
-                        <span style={{ fontWeight:600 }}>Système : </span>{QUALIF_LBL[f.qualificationSysteme]||f.qualificationSysteme}
+                        <span style={{ fontWeight:600 }}>Système : </span>{qualifLbl[f.qualificationSysteme]||f.qualificationSysteme}
                       </div>
                     )}
                     {/* Date de vente */}

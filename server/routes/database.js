@@ -15,7 +15,7 @@ router.get('/stats', auth, async (req, res) => {
 
     // Collections réelles utilisées par l'application
     const [seCount, usersCount, essenceCount] = await Promise.all([
-      db.collection('solutionexpress').countDocuments(),
+      db.collection('solutionexpresses').countDocuments(),
       db.collection('users').countDocuments(),
       db.collection('essences').countDocuments(),
     ]);

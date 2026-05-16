@@ -10,13 +10,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../api';
 import {
-  Fuel, CheckCircle, XCircle, ChevronLeft, ChevronRight,
+  Fuel, CheckCircle, XCircle,
   TrendingUp, Calendar, AlertTriangle, Download,
   BarChart2, Target, FileText, X
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  Cell, LineChart, Line, Area, AreaChart, CartesianGrid
+  Area, AreaChart, CartesianGrid
 } from 'recharts';
 import toast from 'react-hot-toast';
 
@@ -96,18 +96,24 @@ export default function Essence() {
   const [data,       setData]       = useState([]);
   const [stats,      setStats]      = useState(null);
   const [annees,     setAnnees]     = useState([]);
-  const [annee,      setAnnee]      = useState(new Date().getFullYear());
+  const [annee,      setAnnee]      = useState(String(new Date().getFullYear()));
   const [loading,    setLoading]    = useState(true);
-  const [noteModal,  setNoteModal]  = useState(null);   // doc en édition
-  const [vueMode,    setVueMode]    = useState('annee'); // 'annee' | 'cumul'
+  const [noteModal,  setNoteModal]  = useState(null);
+  const [vueMode,    setVueMode]    = useState('annee');
   const [simJours,   setSimJours]   = useState(22);
+  const [editingId,  setEditingId]  = useState(null);
+  const [editVal,    setEditVal]    = useState('');
+  const anneesRef = useRef([]);
 
   // ── Fetch années ──────────────────────────────────────────────────────────
   const fetchAnnees = useCallback(async () => {
     try {
       const r = await api.get('/api/essence/annees');
       setAnnees(r.data);
-      if (r.data.length > 0 && !r.data.includes(annee)) setAnnee(r.data[r.data.length - 1]);
+      anneesRef.current = r.data;
+      if (r.data.length > 0) {
+        setAnnee(prev => (prev !== 'tout' && !r.data.includes(Number(prev))) ? String(r.data[r.data.length - 1]) : prev);
+      }
     } catch { toast.error('Erreur années'); }
   }, []);
 
@@ -115,12 +121,36 @@ export default function Essence() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [rData, rStats] = await Promise.all([
-        api.get(`/api/essence?annee=${annee}`),
-        api.get(`/api/essence/stats?annee=${annee}`),
-      ]);
-      setData(rData.data);
-      setStats(rStats.data);
+      if (annee === 'tout') {
+        const years = anneesRef.current;
+        if (!years.length) { setLoading(false); return; }
+        const results = await Promise.all(
+          years.map(y => Promise.all([
+            api.get(`/api/essence?annee=${y}`),
+            api.get(`/api/essence/stats?annee=${y}`),
+          ]))
+        );
+        const allData = results.flatMap(([rD]) => rD.data)
+          .sort((a, b) => b.annee - a.annee || b.mois - a.mois);
+        const aggStats = results.reduce((acc, [, rS]) => ({
+          totalAttendu:  (acc.totalAttendu  || 0) + (rS.data.totalAttendu  || 0),
+          totalRecu:     (acc.totalRecu     || 0) + (rS.data.totalRecu     || 0),
+          totalManquant: (acc.totalManquant || 0) + (rS.data.totalManquant || 0),
+          totalJours:    (acc.totalJours    || 0) + (rS.data.totalJours    || 0),
+          moisRecus:     (acc.moisRecus     || 0) + (rS.data.moisRecus     || 0),
+          moisTotal:     (acc.moisTotal     || 0) + (rS.data.moisTotal     || 0),
+        }), {});
+        aggStats.pctRecu = aggStats.totalAttendu > 0 ? Math.round((aggStats.totalRecu / aggStats.totalAttendu) * 100) : 0;
+        setData(allData);
+        setStats(aggStats);
+      } else {
+        const [rData, rStats] = await Promise.all([
+          api.get(`/api/essence?annee=${annee}`),
+          api.get(`/api/essence/stats?annee=${annee}`),
+        ]);
+        setData(rData.data);
+        setStats(rStats.data);
+      }
     } catch { toast.error('Erreur chargement'); }
     finally { setLoading(false); }
   }, [annee]);
@@ -134,12 +164,12 @@ const toggleRecu = async (doc) => {
     const res = await api.put(`/api/essence/${doc._id}`, { recu: !doc.recu });
     toast.success(!doc.recu ? '✅ Marqué reçu !' : 'Marqué en attente');
 
-    // Si décembre payé + toute l'année reçue → passer à l'année suivante
-    if (res.data.nextAnnee) {
-      toast.success(`🎉 Année ${annee} terminée ! Passage à ${res.data.nextAnnee}`);
+    if (res.data.nextAnnee && annee !== 'tout') {
+      toast.success(`🎉 Année ${doc.annee} terminée ! Passage à ${res.data.nextAnnee}`);
       await fetchAnnees();
-      setAnnee(res.data.nextAnnee);
+      setAnnee(String(res.data.nextAnnee));
     } else {
+      await fetchAnnees();
       fetchData();
     }
   } catch { toast.error('Erreur'); }
@@ -155,15 +185,35 @@ const toggleRecu = async (doc) => {
     } catch { toast.error('Erreur'); }
   };
 
+  // ── Édition manuelle du montant ──────────────────────────────────────────
+  const startEdit = (doc) => {
+    setEditingId(doc._id);
+    setEditVal(String(doc.montantAttendu));
+  };
+  const saveMontant = async (doc) => {
+    const v = parseFloat(editVal);
+    if (isNaN(v) || v < 0) { setEditingId(null); return; }
+    try {
+      await api.put(`/api/essence/${doc._id}`, { montantAttendu: +v.toFixed(3) });
+      toast.success('Montant mis à jour');
+      setEditingId(null);
+      fetchData();
+    } catch { toast.error('Erreur'); }
+  };
+
   // ── Alerte : dernier mois non reçu ───────────────────────────────────────
   const now         = new Date();
   const prevMoisIdx = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-  const prevMoisDoc = data.find(d => d.mois === prevMoisIdx);
+  const prevMoisDoc = data.find(d => d.mois === prevMoisIdx && d.annee === now.getFullYear());
   const showAlerte  = prevMoisDoc && !prevMoisDoc.recu;
 
-  // ── Données graphique barres ──────────────────────────────────────────────
-  const chartBar = data.map(d => ({
-    name:    MOIS_SHORT[d.mois],
+  // ── Données graphique (toujours croissant pour les axes temporels) ────────
+  const chartDataAsc = annee === 'tout'
+    ? [...data].sort((a, b) => a.annee - b.annee || a.mois - b.mois)
+    : data;
+
+  const chartBar = chartDataAsc.map(d => ({
+    name:    annee === 'tout' ? `${MOIS_SHORT[d.mois]} ${d.annee}` : MOIS_SHORT[d.mois],
     total:   d.montantAttendu,
     recu:    d.recu ? d.montantAttendu : 0,
     attente: d.recu ? 0 : d.montantAttendu,
@@ -171,7 +221,7 @@ const toggleRecu = async (doc) => {
 
   // ── Données graphique cumulatif ───────────────────────────────────────────
   let cumAttendu = 0, cumRecu = 0;
-  const chartCumul = data.map(d => {
+  const chartCumul = chartDataAsc.map(d => {
     cumAttendu += d.montantAttendu;
     cumRecu    += d.recu ? d.montantAttendu : 0;
     return { name: MOIS_SHORT[d.mois], attendu: +cumAttendu.toFixed(3), recu: +cumRecu.toFixed(3) };
@@ -189,7 +239,7 @@ const toggleRecu = async (doc) => {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href = url; a.download = `essence_${annee}.csv`; a.click();
+    a.href = url; a.download = `essence_${annee === 'tout' ? 'toutes_annees' : annee}.csv`; a.click();
     URL.revokeObjectURL(url);
     toast.success('Export CSV téléchargé');
   };
@@ -252,10 +302,17 @@ const toggleRecu = async (doc) => {
 
           {/* Contrôles droite */}
           <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            {/* Chip date */}
+            {!isMobile && (
+              <div style={{ fontSize:12, color:'#efefef', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)', textTransform:'capitalize', whiteSpace:'nowrap' }}>
+                {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+              </div>
+            )}
             {/* Sélecteur année dynamique */}
-            <select value={annee} onChange={e => setAnnee(parseInt(e.target.value))}
-              style={{ fontSize:12, padding:'7px 12px', borderRadius:9, border:'1px solid rgba(245,158,11,0.3)', background:'var(--bg-card)', color:'var(--text-primary)', cursor:'pointer', outline:'none', fontWeight:700 }}>
-              {annees.map(y => <option key={y} value={y}>{y}</option>)}
+            <select value={annee} onChange={e => setAnnee(e.target.value)}
+              style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
+              <option value="tout">Toutes les années</option>
+              {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}
             </select>
             {/* Bouton export */}
             <button onClick={exportCSV}
@@ -361,7 +418,7 @@ const toggleRecu = async (doc) => {
             <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>
               {vueMode === 'annee' ? 'Carburant par mois' : 'Tendance cumulative'}
             </div>
-            <div style={{ fontSize:11, color:'#ffffff', marginTop:2 }}>{annee}</div>
+            <div style={{ fontSize:11, color:'#ffffff', marginTop:2 }}>{annee === 'tout' ? 'Toutes les années' : annee}</div>
           </div>
           <div style={{ display:'flex', gap:3, background:'rgba(0,0,0,0.08)', borderRadius:10, padding:3 }}>
             {[['annee','Barres',BarChart2],['cumul','Cumul',TrendingUp]].map(([k,l,Icon]) => (
@@ -428,7 +485,7 @@ const toggleRecu = async (doc) => {
       <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', overflow:'hidden', backdropFilter:'blur(20px)' }}>
 
         <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border)', background:'linear-gradient(135deg,rgba(245,158,11,0.06),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Historique mensuel {annee}</div>
+          <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Historique mensuel {annee === 'tout' ? '— Toutes les années' : annee}</div>
           <div style={{ fontSize:11, background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.25)', color:'#f59e0b', padding:'3px 12px', borderRadius:20, fontWeight:700 }}>
             {data.length} mois
           </div>
@@ -470,11 +527,48 @@ const toggleRecu = async (doc) => {
                     </div>
                   )}
 
-                  {/* Montant */}
-                  <div style={{ textAlign:'right', flexShrink:0, minWidth: isMobile?70:90 }}>
-                    <div style={{ fontSize: isMobile?15:19, fontWeight:800, color: doc.recu ? '#12b76a' : '#f59e0b', lineHeight:1 }}>
-                      {fmtMoney(doc.montantAttendu)}
-                    </div>
+                  {/* Montant — éditable */}
+                  <div style={{ textAlign:'right', flexShrink:0, minWidth: isMobile?80:110 }}>
+                    {editingId === doc._id ? (
+                      <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:5 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                          <input
+                            autoFocus
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            value={editVal}
+                            onChange={e => setEditVal(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') saveMontant(doc); if (e.key === 'Escape') setEditingId(null); }}
+                            style={{ width:86, padding:'4px 8px', borderRadius:8, border:`1px solid ${doc.recu ? 'rgba(18,183,106,0.5)' : 'rgba(245,158,11,0.5)'}`, background:'rgba(255,255,255,0.06)', color: doc.recu ? '#12b76a' : '#f59e0b', fontSize:14, fontWeight:800, textAlign:'right', outline:'none' }}
+                          />
+                          <span style={{ fontSize:11, color:'#ffffff' }}>TND</span>
+                        </div>
+                        <div style={{ display:'flex', gap:4 }}>
+                          <button
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => saveMontant(doc)}
+                            style={{ padding:'4px 10px', borderRadius:8, border:'none', background:'#12b76a', color:'#fff', cursor:'pointer', fontSize:11, fontWeight:700 }}>
+                            ✓ Confirmer
+                          </button>
+                          <button
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => setEditingId(null)}
+                            style={{ padding:'4px 8px', borderRadius:8, border:'1px solid var(--border)', background:'transparent', color:'#ffffff', cursor:'pointer', fontSize:11, fontWeight:600 }}>
+                            ✗
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => startEdit(doc)}
+                        title="Cliquer pour modifier"
+                        style={{ fontSize: isMobile?15:19, fontWeight:800, color: doc.recu ? '#12b76a' : '#f59e0b', lineHeight:1, cursor:'pointer', display:'flex', alignItems:'center', gap:4, justifyContent:'flex-end' }}
+                      >
+                        {fmtMoney(doc.montantAttendu)}
+                        <span style={{ fontSize:9, color:'rgba(255,255,255,0.3)', fontWeight:400 }}>✎</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Bouton note */}
@@ -508,7 +602,7 @@ const toggleRecu = async (doc) => {
             <div style={{ width:64, height:64, borderRadius:18, background:'rgba(245,158,11,0.08)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', border:'1px solid rgba(245,158,11,0.15)' }}>
               <Fuel size={30} color="#f59e0b" style={{ opacity:0.4 }}/>
             </div>
-            <div style={{ fontSize:14, fontWeight:600, color:'#ffffff', marginBottom:6 }}>Aucune donnée pour {annee}</div>
+            <div style={{ fontSize:14, fontWeight:600, color:'#ffffff', marginBottom:6 }}>Aucune donnée {annee === 'tout' ? 'disponible' : `pour ${annee}`}</div>
             <div style={{ fontSize:12 }}>Les mois apparaîtront automatiquement</div>
           </div>
         )}

@@ -92,7 +92,7 @@ router.get('/stats', auth, async (req, res) => {
 // ─── PUT /api/essence/:id  → toggle reçu + note + taux ──────────────────────
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { recu, note, montantParJour } = req.body;
+    const { recu, note, montantParJour, montantAttendu } = req.body;
     const doc = await Essence.findById(req.params.id);
     if (!doc) return res.status(404).json({ error: 'Not found' });
 
@@ -105,6 +105,7 @@ router.put('/:id', auth, async (req, res) => {
       doc.montantParJour = montantParJour;
       doc.montantAttendu = +(doc.joursOuvres * montantParJour).toFixed(3);
     }
+    if (montantAttendu !== undefined) doc.montantAttendu = +Number(montantAttendu).toFixed(3);
     await doc.save();
 
     // ── Si décembre reçu → supprimer toute l'année et passer à l'année suivante

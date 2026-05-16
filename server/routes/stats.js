@@ -59,20 +59,16 @@ router.get('/', auth, async (req, res) => {
       { $limit: 6 }
     ]);
 
-    // ── TOP FOURNISSEURS ACTUELS ───────────────────────────────────────────
-    const fournData = await SolutionExpress.aggregate([{ $facet: {
-      alarme:   [{ $match: { fournisseurAlarme:   { $nin: ['inconnu','aucun',''] } } }, { $group: { _id: '$fournisseurAlarme',   count: { $sum: 1 } } }],
-      internet: [{ $match: { fournisseurInternet: { $nin: ['inconnu','aucun',''] } } }, { $group: { _id: '$fournisseurInternet', count: { $sum: 1 } } }],
-      mobile:   [{ $match: { fournisseurMobile:   { $nin: ['inconnu','aucun',''] } } }, { $group: { _id: '$fournisseurMobile',   count: { $sum: 1 } } }],
-    }}]);
-    const fournMap = {};
-    const fd = fournData[0] || {};
-    [...(fd.alarme||[]),...(fd.internet||[]),...(fd.mobile||[])].forEach(f => {
-      if (f._id) fournMap[f._id] = (fournMap[f._id]||0) + f.count;
-    });
-    const byFourn = Object.entries(fournMap)
-      .map(([_id, count]) => ({ _id, count }))
-      .sort((a,b) => b.count - a.count).slice(0, 6);
+    // ── TOP FOURNISSEURS PROPOSÉS (nouveau format fournisseurs{}) ─────────
+    const fournRaw = await SolutionExpress.aggregate([
+      { $project: { fournisseursArr: { $objectToArray: { $ifNull: ['$fournisseurs', {}] } } } },
+      { $unwind: '$fournisseursArr' },
+      { $match: { 'fournisseursArr.v.propose': { $nin: ['inconnu','aucun','',null] } } },
+      { $group: { _id: '$fournisseursArr.v.propose', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 6 }
+    ]);
+    const byFourn = fournRaw;
 
     // ── TYPES DE LEAD ──────────────────────────────────────────────────────
     const byLeadType = await SolutionExpress.aggregate([

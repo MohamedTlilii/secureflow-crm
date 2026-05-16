@@ -10,7 +10,6 @@ const EssenceSchema = new mongoose.Schema({
   recu:           { type: Boolean, default: false },
   dateReception:  { type: Date, default: null },
   note:           { type: String, default: '' },
-  createdAt:      { type: Date, default: Date.now },
 }, { timestamps: true });
 
 // Un seul doc par (annee, mois)

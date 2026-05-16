@@ -9,6 +9,7 @@ import Sidebar from './components/Sidebar';
 import SolutionExpress from './pages/SolutionExpress';
 import Commissions from './pages/Commissions';
 import Essence from './pages/Essence';
+import Parametres from './pages/Parametres';
 
 import './index.css';
 
@@ -106,6 +107,9 @@ const AppRoutes = () => {
 
       {/* /database → Database page (protected) */}
       <Route path="/database" element={<ProtectedLayout><Database /></ProtectedLayout>} />
+
+      {/* /parametres → Settings page (protected) */}
+      <Route path="/parametres" element={<ProtectedLayout><Parametres /></ProtectedLayout>} />
 
       {/* Any unknown route → redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />

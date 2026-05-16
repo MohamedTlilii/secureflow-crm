@@ -9,12 +9,12 @@
 // API         : GET /api/stats?periode=tout + GET /api/solution-express
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import api from '../api';
 import {
   Users, TrendingUp, CheckCircle, AlertCircle, Clock,
-  MapPin, Zap, Building2, Shield, Wifi, Smartphone, Video, Wallet,
-  Target, Filter,
+  MapPin, Zap, Building2, Shield, Wallet,
+  Target,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -29,34 +29,8 @@ function useIsMobile() {
   return isMobile;
 }
 
-// ── Constantes labels ─────────────────────────────────────────────────────
-const PRODUIT_COLORS = { alarme:'#f04438', cameras:'#a764f8', internet:'#3b6cf8', mobile:'#12b76a', controle_acces:'#f79009', autre:'#8b8b9e' };
-const PRODUIT_LABELS = { alarme:'Alarme', cameras:'Caméras', internet:'Internet', mobile:'Mobile', controle_acces:'Contrôle accès', autre:'Autre' };
-const PRODUIT_ICONS  = { alarme:Shield, cameras:Video, internet:Wifi, mobile:Smartphone, controle_acces:Shield, autre:Zap };
-const QUALIF_LABELS  = {
-  pas_de_systeme:'Pas de système', systeme_plus_10_ans:'+10 ans',
-  systeme_non_connecte_nouveau_proprio:'Non connecté (nouveau proprio)',
-  systeme_non_connecte_insatisfait:'Non connecté (insatisfait)',
-  systeme_non_connecte_diy:'Non connecté (DIY)',
-  systeme_moins_5_ans_avec_contrat:'-5 ans avec contrat',
-  systeme_moins_5_ans_sans_contrat:'-5 ans sans contrat',
-  systeme_5_10_ans_panneau_tactile:'5-10 ans (tactile)',
-  systeme_5_10_ans_panneau_boutons:'5-10 ans (boutons)',
-  inconnu:'Inconnu'
-};
-const FOURN_LABELS = {
-  adt:'ADT', bell_alarme:'Bell Alarme', telus_alarme:'Telus Alarme',
-  gardaworld:'GardaWorld', api_alarm:'API Alarm', securitas:'Securitas',
-  alarme_mirabel:'Alarme Mirabel', alarme_signal_teck:'Signal Teck', allo_alarme:'AlloAlarme',
-  videotron:'Vidéotron', bell_internet:'Bell Internet', cogeco:'Cogeco',
-  distributel:'Distributel', teksavvy:'TekSavvy', ebox:'EBox',
-  bell_mobile:'Bell Mobile', telus_mobile:'Telus Mobile', rogers:'Rogers',
-  fizz:'Fizz', koodo:'Koodo', public_mobile:'Public Mobile',
-  fido:'Fido', chatr:'Chatr', virgin_plus:'Virgin Plus',
-  inconnu:'Inconnu', aucun:'Aucun', autre:'Autre'
-};
-const LEAD_TYPE_LABELS = { nouvelle_entreprise:'Nouvelle entreprise', demenagement:'Déménagement', reouverture:'Réouverture', commerce_existant:'Commerce existant', autre:'Autre' };
-const LEAD_TYPE_COLORS = { nouvelle_entreprise:'#12b76a', demenagement:'#0077b5', reouverture:'#f79009', commerce_existant:'#a764f8', autre:'#8b8b9e' };
+// ── Palette couleurs leads (index-stable) ─────────────────────────────────
+const LEAD_PALETTE = ['#12b76a','#0077b5','#f79009','#a764f8','#f04438','#61DAFB','#8b8b9e'];
 const STATUS_COLORS    = { new:'#3b6cf8', contacted:'#f79009', proposal:'#a764f8', installation_en_cours:'#f97316', installe:'#22c55e', installation_annulee:'#be123c' };
 const STATUS_LABELS_FR = { new:'Nouveau', contacted:'Contacté', proposal:'Soumission', installation_en_cours:'Installation en cours', installe:'Installé', installation_annulee:'Installation annulée' };
 
@@ -142,8 +116,9 @@ export default function Dashboard() {
   // ── États ─────────────────────────────────────────────────────────────
   const [stats, setStats]             = useState(null);
   const [loading, setLoading]         = useState(true);
-  const [seFiches, setSeFiches]       = useState([]);   // Toutes les fiches SE
-  const [anneeGlobal, setAnneeGlobal] = useState('tout'); // UN seul filtre année pour toute la page
+  const [seFiches, setSeFiches]       = useState([]);
+  const [settings, setSettings]       = useState({ services: [] });
+  const [anneeGlobal, setAnneeGlobal] = useState('tout');
   const [commFiltre, setCommFiltre]   = useState('tout');
 
   // ── Fetch données ─────────────────────────────────────────────────────
@@ -155,6 +130,9 @@ export default function Dashboard() {
     api.get('/api/solution-express')
       .then(r => setSeFiches(Array.isArray(r.data) ? r.data : []))
       .catch(err => console.error('SE fetch error:', err));
+    api.get('/api/settings')
+      .then(r => setSettings(r.data || { services: [] }))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -163,6 +141,30 @@ export default function Dashboard() {
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [fetchAll]);
+
+  // ── Lookups dynamiques depuis settings ────────────────────────────────
+  const qualifLbl = useMemo(() =>
+    Object.fromEntries((settings.qualificationSysteme||[]).map(q => [q.key, q.label])),
+    [settings.qualificationSysteme]
+  );
+  const leadTypeLbl = useMemo(() =>
+    Object.fromEntries((settings.typeLead||[]).map(t => [t.key, t.label])),
+    [settings.typeLead]
+  );
+  const leadTypeClr = useMemo(() => {
+    const map = {};
+    (settings.typeLead||[]).forEach((t, i) => { map[t.key] = LEAD_PALETTE[i % LEAD_PALETTE.length]; });
+    return map;
+  }, [settings.typeLead]);
+  const fournLbl = useMemo(() => {
+    const map = {};
+    (settings.services||[]).forEach(svc => {
+      [...(svc.actuel||[]), ...(svc.propose||[])].forEach(item => {
+        if (item.key && item.label) map[item.key] = item.label;
+      });
+    });
+    return map;
+  }, [settings.services]);
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', flexDirection:'column', gap:16 }}>
@@ -199,12 +201,7 @@ export default function Dashboard() {
   const b2b        = fiches.filter(f => f.typeClient === 'b2b').length;
   const b2c        = fiches.filter(f => f.typeClient === 'b2c').length;
   const won        = seStatuts.installe;
-  const urgent     = fiches.filter(f => (f.urgencyScore||0) >= 7).length;
-  const enPipeline = seStatuts.contacted + seStatuts.proposal + seStatuts.installation_en_cours + seStatuts.installe + seStatuts.installation_annulee;
   const convRate   = totalSE > 0 ? Math.round((won / totalSE) * 100) : 0;
-  const avgUrgence = fiches.length > 0
-    ? Math.round((fiches.reduce((s,f) => s + (f.urgencyScore||0), 0) / fiches.length) * 10) / 10
-    : 0;
 
   // Top villes
   const cityMap = {};
@@ -221,11 +218,13 @@ export default function Dashboard() {
   fiches.forEach(f => { if(f.qualificationSysteme && f.qualificationSysteme !== 'inconnu' && f.qualificationSysteme !== '') qualifMap[f.qualificationSysteme] = (qualifMap[f.qualificationSysteme]||0) + 1; });
   const byQualif = Object.entries(qualifMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
 
-  // Fournisseurs proposés (nouveaux)
+  // Fournisseurs proposés — lecture depuis f.fournisseurs (nouveau format, toujours peuplé par migration GET)
   const fournMap = {};
   fiches.forEach(f => {
-    [f.fournisseurProposeAlarme, f.fournisseurProposeInternet, f.fournisseurProposeMobile].forEach(fo => {
-      if(fo && !['inconnu','aucun',''].includes(fo)) fournMap[fo] = (fournMap[fo]||0) + 1;
+    Object.values(f.fournisseurs || {}).forEach(svc => {
+      const propose = svc?.propose;
+      if (propose && !['inconnu','aucun',''].includes(propose))
+        fournMap[propose] = (fournMap[propose] || 0) + 1;
     });
   });
   const byFourn = Object.entries(fournMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
@@ -574,16 +573,17 @@ export default function Dashboard() {
           {byProduit.length ? (
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               {byProduit.map((s,i) => {
-                const Icon  = PRODUIT_ICONS[s._id] || Zap;
-                const color = PRODUIT_COLORS[s._id] || '#8b8b9e';
+                const svc   = (settings.services||[]).find(x => x.id === s._id);
+                const label = svc?.label || s._id;
+                const color = svc?.color || '#8b8b9e';
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
                     <div style={{ width:30, height:30, borderRadius:7, background:`${color}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <Icon size={14} color={color}/>
+                      <Zap size={14} color={color}/>
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                        <span style={{ fontSize:13, color:'#ffffff' }}>{PRODUIT_LABELS[s._id]||s._id}</span>
+                        <span style={{ fontSize:13, color:'#ffffff' }}>{label}</span>
                         <span style={{ fontSize:13, fontWeight:700, color }}>{s.count}</span>
                       </div>
                       <ProgressBar value={s.count} max={totalSE} color={color}/>
@@ -618,7 +618,7 @@ export default function Dashboard() {
                     onMouseEnter={e => e.currentTarget.style.transform='translateX(3px)'}
                     onMouseLeave={e => e.currentTarget.style.transform='translateX(0)'}>
                     <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }}/>
-                    <span style={{ flex:1, fontSize:12, color:'#ffffff' }}>🔒 {QUALIF_LABELS[q._id]||q._id}</span>
+                    <span style={{ flex:1, fontSize:12, color:'#ffffff' }}>🔒 {qualifLbl[q._id]||q._id}</span>
                     <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{q.count}</span>
                   </div>
                 );
@@ -638,7 +638,7 @@ export default function Dashboard() {
               {byFourn.map((f,i) => (
                 <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
                   <div style={{ width:22, height:22, borderRadius:6, background:'var(--bg-hover)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#ffffff', flexShrink:0 }}>{i+1}</div>
-                  <span style={{ flex:1, fontSize:13, color:'#ffffff' }}>{FOURN_LABELS[f._id]||f._id}</span>
+                  <span style={{ flex:1, fontSize:13, color:'#ffffff' }}>{fournLbl[f._id]||f._id}</span>
                   <span style={{ fontSize:13, fontWeight:700 }}>{f.count}</span>
                   <ProgressBar value={f.count} max={Math.max(...byFourn.map(x=>x.count),1)} color="var(--accent)"/>
                 </div>
@@ -663,11 +663,11 @@ export default function Dashboard() {
           {byLeadType.length ? (
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               {byLeadType.map((l,i) => {
-                const color = LEAD_TYPE_COLORS[l._id]||'#8b8b9e';
+                const color = leadTypeClr[l._id]||'#8b8b9e';
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
                     <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0, boxShadow:`0 0 6px ${color}80` }}/>
-                    <span style={{ flex:1, fontSize:13, color:'#ffffff' }}>{LEAD_TYPE_LABELS[l._id]||l._id}</span>
+                    <span style={{ flex:1, fontSize:13, color:'#ffffff' }}>{leadTypeLbl[l._id]||l._id}</span>
                     <span style={{ fontSize:13, fontWeight:700, color }}>{l.count}</span>
                     <ProgressBar value={l.count} max={totalSE} color={color}/>
                   </div>

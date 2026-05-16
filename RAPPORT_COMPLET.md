@@ -1,7 +1,7 @@
 # RAPPORT COMPLET — QC SecureFlow CRM
 ## Référence Technique Ultime · Architecture · Fonctions · Guide de Modification
 
-> **Dernière mise à jour :** 2026-05-13
+> **Dernière mise à jour :** 2026-05-16
 > **Auteur :** Mohamed Tlili
 > **Stack :** React + Vite · Node.js/Express · MongoDB Atlas
 > Ce document est la **référence absolue** du projet. Il explique chaque fichier, chaque fonction, chaque décision. Lisez-le avant toute modification.
@@ -325,17 +325,17 @@ historique = periodeComm
 | Groupe | Champs clés |
 |--------|-------------|
 | Source | `sourceText`, `sourceUrl` |
-| Entreprise | `entreprise`, `typeCommerce` (44 valeurs), `ancienneAdresse`, `typeClient` (`b2b`\|`b2c`) |
+| Entreprise | `entreprise`, `typeCommerce` (sans enum, via settings), `ancienneAdresse`, `typeClient` (`b2b`\|`b2c`) |
 | Contact | `prenom`, `nom`, `telephone`, `email`, `sexe` |
 | Localisation | `adresse`, `ville`, `region` |
-| Lead | `leadType` (5 valeurs: nouvelle_entreprise, demenagement, reouverture, commerce_existant, autre) |
-| Système | `qualificationSysteme` (10 valeurs) |
-| Produits | `produits[]` (alarme, cameras, internet, mobile, controle_acces, autre) |
-| Fournisseurs actuels | `fournisseurAlarme`, `fournisseurInternet`, `fournisseurMobile` |
-| Fournisseurs proposés | `fournisseurProposeAlarme`, `fournisseurProposeInternet`, `fournisseurProposeMobile` |
-| Pipeline | `status` (6 valeurs), `urgencyScore` (0-10) |
+| Lead | `leadType` (sans enum, via settings) |
+| Système | `qualificationSysteme` (sans enum, via settings) |
+| Produits | `produits[]` (sans enum — clés depuis settings.services) |
+| Fournisseurs | `fournisseurs: Mixed` → `{ alarme: { actuel, propose }, internet: {...}, mobile: {...} }` |
+| Équipements | `equipements: Mixed` → `{ alarme: ['panneau', ...], internet: [], ... }` |
+| Pipeline | `status` (6 valeurs — **enum strict**), `urgencyScore` (0-10) |
 | Contenu | `summary`, `notes[]` |
-| Commission | `commissionFixe`, `commissionExtra`, `commissionTotale`, `commissionPayee`, `dateVente`, `datePaiementCommission` |
+| Commission | `montantContrat`, `commissionFixe`, `commissionExtra`, `commissionPourcentage`, `commissionTotale`, `commissionPayee`, `dateVente`, `datePaiementCommission` |
 | Meta | `createdBy` (ref User), `createdAt`, `updatedAt` |
 
 ---
@@ -944,16 +944,17 @@ try {
 {
   _id: ObjectId,
   sourceText: String, sourceUrl: String,
-  entreprise: String, typeCommerce: String (44 valeurs),
+  entreprise: String,
+  typeCommerce: String,       // pas d'enum — valeurs gérées par settings.typeCommerce
   ancienneAdresse: String, typeClient: "b2b"|"b2c",
   prenom: String, nom: String, telephone: String,
   email: String, sexe: "homme"|"femme"|"inconnu",
   adresse: String, ville: String, region: String,
-  leadType: "nouvelle_entreprise"|"demenagement"|"reouverture"|"commerce_existant"|"autre",
-  qualificationSysteme: String (10 valeurs),
-  produits: ["alarme","cameras","internet","mobile","controle_acces","autre"],
-  fournisseurAlarme: String, fournisseurInternet: String, fournisseurMobile: String,
-  fournisseurProposeAlarme: String, fournisseurProposeInternet: String, fournisseurProposeMobile: String,
+  leadType: String,           // pas d'enum — valeurs gérées par settings.typeLead
+  qualificationSysteme: String, // pas d'enum — valeurs gérées par settings.qualificationSysteme
+  produits: [String],         // pas d'enum — valeurs gérées par settings.services[].key
+  fournisseurs: Mixed,        // { alarme: { actuel: 'adt', propose: 'gardaworld' }, ... }
+  equipements:  Mixed,        // { alarme: ['panneau', 'contact_porte'], ... }
   status: "new"|"contacted"|"proposal"|"installation_en_cours"|"installe"|"installation_annulee",
   urgencyScore: Number (0-10),
   summary: String, notes: [String],
@@ -964,6 +965,33 @@ try {
   createdAt: Date, updatedAt: Date
 }
 ```
+
+> **Architecture dynamique :** `typeCommerce`, `leadType`, `qualificationSysteme` et les clés de `fournisseurs`/`produits` n'ont **pas d'enum MongoDB** — leurs valeurs valides sont stockées dans la collection `settings` et chargées dynamiquement par le frontend (`GET /api/settings`). Seul `status` et `typeClient` ont un enum strict en base.
+
+### Collection `settings`
+
+```
+{
+  _id: ObjectId,
+  villes:               [{ key: String, label: String, region: String }],
+  typeCommerce:         [{ key: String, label: String }],
+  typeLead:             [{ key: String, label: String, color: String }],
+  qualificationSysteme: [{ key: String, label: String }],
+  services: [
+    {
+      key: String,          // "alarme", "internet", "mobile", ...
+      label: String,        // "Alarme", "Internet", ...
+      color: String,        // couleur du badge produit
+      fournActuels: [{ key, label }],
+      fournProposes: [{ key, label }],
+      equipements: [{ key, label }]
+    }
+  ]
+}
+// Un seul document dans cette collection (findOne)
+```
+
+> **Fallback frontend :** Si `GET /api/settings` échoue, `SolutionExpress.jsx` utilise `DEFAULT_SERVICES` — un objet statique défini dans le fichier avec les mêmes FOURN_* maps compactés.
 
 ### Collection `essences`
 
@@ -1030,5 +1058,40 @@ try {
 
 ---
 
-*Ce rapport couvre l'intégralité du code source au 2026-05-13.*
+---
+
+## 16. CHANGELOG — MODIFICATIONS 2026-05-16
+
+### Scan complet & nettoyage code mort — Ultra Focus
+
+#### `client/src/pages/SolutionExpress.jsx`
+- **SUPPRIMÉ** import `Video` (jamais utilisé)
+- **SUPPRIMÉ** constantes mortes : `PRODUIT_LABELS`, `PRODUIT_COLORS`, `PRODUIT_ICONS`
+- **SUPPRIMÉ** composant `ProduitBadge` défini mais jamais appelé dans le JSX
+- **SUPPRIMÉ** fonction standalone `getFournLabel(field, val)` (doublon inutile — la version dynamique à l'intérieur du composant était utilisée)
+- **SUPPRIMÉ** champs morts de `EMPTY_FORM` : `fournisseurAlarme`, `fournisseurInternet`, `fournisseurMobile`, `fournisseurProposeAlarme`, `fournisseurProposeInternet`, `fournisseurProposeMobile` (remplacés par `fournisseurs: {}`)
+- **SUPPRIMÉ** champs morts de `EMPTY_FILTERS` : `fournisseurAlarme`, `fournisseurInternet`, `fournisseurMobile`
+- **SUPPRIMÉ** logique de filtre morte (3 blocs `if (filters.fournisseurX && ...)`)
+- **RESTAURÉ** `FOURN_*` maps comme constantes compactées sur une ligne avec commentaire — elles sont **requises** par `DEFAULT_SERVICES` (fallback statique si l'API settings est indisponible)
+
+#### `client/src/pages/Dashboard.jsx`
+- **SUPPRIMÉ** 3 variables calculées mais jamais affichées dans le JSX :
+  - `urgent` = fiches avec urgencyScore ≥ 7
+  - `enPipeline` = somme des statuts intermédiaires
+  - `avgUrgence` = moyenne des scores d'urgence
+- Conservé : `convRate` (utilisé dans les stat cards)
+
+#### `client/src/pages/Commissions.jsx`
+- **AJOUTÉ** `qualifLbl` useMemo (dynamique depuis `settings.qualificationSysteme`)
+- **SUPPRIMÉ** `QUALIF_LBL` objet hardcodé dans l'IIFE du modal
+- **Remplacé** par `{qualifLbl[f.qualificationSysteme] || f.qualificationSysteme}` dans la modal
+
+#### Système de settings — architecture dynamique confirmée
+- `typeCommerce`, `leadType`, `qualificationSysteme`, `produits`, `fournisseurs` → tous dynamiques depuis `GET /api/settings`
+- Plus aucun label hardcodé dans les pages (hors DEFAULT_SERVICES qui est un fallback explicite)
+- Pages 100% settings-driven : Dashboard, SolutionExpress, Pipeline, Commissions, Parametres
+
+---
+
+*Ce rapport couvre l'intégralité du code source au 2026-05-16.*
 *Toute modification majeure doit être reflétée ici.*

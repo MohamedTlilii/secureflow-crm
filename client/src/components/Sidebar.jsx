@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Kanban, LogOut, Database, Building2, Wallet, Fuel } from 'lucide-react';
+import { LayoutDashboard, Kanban, LogOut, Database, Building2, Wallet, Fuel, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -11,6 +11,7 @@ const NAV = [
   { to:'/pipeline',         icon:Kanban,          label:'Pipeline',            color:'#c084fc' },
   { to:'/essence',          icon:Fuel,            label:'Indemnité Carburant', color:'#fb923c' },
   { to:'/database',         icon:Database,        label:'Base de données',     color:'#f472b6' },
+  { to:'/parametres',       icon:Settings,        label:'Paramètres',          color:'#a78bfa' },
 ];
 
 function useIsMobile() {

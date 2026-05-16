@@ -18,15 +18,13 @@ const router  = express.Router();
 const SolutionExpress = require('../models/Solutionexpress');
 const auth    = require('../middleware/auth');  // middleware JWT existant
 
-const VALID_STATUS   = ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'];
-const VALID_LEADTYPE = ['nouvelle_entreprise','demenagement','reouverture','commerce_existant','autre'];
+const VALID_STATUS = ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'];
 
 // ── GET ALL ──────────────────────────────────────────────────────────────────
 router.get('/', auth, async (req, res) => {
   try {
     const { status, leadType, ville, region } = req.query;
-    if (status   && !VALID_STATUS.includes(status))    return res.status(400).json({ message: 'Statut invalide' });
-    if (leadType && !VALID_LEADTYPE.includes(leadType)) return res.status(400).json({ message: 'Type invalide' });
+    if (status && !VALID_STATUS.includes(status)) return res.status(400).json({ message: 'Statut invalide' });
     if (ville  && (typeof ville  !== 'string' || ville.length  > 100)) return res.status(400).json({ message: 'Ville invalide' });
     if (region && (typeof region !== 'string' || region.length > 100)) return res.status(400).json({ message: 'Région invalide' });
 

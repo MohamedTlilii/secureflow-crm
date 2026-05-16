@@ -8,7 +8,7 @@
 // SOURCES     : Solution Express uniquement
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import api from '../api';
 import { ArrowRight, MapPin, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -79,9 +79,11 @@ export default function Pipeline() {
 
   // ── États ─────────────────────────────────────────────────────────────
   const [items, setItems]         = useState([]);
+  const [anneeFiltre, setAnneeFiltre] = useState(String(new Date().getFullYear()));
   const [loading, setLoading]     = useState(true);
-  const [dragOver, setDragOver]   = useState(null); // colonne survolée pendant drag
-  const [dragging, setDragging]   = useState(null); // item en cours de drag
+  const [dragOver, setDragOver]   = useState(null);
+  const [dragging, setDragging]   = useState(null);
+  const [settings, setSettings]   = useState({ services: [] });
 
   // ── Fetch Solution Express ────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -102,7 +104,15 @@ export default function Pipeline() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+    api.get('/api/settings').then(r => setSettings(r.data || { services: [] })).catch(() => {});
+  }, [fetchAll]);
+
+  const svcMap = useMemo(() =>
+    Object.fromEntries((settings.services||[]).map(s => [s.id, { label: s.label, color: s.color }])),
+    [settings.services]
+  );
 
   // ── Drag & Drop ───────────────────────────────────────────────────────
   const onDragStart = (e, id, source, item) => {
@@ -155,13 +165,26 @@ const updateStatus = async (item, targetStage) => {
     return ((parts[0]?.[0]||'')+(parts[1]?.[0]||'')).toUpperCase() || '?';
   };
 
+  // ── Années disponibles + filtrage ────────────────────────────────────
+  const annees = useMemo(() =>
+    [...new Set(items.map(f => new Date(f.dateVente || f.createdAt || Date.now()).getUTCFullYear()))].sort((a, b) => b - a),
+    [items]
+  );
+
+  const filteredItems = useMemo(() =>
+    anneeFiltre === 'tout'
+      ? items
+      : items.filter(f => String(new Date(f.dateVente || f.createdAt || Date.now()).getUTCFullYear()) === anneeFiltre),
+    [items, anneeFiltre]
+  );
+
   // ── Stats pour le header ──────────────────────────────────────────────
-  const totalItems   = items.length;
-  const totalGagnes  = items.filter(i => i.stage === 'installe').length;
-  const inCours      = items.filter(i => i.stage === 'installation_en_cours').length;
-  const proposals    = items.filter(i => i.stage === 'proposal').length;
-  const b2b          = items.filter(i => i.typeClient === 'b2b').length;
-  const b2c          = items.filter(i => i.typeClient === 'b2c').length;
+  const totalItems   = filteredItems.length;
+  const totalGagnes  = filteredItems.filter(i => i.stage === 'installe').length;
+  const inCours      = filteredItems.filter(i => i.stage === 'installation_en_cours').length;
+  const proposals    = filteredItems.filter(i => i.stage === 'proposal').length;
+  const b2b          = filteredItems.filter(i => i.typeClient === 'b2b').length;
+  const b2c          = filteredItems.filter(i => i.typeClient === 'b2c').length;
   const convRate     = totalItems > 0 ? Math.round((totalGagnes / totalItems) * 100) : 0;
 
   // ════════════════════════════════════════════════════════════════════════
@@ -192,11 +215,18 @@ const updateStatus = async (item, targetStage) => {
               </p>
             </div>
           </div>
-          {!isMobile && (
-            <div style={{ fontSize:12, color:'#efefef', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)', textTransform:'capitalize' }}>
-              {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
-            </div>
-          )}
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            {!isMobile && (
+              <div style={{ fontSize:12, color:'#efefef', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)', textTransform:'capitalize', whiteSpace:'nowrap' }}>
+                {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+              </div>
+            )}
+            <select value={anneeFiltre} onChange={e => setAnneeFiltre(e.target.value)}
+              style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
+              <option value="tout">Toutes les années</option>
+              {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* Ligne 2 : Stats rapides */}
@@ -251,7 +281,7 @@ const updateStatus = async (item, targetStage) => {
           WebkitOverflowScrolling:'touch'
         }}>
           {STAGES.map((stage, stageIdx) => {
-            const stageItems = items.filter(p => p.stage === stage.key);
+            const stageItems = filteredItems.filter(p => p.stage === stage.key);
             const isDropTarget = dragOver === stage.key;
 
             return (
@@ -350,11 +380,15 @@ const updateStatus = async (item, targetStage) => {
                         {/* Produits Solution Express */}
                         {isSE && (p.produits||[]).length > 0 && (
                           <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:7 }}>
-                            {p.produits.slice(0,3).map(code => (
-                              <span key={code} style={{ fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:20, background:`${stage.color}15`, color:stage.color, border:`1px solid ${stage.color}30` }}>
-                                {code === 'alarme' ? '🔒' : code === 'internet' ? '🌐' : code === 'mobile' ? '📱' : code === 'cameras' ? '📷' : '•'} {code}
-                              </span>
-                            ))}
+                            {p.produits.slice(0,3).map(code => {
+                              const svc = svcMap[code];
+                              const clr = svc?.color || stage.color;
+                              return (
+                                <span key={code} style={{ fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:20, background:`${clr}15`, color:clr, border:`1px solid ${clr}30` }}>
+                                  {svc?.label || code}
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
 
