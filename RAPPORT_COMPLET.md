@@ -97,7 +97,7 @@ cd client && npm run dev             # → http://localhost:5173
 │                                                              │
 │  /api/auth             → routes/auth.js                     │
 │  /api/solution-express → routes/Solutionexpress.js          │
-│  /api/stats            → routes/stats.js                    │
+│  /api/settings         → routes/settings.js                 │
 │  /api/essence          → routes/essence.js                  │
 │  /api/database         → routes/database.js                 │
 │                                                              │
@@ -117,13 +117,12 @@ cd client && npm run dev             # → http://localhost:5173
 
 ```
 1. Composant Dashboard monte
-2. useEffect() → api.get('/api/stats?periode=tout')
-                  api.get('/api/solution-express')
+2. useEffect() → api.get('/api/solution-express')
+                  api.get('/api/settings')
 3. api.js interceptor REQUEST ajoute: Authorization: Bearer <sf_token>
 4. Express reçoit → middleware auth.js vérifie JWT → next()
-5. route stats.js exécute 10+ requêtes MongoDB en parallèle (Promise.all)
-6. JSON retourné → useState() → composant re-rend avec données réelles
-7. Si 401 → api.js interceptor RESPONSE → localStorage.removeItem → redirect /login
+5. Données retournées → calculs côté frontend → useState() → composant re-rend
+6. Si 401 → api.js interceptor RESPONSE → localStorage.removeItem → redirect /login
 ```
 
 ---
@@ -235,48 +234,6 @@ Requête entrante
 - **Sortie :** `{ message: 'Fiche supprimée' }` — suppression **définitive**, sans corbeille
 
 ---
-
-### `server/routes/stats.js` — Statistiques Dashboard
-
-**Route :** `GET /api/stats?periode=tout`
-
-**10 requêtes MongoDB en parallèle via `Promise.all` :**
-```javascript
-Promise.all([
-  SolutionExpress.countDocuments(),
-  SolutionExpress.countDocuments({ status: 'new' }),
-  SolutionExpress.countDocuments({ status: 'contacted' }),
-  SolutionExpress.countDocuments({ status: 'proposal' }),
-  SolutionExpress.countDocuments({ status: 'installation_en_cours' }),
-  SolutionExpress.countDocuments({ status: 'installe' }),
-  SolutionExpress.countDocuments({ status: 'installation_annulee' }),
-  SolutionExpress.countDocuments({ urgencyScore: { $gte: 7 } }),
-  SolutionExpress.countDocuments({ typeClient: 'b2b' }),
-  SolutionExpress.countDocuments({ typeClient: 'b2c' }),
-])
-```
-
-**Agrégations supplémentaires :**
-- `$group` par ville → toutes les villes (plus de limite)
-- `$unwind produits` + `$group` → tous les produits
-- `$group qualificationSysteme` → toutes les qualifications (plus de limite)
-- `$facet` sur fournisseurProposeAlarme/Internet/Mobile → top fournisseurs **proposés** (pas actuels)
-- `$group leadType` → tous les types
-- `.find().sort({ createdAt: -1 }).limit(6)` → 6 leads récents
-
-**Commissions :**
-```javascript
-// CORRECT — utilise periodeComm (données filtrées par période) pour TOUS les calculs
-const periodeComm = periode === 'tout' ? avecComm : avecComm.filter(...);
-totalGagne = periodeComm.reduce(...)   // ← periodeComm, pas avecComm
-totalPaye  = periodeComm.filter(...).reduce(...)
-moyenne    = totalGagne / periodeComm.length
-historique = periodeComm
-```
-
-> **Important :** Le Dashboard utilise DEUX sources :
-> - `GET /api/stats?periode=tout` → commissions pré-calculées
-> - `GET /api/solution-express` → filtrage par année côté frontend (tout le reste)
 
 ---
 
@@ -422,8 +379,8 @@ api.interceptors.response.use(
 
 **Deux sources de données (useEffect + visibilitychange) :**
 ```javascript
-api.get('/api/stats?periode=tout')    // → setStats()  [commissions]
-api.get('/api/solution-express')      // → setSeFiches() [tout le reste]
+api.get('/api/solution-express')   // → setSeFiches() [toutes les fiches]
+api.get('/api/settings')           // → setSettings() [labels dynamiques]
 ```
 
 **Filtre global `anneeGlobal` :** Recalcule TOUT côté frontend sur `seFiches` filtré. Évite des appels serveur.

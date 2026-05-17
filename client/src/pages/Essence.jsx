@@ -150,7 +150,7 @@ const toggleRecu = async (doc) => {
       setAnnee(String(res.data.nextAnnee));
     } else {
       await fetchAnnees();
-      fetchData();
+      await fetchData();
     }
   } catch { toast.error('Erreur'); }
 };
@@ -161,7 +161,7 @@ const toggleRecu = async (doc) => {
       await api.put(`/api/essence/${noteModal._id}`, { note });
       toast.success('Note sauvegardée');
       setNoteModal(null);
-      fetchData();
+      await fetchData();
     } catch { toast.error('Erreur'); }
   };
 
@@ -177,7 +177,7 @@ const toggleRecu = async (doc) => {
       await api.put(`/api/essence/${doc._id}`, { montantAttendu: +v.toFixed(3) });
       toast.success('Montant mis à jour');
       setEditingId(null);
-      fetchData();
+      await fetchData();
     } catch { toast.error('Erreur'); }
   };
 
