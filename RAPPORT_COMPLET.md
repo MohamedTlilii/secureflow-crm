@@ -1271,3 +1271,65 @@ try {
 
 *Ce rapport couvre l'intégralité du code source au 2026-05-17.*
 *Toute modification majeure doit être reflétée ici.*
+
+---
+
+## 19. CHANGELOG — MODIFICATIONS 2026-05-17 (session 2)
+
+> **Session** : audit final de sécurité, correction doublon constante backend, ajout outils de test.
+
+---
+
+### `server/routes/Solutionexpress.js` — 1 correction
+
+- **FIX** Doublon de constante : `VALID_STATUS` (GET) et `VALID_STATUTS` (PUT) étaient deux constantes identiques avec des noms différents. Consolidé en une seule constante `VALID_STATUTS` utilisée par les deux routes. Aucun impact fonctionnel — les deux validaient correctement — mais élimine la confusion future.
+
+---
+
+### `test-api.js` — NOUVEAU FICHIER (racine du projet)
+
+- **AJOUT** Script de test API complet en Node.js. Lance 62 tests automatiques couvrant l'intégralité du backend :
+  - Section 1 : Health check serveur
+  - Section 2 : Authentification (login, token, /me, sécurité mdp)
+  - Section 3 : Settings (GET tous champs, PUT objectifAnnuel par année, PUT motifsAnnulation, ajout/suppression ville)
+  - Section 4 : Solution Express CRUD (GET liste, POST créer, GET filtre, PUT statut, PUT statut invalide → 400)
+  - Section 5 : Motif d'annulation (PUT annulation + motif, persistance DB, lecture via GET)
+  - Section 6 : Commissions (distinction actives/annulées, champ motifAnnulation présent)
+  - Section 7 : Toggle paiement (commissionPayee true/false + datePaiementCommission)
+  - Section 8 : Database stats (totalDocs, storageMB, storagePercent)
+  - Section 9 : Notes sur une fiche
+  - Section 10 : Nettoyage (DELETE fiche test, vérification absence)
+  - Section 11 : Sécurité (accès sans token → 401, token invalide → 401)
+- **Usage** : `node test-api.js <email> <motdepasse>` (serveur doit être lancé)
+- **Résultat dernier run** : 62/62 ✅ — Score 100%
+- Ce fichier n'affecte pas l'application. Il ne se lance jamais automatiquement.
+
+---
+
+### `RAPPORT_TEST.md` — NOUVEAU FICHIER (racine du projet)
+
+- **AJOUT** Rapport de test individuel séparé du RAPPORT_COMPLET. Contient :
+  - Instructions pour lancer le script API
+  - Tableau des 11 sections testées avec description
+  - Résultats du dernier run (62/62, 100%)
+  - Checklist manuelle de 66 cases couvrant les 8 pages de l'interface
+  - Tableau résumé global à remplir après chaque session de test
+
+---
+
+### Audit final session 2 — résultat
+
+| Vérification | Résultat |
+|---|---|
+| Doublon VALID_STATUS / VALID_STATUTS | ✅ Corrigé — une seule constante |
+| Tests API automatiques | ✅ 62/62 — 100% |
+| commissionPayee filtre (faux bug signalé) | ✅ Logique correcte confirmée |
+| Race condition togglePaiement (faux bug) | ✅ toggleInProgress déjà en place |
+| Code mort | ✅ Zéro |
+| Divisions par zéro | ✅ Zéro |
+| Données hardcodées | ✅ Zéro |
+
+---
+
+*Ce rapport couvre l'intégralité du code source au 2026-05-17 (session 2).*
+*Toute modification majeure doit être reflétée ici.*
