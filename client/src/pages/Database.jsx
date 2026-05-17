@@ -114,7 +114,7 @@ export default function Database() {
     (!filters.ville || item.ville === filters.ville)
   );
 
-  const displayData = applyFilters(fichesByAnnee);
+  const displayData = applyFilters(fichesByAnnee).sort((a,b) => new Date(b.dateVente||b.createdAt) - new Date(a.dateVente||a.createdAt));
   const hasFilters  = Object.values(filters).some(v => v);
 
   // ── Couleur barre storage ─────────────────────────────────────────────

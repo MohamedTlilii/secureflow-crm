@@ -502,8 +502,8 @@ export default function SolutionExpress() {
   // ── Tri ───────────────────────────────────────────────────────────────
   const sorted = [...filtered].sort((a, b) => {
     switch (sortBy) {
-      case 'date_desc':       return new Date(b.createdAt) - new Date(a.createdAt);
-      case 'date_asc':        return new Date(a.createdAt) - new Date(b.createdAt);
+      case 'date_desc':       return new Date(b.dateVente||b.createdAt) - new Date(a.dateVente||a.createdAt);
+      case 'date_asc':        return new Date(a.dateVente||a.createdAt) - new Date(b.dateVente||b.createdAt);
       case 'urgency_desc':    return b.urgencyScore - a.urgencyScore;
       case 'commission_desc': return (b.commissionTotale||0) - (a.commissionTotale||0);
       case 'entreprise':      return (a.entreprise||'').localeCompare(b.entreprise||'');

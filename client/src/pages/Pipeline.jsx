@@ -257,7 +257,7 @@ const updateStatus = async (item, targetStage) => {
           WebkitOverflowScrolling:'touch'
         }}>
           {STAGES.map((stage, stageIdx) => {
-            const stageItems = filteredItems.filter(p => p.stage === stage.key);
+            const stageItems = filteredItems.filter(p => p.stage === stage.key).sort((a,b) => new Date(b.dateVente||b.createdAt) - new Date(a.dateVente||a.createdAt));
             const isDropTarget = dragOver === stage.key;
 
             return (

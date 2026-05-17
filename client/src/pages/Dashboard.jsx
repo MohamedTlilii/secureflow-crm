@@ -207,7 +207,7 @@ export default function Dashboard() {
   const byLeadType = Object.entries(leadMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
 
   // Leads récents (triés par date)
-  const recentProspects = [...fiches].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0,6);
+  const recentProspects = [...fiches].sort((a,b) => new Date(b.dateVente||b.createdAt) - new Date(a.dateVente||a.createdAt)).slice(0,6);
 
   // Pipeline data pour graphique
   const pipelineData = [
