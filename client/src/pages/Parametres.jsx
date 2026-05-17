@@ -131,6 +131,76 @@ function SimpleSection({ items, color, placeholder, onAdd, onRemove }) {
   );
 }
 
+// ── Section objectif par année ───────────────────────────────────────────
+function ObjectifSection({ objectifs, onAdd, onRemove }) {
+  const [annee,   setAnnee]   = useState(String(new Date().getFullYear()));
+  const [montant, setMontant] = useState('');
+  const color = '#12b76a';
+
+  const add = () => {
+    const m = parseFloat(montant);
+    if (!annee || !m || m <= 0) { toast.error('Année et montant requis'); return; }
+    onAdd(annee, m);
+    setMontant('');
+  };
+
+  const entries = Object.entries(objectifs).sort((a,b) => Number(b[0]) - Number(a[0]));
+
+  return (
+    <div style={{ animation:'fadeSlideUp 0.2s ease both' }}>
+      <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
+        <input
+          type="number" min="2020" max="2099" step="1"
+          value={annee}
+          onChange={e => setAnnee(e.target.value)}
+          placeholder="Année"
+          style={{ width:90, padding:'9px 12px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'var(--text-primary)', fontSize:13, outline:'none', transition:'border-color 0.2s' }}
+          onFocus={e => e.target.style.borderColor=color}
+          onBlur={e => e.target.style.borderColor='rgba(255,255,255,0.12)'}
+        />
+        <input
+          type="number" min="0"
+          value={montant}
+          onChange={e => setMontant(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && add()}
+          placeholder="Ex: 5000"
+          style={{ width:130, padding:'9px 14px', borderRadius:10, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.05)', color:'var(--text-primary)', fontSize:13, outline:'none', transition:'border-color 0.2s' }}
+          onFocus={e => e.target.style.borderColor=color}
+          onBlur={e => e.target.style.borderColor='rgba(255,255,255,0.12)'}
+        />
+        <span style={{ alignSelf:'center', fontSize:12, color:'rgba(255,255,255,0.4)' }}>TND</span>
+        <button onClick={add}
+          style={{ display:'flex', alignItems:'center', gap:6, padding:'9px 16px', borderRadius:10, border:`1px solid ${color}44`, background:`${color}18`, color, fontSize:13, fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.background=`${color}30`; e.currentTarget.style.borderColor=color; }}
+          onMouseLeave={e => { e.currentTarget.style.background=`${color}18`; e.currentTarget.style.borderColor=`${color}44`; }}>
+          <Plus size={13}/> Ajouter
+        </button>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        {entries.length === 0 && (
+          <div style={{ color:'rgba(255,255,255,0.3)', fontSize:12, fontStyle:'italic' }}>Aucun objectif — ajoutez-en un ci-dessus</div>
+        )}
+        {entries.map(([yr, mt]) => (
+          <div key={yr} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:10, background:'rgba(18,183,106,0.05)', border:'1px solid rgba(18,183,106,0.15)' }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'#12b76a', minWidth:40 }}>{yr}</div>
+            <div style={{ flex:1, height:5, borderRadius:3, background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
+              <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#3b6cf8,#12b76a)', width:'60%' }}/>
+            </div>
+            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{mt.toLocaleString()} TND</div>
+            <button onClick={() => onRemove(yr)}
+              style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.3)', padding:4, borderRadius:6, display:'flex', alignItems:'center', transition:'color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color='#f04438'}
+              onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.3)'}>
+              <X size={14}/>
+            </button>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:12, color:'rgba(255,255,255,0.35)', marginTop:10 }}>Barre de progression visible sur le Dashboard et Commissions selon l'année sélectionnée</div>
+    </div>
+  );
+}
+
 // ── Section pour liste clé/label ─────────────────────────────────────────
 function KeyLabelSection({ items, color, placeholder, onAdd, onRemove, getItemColor }) {
   const [val, setVal] = useState('');
@@ -677,6 +747,36 @@ export default function Parametres() {
             isMobile={isMobile}
           />
         )}
+      </div>
+
+      {/* ── Objectif annuel ─────────────────────────────────────────────── */}
+      <div style={{ marginTop:16, background:'rgba(2,8,16,0.97)', borderRadius:18, padding: isMobile?'18px 16px':'24px 28px', border:'1px solid rgba(255,255,255,0.07)', backdropFilter:'blur(20px)', boxShadow:'0 4px 24px rgba(0,0,0,0.3)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+          <TrendingUp size={18} color="#12b76a"/>
+          <h2 style={{ margin:0, fontSize:16, fontWeight:700, color:'#12b76a' }}>Objectif annuel</h2>
+          <div style={{ flex:1, height:1, background:'linear-gradient(90deg,#12b76a40,transparent)' }}/>
+        </div>
+        <ObjectifSection
+          objectifs={typeof settings.objectifAnnuel === 'object' && !Array.isArray(settings.objectifAnnuel) ? settings.objectifAnnuel : {}}
+          onAdd={(annee, montant) => updateKey('objectifAnnuel', { ...(typeof settings.objectifAnnuel === 'object' && !Array.isArray(settings.objectifAnnuel) ? settings.objectifAnnuel : {}), [annee]: montant })}
+          onRemove={annee => { const next = { ...(typeof settings.objectifAnnuel === 'object' && !Array.isArray(settings.objectifAnnuel) ? settings.objectifAnnuel : {}) }; delete next[annee]; updateKey('objectifAnnuel', next); }}
+        />
+      </div>
+
+      {/* ── Motifs d'annulation ──────────────────────────────────────────── */}
+      <div style={{ marginTop:16, background:'rgba(2,8,16,0.97)', borderRadius:18, padding: isMobile?'18px 16px':'24px 28px', border:'1px solid rgba(255,255,255,0.07)', backdropFilter:'blur(20px)', boxShadow:'0 4px 24px rgba(0,0,0,0.3)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+          <AlertCircle size={18} color="#f04438"/>
+          <h2 style={{ margin:0, fontSize:16, fontWeight:700, color:'#f04438' }}>Motifs d'annulation</h2>
+          <div style={{ flex:1, height:1, background:'linear-gradient(90deg,#f0443840,transparent)' }}/>
+        </div>
+        <SimpleSection
+          items={settings.motifsAnnulation || []}
+          color="#f04438"
+          placeholder="Ex: Prix trop élevé, Concurrent..."
+          onAdd={v => addSimple('motifsAnnulation', v)}
+          onRemove={i => removeSimple('motifsAnnulation', i)}
+        />
       </div>
 
       {/* ── FAB mobile Sauvegarder ──────────────────────────────────────── */}

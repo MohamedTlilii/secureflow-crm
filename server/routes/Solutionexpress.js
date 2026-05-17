@@ -60,9 +60,14 @@ router.post('/', auth, async (req, res) => {
 //   • Modification des infos générales (openEdit)
 //   • Changement de statut rapide (changeStatus)
 //   • Ajout de note (addNote → notes: [...existing, newNote])
+const VALID_STATUTS = ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'];
+
 router.put('/:id', auth, async (req, res) => {
   try {
     const { createdBy, ...updateFields } = req.body; // createdBy immuable
+    if (updateFields.status && !VALID_STATUTS.includes(updateFields.status)) {
+      return res.status(400).json({ message: 'Statut invalide' });
+    }
     const fiche = await SolutionExpress.findByIdAndUpdate(
       req.params.id,
       { ...updateFields, updatedAt: Date.now() },

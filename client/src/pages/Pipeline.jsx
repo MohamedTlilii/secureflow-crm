@@ -60,6 +60,7 @@ export default function Pipeline() {
   const [dragOver, setDragOver]   = useState(null);
   const [dragging, setDragging]   = useState(null);
   const [settings, setSettings]   = useState({ services: [] });
+  const [motifPending, setMotifPending] = useState(null);
 
   // ── Fetch Solution Express ────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
@@ -101,11 +102,16 @@ export default function Pipeline() {
   const onDragOver = (e, stageKey) => { e.preventDefault(); setDragOver(stageKey); };
   const onDragLeave = () => setDragOver(null);
 
-  // ── Mise à jour statut — logique originale intacte ─────────────────────
-const updateStatus = async (item, targetStage) => {
-    const newStatus = targetStage;
+  // ── Mise à jour statut ────────────────────────────────────────────────
+  const updateStatus = async (item, targetStage, motif) => {
+    if (targetStage === 'installation_annulee' && !motif) {
+      setMotifPending({ item, targetStage });
+      return;
+    }
     try {
-      await api.put(`/api/solution-express/${item._id}`, { status: newStatus });
+      const payload = { status: targetStage };
+      if (motif) payload.motifAnnulation = motif;
+      await api.put(`/api/solution-express/${item._id}`, payload);
       toast.success(`→ ${STAGES.find(s => s.key === targetStage)?.label}`);
       fetchAll();
     } catch (err) {
@@ -117,6 +123,12 @@ const updateStatus = async (item, targetStage) => {
         toast.error('Erreur mise à jour : ' + (err.response?.data?.message || err.message));
       }
     }
+  };
+
+  const confirmAnnulation = (motif) => {
+    const { item, targetStage } = motifPending;
+    setMotifPending(null);
+    updateStatus(item, targetStage, motif);
   };
 
   const onDrop = async (e, targetStage) => {
@@ -418,6 +430,31 @@ const updateStatus = async (item, targetStage) => {
         </div>
       )}
 
+
+      {/* ── Modal motif d'annulation ── */}
+      {motifPending && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
+          <div style={{ background:'rgba(3,8,26,0.98)', borderRadius:18, padding:'28px 24px', width:'100%', maxWidth:420, border:'1px solid rgba(190,18,60,0.3)', boxShadow:'0 25px 60px rgba(0,0,0,0.6)' }}>
+            <div style={{ fontSize:20, marginBottom:6 }}>⚠️</div>
+            <div style={{ fontSize:16, fontWeight:700, color:'#be123c', marginBottom:6 }}>Motif d'annulation</div>
+            <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', marginBottom:20 }}>Pourquoi cette installation a-t-elle été annulée ?</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
+              {(settings.motifsAnnulation||['Prix trop élevé','Délai trop long','Concurrent','Client non disponible','Autre']).map(m => (
+                <button key={m} onClick={() => confirmAnnulation(m)}
+                  style={{ padding:'11px 16px', borderRadius:10, border:'1px solid rgba(190,18,60,0.25)', background:'rgba(190,18,60,0.06)', color:'#ffffff', fontSize:13, fontWeight:500, cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background='rgba(190,18,60,0.15)'; e.currentTarget.style.borderColor='rgba(190,18,60,0.5)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background='rgba(190,18,60,0.06)'; e.currentTarget.style.borderColor='rgba(190,18,60,0.25)'; }}>
+                  {m}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setMotifPending(null)}
+              style={{ width:'100%', padding:'10px', borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'rgba(255,255,255,0.5)', fontSize:12, cursor:'pointer' }}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Keyframes animations */}
       <style>{`

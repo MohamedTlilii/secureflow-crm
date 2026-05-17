@@ -233,6 +233,7 @@ const EMPTY_FORM = {
   fournisseurs: {},
   equipements:  {},
   status:'new', urgencyScore:0, summary:'',
+  motifAnnulation:'',
   commissionFixe:0, commissionExtra:0,
   commissionTotale:0, commissionPayee:false,
   dateVente:'', datePaiementCommission:'',
@@ -350,6 +351,8 @@ export default function SolutionExpress() {
   const [fetchError, setFetchError]       = useState(false);
   const [settings, setSettings]           = useState(null);
   const [anneeFiltre, setAnneeFiltre]     = useState(String(new Date().getFullYear()));
+  const [motifPending, setMotifPending]   = useState(null);
+  const toggleInProgress = useRef(new Set());
 
   // ── Chargement settings dynamiques — rechargé au retour sur l'onglet ──
   useEffect(() => {
@@ -444,21 +447,22 @@ export default function SolutionExpress() {
 
   // ── Toggle payé/non payé depuis la card ──────────────────────────────
   const togglePaiement = async (p) => {
+    if (toggleInProgress.current.has(p._id)) return;
+    toggleInProgress.current.add(p._id);
     try {
-      const updated = {
-        ...p,
-        commissionPayee: !p.commissionPayee,
-        datePaiementCommission: !p.commissionPayee ? new Date().toISOString() : null,
-        stage: undefined, source: undefined, displayName: undefined
-      };
-      await api.put(`/api/solution-express/${p._id}`, updated);
-      toast.success(!p.commissionPayee ? '✓ Commission marquée payée !' : 'Commission marquée non payée');
+      const nowPaid = !p.commissionPayee;
+      await api.put(`/api/solution-express/${p._id}`, {
+        commissionPayee: nowPaid,
+        datePaiementCommission: nowPaid ? new Date().toISOString() : null,
+      });
+      toast.success(nowPaid ? '✓ Commission marquée payée !' : 'Commission marquée non payée');
       const fresh = await fetchFiches();
       if (fresh && selected?._id === p._id) {
         const freshFiche = fresh.find(x => x._id === p._id);
         if (freshFiche) setSelected(freshFiche);
       }
     } catch { toast.error('Erreur mise à jour commission'); }
+    finally { toggleInProgress.current.delete(p._id); }
   };
 
   // ── Années disponibles + filtre par année ────────────────────────────
@@ -590,12 +594,19 @@ export default function SolutionExpress() {
   };
 
   // ── Changer statut depuis l'ultra-fiche ───────────────────────────────
-  const changeStatus = async (p, newStatus) => {
-    try {
-      await api.put(`/api/solution-express/${p._id}`, { status: newStatus });
-      setSelected(prev => ({ ...prev, status: newStatus }));
-      await fetchFiches(); toast.success('Statut mis à jour');
-    } catch { toast.error('Erreur statut'); }
+  const changeStatus = (p, newStatus) => {
+    if (newStatus === 'installation_annulee') { setMotifPending({ fiche: p }); return; }
+    api.put(`/api/solution-express/${p._id}`, { status: newStatus })
+      .then(() => { setSelected(prev => ({ ...prev, status: newStatus })); fetchFiches(); toast.success('Statut mis à jour'); })
+      .catch(() => toast.error('Erreur statut'));
+  };
+
+  const confirmAnnulation = (motif) => {
+    const { fiche } = motifPending;
+    setMotifPending(null);
+    api.put(`/api/solution-express/${fiche._id}`, { status: 'installation_annulee', motifAnnulation: motif })
+      .then(() => { setSelected(prev => ({ ...prev, status: 'installation_annulee', motifAnnulation: motif })); fetchFiches(); toast.success('Installation annulée'); })
+      .catch(() => toast.error('Erreur statut'));
   };
 
   // ── Onglets du formulaire ─────────────────────────────────────────────
@@ -905,12 +916,17 @@ export default function SolutionExpress() {
                 </div>
 
                 {/* ── Badges statut + lead type ── */}
-                <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
+                <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom: p.status==='installation_annulee'&&p.motifAnnulation?4:10 }}>
                   <span className={`badge ${STATUS_CLASS[p.status]||'badge-p0'}`}>{STATUS_LABELS[p.status]}</span>
                   <span style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, background:`${leadColor}18`, color:leadColor, border:`1px solid ${leadColor}30` }}>
                     {dLead[p.leadType]||p.leadType}
                   </span>
                 </div>
+                {p.status === 'installation_annulee' && p.motifAnnulation && (
+                  <div style={{ fontSize:10, color:'#be123c', fontWeight:600, marginBottom:8, padding:'3px 8px', borderRadius:6, background:'rgba(190,18,60,0.08)', border:'1px solid rgba(190,18,60,0.2)', display:'inline-block' }}>
+                    ✕ {p.motifAnnulation}
+                  </div>
+                )}
 
                 {/* ── Produits ── */}
                 {(p.produits||[]).length > 0 && (
@@ -1054,6 +1070,12 @@ export default function SolutionExpress() {
                         );
                       })}
                     </div>
+                    {selected.status === 'installation_annulee' && selected.motifAnnulation && (
+                      <div style={{ marginTop:10, display:'inline-flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:10, background:'rgba(190,18,60,0.08)', border:'1px solid rgba(190,18,60,0.25)' }}>
+                        <span style={{ fontSize:12, color:'#be123c', fontWeight:700 }}>✕ Motif d'annulation :</span>
+                        <span style={{ fontSize:12, color:'#fca5a5', fontWeight:600 }}>{selected.motifAnnulation}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button className="btn btn-ghost btn-sm" onClick={() => setModal(null)}><X size={16}/></button>
@@ -1594,6 +1616,32 @@ export default function SolutionExpress() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal motif d'annulation ── */}
+      {motifPending && (
+        <div onClick={() => setMotifPending(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:1100, display:'flex', alignItems:'center', justifyContent:'center', padding:16, backdropFilter:'blur(6px)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'var(--bg-card)', borderRadius:20, padding:24, width:'100%', maxWidth:360, border:'1px solid rgba(240,68,56,0.3)', boxShadow:'0 20px 60px rgba(0,0,0,0.5)', animation:'fadeSlideUp 0.2s ease both' }}>
+            <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)', marginBottom:6 }}>⚠️ Motif d'annulation</div>
+            <div style={{ fontSize:12, color:'#ffffff', marginBottom:16 }}>Pourquoi cette installation a-t-elle été annulée ?</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {(settings?.motifsAnnulation?.length ? settings.motifsAnnulation : ['Prix trop élevé','Délai trop long','Concurrent','Client non disponible','Autre']).map(motif => (
+                <button key={motif} onClick={() => confirmAnnulation(motif)}
+                  style={{ padding:'10px 16px', borderRadius:10, border:'1px solid rgba(240,68,56,0.3)', background:'rgba(240,68,56,0.06)', color:'#f04438', fontSize:13, fontWeight:600, cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background='rgba(240,68,56,0.14)'; e.currentTarget.style.borderColor='#f04438'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background='rgba(240,68,56,0.06)'; e.currentTarget.style.borderColor='rgba(240,68,56,0.3)'; }}>
+                  {motif}
+                </button>
+              ))}
+              <button onClick={() => confirmAnnulation('')} style={{ padding:'8px 16px', borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'rgba(255,255,255,0.4)', fontSize:12, cursor:'pointer', marginTop:4 }}>
+                Annuler sans motif
+              </button>
+            </div>
+            <button onClick={() => setMotifPending(null)} style={{ marginTop:12, width:'100%', padding:'8px', borderRadius:10, border:'1px solid var(--border)', background:'transparent', color:'#ffffff', cursor:'pointer', fontSize:13 }}>
+              ← Retour
+            </button>
           </div>
         </div>
       )}

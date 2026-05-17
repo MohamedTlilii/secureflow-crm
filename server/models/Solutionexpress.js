@@ -29,7 +29,8 @@ const SolutionExpressSchema = new mongoose.Schema({
   // { alarme: ['panneau', 'contact_porte'], internet: [] }
   equipements:  { type: mongoose.Schema.Types.Mixed, default: {} },
 
-  status:       { type: String, enum: ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'], default: 'new' },
+  status:          { type: String, enum: ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'], default: 'new' },
+  motifAnnulation: { type: String, default: '' },
   urgencyScore: { type: Number, default: 0, min: 0, max: 10 },
   summary:      { type: String, default: '' },
   notes:        [{ type: String }],
@@ -37,7 +38,6 @@ const SolutionExpressSchema = new mongoose.Schema({
   montantContrat:         { type: Number, default: 0 },
   commissionFixe:         { type: Number, default: 0 },
   commissionExtra:        { type: Number, default: 0 },
-  commissionPourcentage:  { type: Number, default: 0 },
   commissionTotale:       { type: Number, default: 0 },
   commissionPayee:        { type: Boolean, default: false },
   dateVente:              { type: Date },

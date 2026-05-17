@@ -179,6 +179,8 @@ const DEFAULTS = {
     {key:'systeme_5_10_ans_panneau_boutons',label:'5-10 ans panneau boutons'},
     {key:'inconnu',label:'Inconnu'}
   ],
+  motifsAnnulation: ['Prix trop élevé','Délai trop long','Concurrent','Client non disponible','Autre'],
+  objectifAnnuel: {},
   services: [
     {
       id:'alarme', label:'Alarme', color:'#f04438', icon:'shield',
@@ -273,13 +275,15 @@ router.get('/', auth, async (req, res) => {
 
 router.put('/', auth, async (req, res) => {
   try {
-    const { villes, typeCommerce, typeLead, qualificationSysteme, services } = req.body;
+    const { villes, typeCommerce, typeLead, qualificationSysteme, services, motifsAnnulation, objectifAnnuel } = req.body;
     const update = {};
     if (villes               !== undefined) update.villes               = villes;
     if (typeCommerce         !== undefined) update.typeCommerce         = typeCommerce;
     if (typeLead             !== undefined) update.typeLead             = typeLead;
     if (qualificationSysteme !== undefined) update.qualificationSysteme = qualificationSysteme;
     if (services             !== undefined) update.services             = services;
+    if (motifsAnnulation     !== undefined) update.motifsAnnulation     = motifsAnnulation;
+    if (objectifAnnuel       !== undefined) update.objectifAnnuel       = objectifAnnuel;
     await col().updateOne({ _id: 'global' }, { $set: update }, { upsert: true });
     res.json({ ok: true });
   } catch (e) {

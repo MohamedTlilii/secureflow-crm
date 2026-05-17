@@ -13,7 +13,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import api from '../api';
 import AnimatedNumber from '../components/AnimatedNumber';
 import {
-  Users, TrendingUp, CheckCircle, AlertCircle, Clock,
+  Users, TrendingUp, CheckCircle, AlertCircle, Clock, XCircle,
   MapPin, Zap, Building2, Shield, Wallet,
   Target,
 } from 'lucide-react';
@@ -227,10 +227,12 @@ export default function Dashboard() {
     const statutOk = commFiltre === 'tout' ? true : commFiltre === 'payee' ? c.commissionPayee : !c.commissionPayee;
     return yearOk && statutOk;
   });
-  const commTotalGagne = commFiches.reduce((s,c) => s+(c.commissionTotale||0), 0);
-  const commTotalPaye  = commFiches.filter(c=>c.commissionPayee).reduce((s,c) => s+(c.commissionTotale||0), 0);
+  const commActives    = commFiches.filter(c => c.status !== 'installation_annulee');
+  const commAnnulees   = commFiches.filter(c => c.status === 'installation_annulee').length;
+  const commTotalGagne = commActives.reduce((s,c) => s+(c.commissionTotale||0), 0);
+  const commTotalPaye  = commActives.filter(c=>c.commissionPayee).reduce((s,c) => s+(c.commissionTotale||0), 0);
   const commEnAttente  = commTotalGagne - commTotalPaye;
-  const commVals       = commFiches.map(c=>c.commissionTotale||0).filter(v=>v>0);
+  const commVals       = commActives.map(c=>c.commissionTotale||0).filter(v=>v>0);
   const commMax        = commVals.length > 0 ? Math.max(...commVals) : 0;
   const commMin        = commVals.length > 0 ? Math.min(...commVals) : 0;
 
@@ -323,12 +325,13 @@ export default function Dashboard() {
           Mobile : 2 colonnes / Desktop : 4 colonnes
           Toutes calculées depuis fiches filtrées
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(4,1fr)', gap: isMobile?10:14, marginBottom:24 }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(5,1fr)', gap: isMobile?10:14, marginBottom:24 }}>
         {[
-          { label:'Total fiches',          value:totalSE,                         sub:`${b2b} B2B · ${b2c} B2C`,                    icon:Users,       color:'#3b6cf8'  },
-          { label:'Installés',             value:won,                             sub:`Taux d'installation ${convRate}%`,             icon:CheckCircle, color:'#22c55e'  },
-          { label:'Installation en cours', value:seStatuts.installation_en_cours, sub:`${seStatuts.installation_en_cours} en cours`, icon:AlertCircle, color:'#f97316'  },
-          { label:'Soumissions',           value:seStatuts.proposal,              sub:`${seStatuts.proposal} fiches`,                icon:Clock,       color:'#a764f8'  },
+          { label:'Total fiches',          value:totalSE,                              sub:`${b2b} B2B · ${b2c} B2C`,                    icon:Users,       color:'#3b6cf8'  },
+          { label:'Installés',             value:won,                                  sub:`Taux d'installation ${convRate}%`,             icon:CheckCircle, color:'#22c55e'  },
+          { label:'Installation en cours', value:seStatuts.installation_en_cours,      sub:`${seStatuts.installation_en_cours} en cours`, icon:AlertCircle, color:'#f97316'  },
+          { label:'Soumissions',           value:seStatuts.proposal,                   sub:`${seStatuts.proposal} fiches`,                icon:Clock,       color:'#a764f8'  },
+          { label:'Annulées',              value:seStatuts.installation_annulee||0,    sub:`installations annulées`,                      icon:XCircle,     color:'#be123c'  },
         ].map((s,i) => (
           <div key={i} style={{ padding:'1px', borderRadius:14, background:`linear-gradient(135deg,${s.color}60,${s.color}20)`, animation:`fadeSlideUp 0.4s ${i*0.07}s ease both` }}>
             <div className="stat-card" style={{ background:'rgba(2,8,16,0.97)', borderRadius:13, height:'100%', transition:'transform 0.2s,box-shadow 0.2s' }}
@@ -408,6 +411,25 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Barre objectif annuel */}
+          {anneeGlobal !== 'tout' && ((settings.objectifAnnuel||{})[anneeGlobal] > 0) && (() => {
+            const obj = (settings.objectifAnnuel||{})[anneeGlobal];
+            const pct = Math.min(100, Math.round((commTotalGagne / obj) * 100));
+            return (
+              <div style={{ marginBottom:14, background:'rgba(18,183,106,0.05)', borderRadius:12, padding:'12px 16px', border:'1px solid rgba(18,183,106,0.15)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'#ffffff', marginBottom:6 }}>
+                  <span>Objectif {anneeGlobal}</span>
+                  <span style={{ fontWeight:700, color: pct >= 100 ? '#12b76a' : '#f79009' }}>
+                    {commTotalGagne.toFixed(0)} / {obj} TND — {pct}%
+                  </span>
+                </div>
+                <div style={{ height:6, borderRadius:3, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
+                  <div style={{ height:'100%', borderRadius:3, background: pct >= 100 ? 'linear-gradient(90deg,#12b76a,#61DAFB)' : 'linear-gradient(90deg,#3b6cf8,#12b76a)', width:`${pct}%`, transition:'width 1.2s ease' }}/>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Stats commissions ligne 1 */}
           <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr 1fr 1fr', gap:12, marginBottom:10 }}>
             {[
@@ -426,7 +448,7 @@ export default function Dashboard() {
           </div>
 
           {/* Stats commissions ligne 2 */}
-          <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'1fr 1fr 1fr', gap:12, marginBottom:14 }}>
+          <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(4,1fr)', gap:12, marginBottom:14 }}>
             <div style={{ background:'rgba(167,100,248,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(167,100,248,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div>
                 <div style={{ fontSize:10, color:'#a764f8', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Maximum</div>
@@ -441,13 +463,21 @@ export default function Dashboard() {
               </div>
               <div style={{ fontSize:28, opacity:0.15 }}>↓</div>
             </div>
-            <div style={{ background:'rgba(18,183,106,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(18,183,106,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between', gridColumn: isMobile?'1 / -1':'auto' }}>
+            <div style={{ background:'rgba(18,183,106,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(18,183,106,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div>
                 <div style={{ fontSize:10, color:'#12b76a', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Commissions</div>
-                <div style={{ fontSize:20, fontWeight:700, color:'#12b76a' }}>{commFiches.length}</div>
+                <div style={{ fontSize:20, fontWeight:700, color:'#12b76a' }}>{commActives.length}</div>
                 <div style={{ fontSize:11, color:'#ffffff', marginTop:4 }}>Solution Express</div>
               </div>
               <div style={{ fontSize:24, opacity:0.2 }}>✅</div>
+            </div>
+            <div style={{ background:'rgba(190,18,60,0.06)', borderRadius:12, padding:'14px 18px', border:'1px solid rgba(190,18,60,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div>
+                <div style={{ fontSize:10, color:'#be123c', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:4 }}>Annulées</div>
+                <div style={{ fontSize:20, fontWeight:700, color:'#be123c' }}>{commAnnulees}</div>
+                <div style={{ fontSize:11, color:'#ffffff', marginTop:4 }}>installations</div>
+              </div>
+              <div style={{ fontSize:24, opacity:0.2 }}>❌</div>
             </div>
           </div>
 
@@ -468,29 +498,33 @@ export default function Dashboard() {
                   </button>
                 );
               })}
-              <div style={{ marginLeft:'auto', fontSize:11, color:'#ffffff', display:'flex', alignItems:'center' }}>
-                {commFiches.length} entrée{commFiches.length!==1?'s':''}
+              <div style={{ marginLeft:'auto', fontSize:11, color:'#ffffff', display:'flex', alignItems:'center', gap:6 }}>
+                <span>{commActives.length} active{commActives.length!==1?'s':''}</span>
+                {commAnnulees > 0 && <span style={{ color:'#be123c', fontWeight:700 }}>· {commAnnulees} annulée{commAnnulees>1?'s':''}</span>}
               </div>
             </div>
             <div style={{ padding:'8px 0' }}>
-              {commFiches.length > 0 ? commFiches.map((c,i) => {
-                const paid = !!c.commissionPayee;
+              {commFiches.length > 0 ? [...commFiches].sort((a,b) => new Date(b.dateVente||b.createdAt) - new Date(a.dateVente||a.createdAt)).map((c,i) => {
+                const annulee = c.status === 'installation_annulee';
+                const paid    = !annulee && !!c.commissionPayee;
+                const color   = annulee ? '#be123c' : paid ? '#12b76a' : '#f79009';
                 const fixed = c.commissionFixe || 0;
                 const extra = c.commissionExtra || 0;
                 const date = new Date(c.dateVente || c.createdAt).toLocaleDateString('fr-CA', { timeZone:'UTC' });
                 return (
-                  <div key={i} style={{ display:'flex', alignItems:'center', gap: isMobile?10:12, padding: isMobile?'10px 14px':'10px 16px', borderBottom:i < commFiches.length-1 ? '1px solid var(--border)' : 'none', transition:'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background='var(--bg-secondary)'; if(!isMobile) e.currentTarget.style.transform='translateX(3px)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.transform='translateX(0)'; }}>
-                    <div style={{ width:38, height:38, borderRadius:9, background:paid ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <Wallet size={15} color={paid ? '#12b76a' : '#f79009'}/>
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap: isMobile?10:12, padding: isMobile?'10px 14px':'10px 16px', borderBottom:i < commFiches.length-1 ? '1px solid var(--border)' : 'none', transition:'all 0.15s', background: annulee ? 'rgba(190,18,60,0.04)' : 'transparent' }}
+                    onMouseEnter={e => { e.currentTarget.style.background= annulee ? 'rgba(190,18,60,0.08)' : 'var(--bg-secondary)'; if(!isMobile) e.currentTarget.style.transform='translateX(3px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background= annulee ? 'rgba(190,18,60,0.04)' : 'transparent'; e.currentTarget.style.transform='translateX(0)'; }}>
+                    <div style={{ width:38, height:38, borderRadius:9, background:`${color}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <Wallet size={15} color={color}/>
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      <div style={{ fontSize:13, fontWeight:600, color: annulee ? '#be123c' : 'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                         {c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'Sans nom'}
                       </div>
                       <div style={{ fontSize:11, color:'#ffffff', marginTop:1 }}>
                         {c.ville||'—'} · {date}
+                        {annulee && c.motifAnnulation && <span style={{ color:'#be123c', marginLeft:6 }}>· {c.motifAnnulation}</span>}
                       </div>
                     </div>
                     {!isMobile && fixed > 0 && (
@@ -500,13 +534,12 @@ export default function Dashboard() {
                       </div>
                     )}
                     <div style={{ textAlign:'right', flexShrink:0, minWidth: isMobile?80:90 }}>
-                      <div style={{ fontSize: isMobile?14:16, fontWeight:700, color:paid ? '#12b76a' : '#f79009' }}>
+                      <div style={{ fontSize: isMobile?14:16, fontWeight:700, color }}>
                         {(c.commissionTotale||0).toFixed(2)} TND
                       </div>
                       <div style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, display:'inline-block', marginTop:2,
-                        background:paid ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.1)',
-                        color:paid ? '#12b76a' : '#f79009' }}>
-                        {paid ? '✓ Payée' : '⏳ En attente'}
+                        background:`${color}18`, color }}>
+                        {annulee ? '❌ Annulée' : paid ? '✓ Payée' : '⏳ En attente'}
                       </div>
                     </div>
                   </div>

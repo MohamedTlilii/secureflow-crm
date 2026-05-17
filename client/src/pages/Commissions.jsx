@@ -234,10 +234,11 @@ export default function Commissions() {
 
   // Graphique : par année si "tout", par mois si année précise
   const MOIS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const YEAR_COLORS = ['#12b76a','#3b6cf8','#f79009','#a764f8','#f04438','#61DAFB','#f97316'];
   const chartData = annee === 'tout'
-    ? annees.map(yr => {
+    ? annees.map((yr, i) => {
         const yrFiches = filtered.filter(c => new Date(c.dateVente || c.createdAt).getUTCFullYear() === yr);
-        return { name: String(yr), total: yrFiches.reduce((s,c) => s + (c.commissionTotale||0), 0), count: yrFiches.length };
+        return { name: String(yr), total: yrFiches.reduce((s,c) => s + (c.commissionTotale||0), 0), count: yrFiches.length, color: YEAR_COLORS[i % YEAR_COLORS.length] };
       })
     : MOIS.map((name, idx) => {
         const moisFiches = filtered.filter(c => new Date(c.dateVente || c.createdAt).getUTCMonth() === idx);
@@ -387,6 +388,27 @@ export default function Commissions() {
         </div>
       </div>
 
+      {/* Barre objectif annuel */}
+      {annee !== 'tout' && ((settings.objectifAnnuel||{})[annee] > 0) && (() => {
+        const obj = (settings.objectifAnnuel||{})[annee];
+        const actives = filtered.filter(c => c.status !== 'installation_annulee');
+        const gagneActif = actives.reduce((s,c) => s+(c.commissionTotale||0), 0);
+        const pct = Math.min(100, Math.round((gagneActif / obj) * 100));
+        return (
+          <div style={{ marginBottom:20, background:'rgba(18,183,106,0.05)', borderRadius:12, padding:'12px 16px', border:'1px solid rgba(18,183,106,0.15)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'#ffffff', marginBottom:6 }}>
+              <span style={{ fontWeight:700 }}>Objectif {annee}</span>
+              <span style={{ fontWeight:700, color: pct >= 100 ? '#12b76a' : '#f79009' }}>
+                {gagneActif.toFixed(0)} / {obj} TND — {pct}%
+              </span>
+            </div>
+            <div style={{ height:6, borderRadius:3, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
+              <div style={{ height:'100%', borderRadius:3, background: pct >= 100 ? 'linear-gradient(90deg,#12b76a,#61DAFB)' : 'linear-gradient(90deg,#3b6cf8,#12b76a)', width:`${pct}%`, transition:'width 1.2s ease' }}/>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ════════════════════════════════════════════════════════════════
           GRAPHIQUE PAR MOIS
           ════════════════════════════════════════════════════════════════ */}
@@ -424,7 +446,7 @@ export default function Commissions() {
                 if (!c) return null;
                 return <text x={x + width / 2} y={y - 4} textAnchor="middle" fill="#ffffff" fontSize={10} fontWeight={700}>{c}</text>;
               }}}>
-              {chartData.map((e,i) => <Cell key={i} fill={e.total > 0 ? '#12b76a' : 'var(--bg-secondary)'}/>)}
+              {chartData.map((e,i) => <Cell key={i} fill={e.total > 0 ? (e.color || '#12b76a') : 'var(--bg-secondary)'}/>)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -494,15 +516,18 @@ export default function Commissions() {
             <div>
               {[...filtered]
                 .sort((a,b) => new Date(b.dateVente||b.createdAt) - new Date(a.dateVente||a.createdAt))
-                .map((c, i, arr) => (
+                .map((c, i, arr) => {
+                  const annulee = c.status === 'installation_annulee';
+                  const color   = annulee ? '#be123c' : c.commissionPayee ? '#12b76a' : '#f79009';
+                  return (
                 <div key={c._id}
-                  style={{ display:'flex', alignItems:'center', gap: isMobile?10:14, padding: isMobile?'12px 14px':'14px 20px', borderBottom: i<arr.length-1?'1px solid var(--border)':'none', transition:'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background='var(--bg-secondary)'; if(!isMobile) e.currentTarget.style.transform='translateX(3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.transform='translateX(0)'; }}>
+                  style={{ display:'flex', alignItems:'center', gap: isMobile?10:14, padding: isMobile?'12px 14px':'14px 20px', borderBottom: i<arr.length-1?'1px solid var(--border)':'none', transition:'all 0.15s', background: annulee?'rgba(190,18,60,0.03)':undefined }}
+                  onMouseEnter={e => { e.currentTarget.style.background= annulee?'rgba(190,18,60,0.07)':'var(--bg-secondary)'; if(!isMobile) e.currentTarget.style.transform='translateX(3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background= annulee?'rgba(190,18,60,0.03)':'transparent'; e.currentTarget.style.transform='translateX(0)'; }}>
 
                   {/* Icône */}
-                  <div style={{ width: isMobile?36:44, height: isMobile?36:44, borderRadius:12, background: c.commissionPayee?'linear-gradient(135deg,rgba(18,183,106,0.15),rgba(18,183,106,0.05))':'linear-gradient(135deg,rgba(247,144,9,0.15),rgba(247,144,9,0.05))', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:`1px solid ${c.commissionPayee?'rgba(18,183,106,0.2)':'rgba(247,144,9,0.2)'}` }}>
-                    <Wallet size={isMobile?14:18} color={c.commissionPayee?'#12b76a':'#f79009'}/>
+                  <div style={{ width: isMobile?36:44, height: isMobile?36:44, borderRadius:12, background:`linear-gradient(135deg,${color}22,${color}08)`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:`1px solid ${color}33` }}>
+                    <Wallet size={isMobile?14:18} color={color}/>
                   </div>
 
                   {/* Nom + infos */}
@@ -522,10 +547,13 @@ export default function Commissions() {
                         <span style={{ color:'#12b76a', fontWeight:600 }}>· Payée le {fmtDate(c.datePaiementCommission)}</span>
                       )}
                     </div>
+                    {annulee && c.motifAnnulation && (
+                      <div style={{ fontSize:10, color:'#be123c', marginTop:3, fontWeight:600 }}>✕ {c.motifAnnulation}</div>
+                    )}
                   </div>
 
                   {/* Détail fixe + extra — caché sur mobile */}
-                  {!isMobile && (c.commissionFixe > 0 || c.commissionExtra > 0) && (
+                  {!isMobile && !annulee && (c.commissionFixe > 0 || c.commissionExtra > 0) && (
                     <div style={{ textAlign:'right', flexShrink:0 }}>
                       {c.commissionFixe  > 0 && <div style={{ fontSize:11, color:'#ffffff' }}>Fixe : <strong style={{color:'#ffffff'}}>{fmtMoney(c.commissionFixe)}</strong></div>}
                       {c.commissionExtra > 0 && <div style={{ fontSize:11, color:'#ffffff' }}>Extra : <strong style={{color:'#ffffff'}}>{fmtMoney(c.commissionExtra)}</strong></div>}
@@ -534,12 +562,18 @@ export default function Commissions() {
 
                   {/* Montant total */}
                   <div style={{ textAlign:'right', flexShrink:0, minWidth: isMobile?70:90 }}>
-                    <div style={{ fontSize: isMobile?15:19, fontWeight:800, color: c.commissionPayee?'#12b76a':'#f79009', lineHeight:1 }}>
+                    <div style={{ fontSize: isMobile?15:19, fontWeight:800, color, lineHeight:1 }}>
                       {fmtMoney(c.commissionTotale)}
                     </div>
+                    {annulee && <div style={{ fontSize:9, color:'#be123c', fontWeight:700, marginTop:2 }}>ANNULÉE</div>}
                   </div>
 
-                  {/* Bouton toggle */}
+                  {/* Bouton toggle ou badge annulée */}
+                  {annulee ? (
+                    <div style={{ display:'flex', alignItems:'center', gap:4, padding: isMobile?'6px 10px':'8px 14px', borderRadius:20, fontSize:11, fontWeight:700, flexShrink:0, border:'1px solid rgba(190,18,60,0.3)', background:'rgba(190,18,60,0.08)', color:'#be123c' }}>
+                      ❌{!isMobile && ' Annulée'}
+                    </div>
+                  ) : (
                   <button onClick={() => togglePaiement(c)}
                     style={{ display:'flex', alignItems:'center', gap: isMobile?4:6, padding: isMobile?'6px 10px':'8px 16px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', flexShrink:0, transition:'all 0.2s',
                       border:`1px solid ${c.commissionPayee?'rgba(18,183,106,0.3)':'rgba(247,144,9,0.3)'}`,
@@ -551,8 +585,10 @@ export default function Commissions() {
                       ? <><CheckCircle size={13}/>{!isMobile && ' Payée'}</>
                       : <><XCircle size={13}/>{!isMobile && ' En attente'}</>}
                   </button>
+                  )}
                 </div>
-              ))}
+                  );
+                })}
             </div>
           ) : (
             <div style={{ textAlign:'center', padding:'60px 20px', color:'#ffffff' }}>

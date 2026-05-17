@@ -1,7 +1,7 @@
 # RAPPORT COMPLET — QC SecureFlow CRM
 ## Référence Technique Ultime · Architecture · Fonctions · Guide de Modification
 
-> **Dernière mise à jour :** 2026-05-16
+> **Dernière mise à jour :** 2026-05-17
 > **Auteur :** Mohamed Tlili
 > **Stack :** React + Vite · Node.js/Express · MongoDB Atlas
 > Ce document est la **référence absolue** du projet. Il explique chaque fichier, chaque fonction, chaque décision. Lisez-le avant toute modification.
@@ -292,7 +292,8 @@ Requête entrante
 | Équipements | `equipements: Mixed` → `{ alarme: ['panneau', ...], internet: [], ... }` |
 | Pipeline | `status` (6 valeurs — **enum strict**), `urgencyScore` (0-10) |
 | Contenu | `summary`, `notes[]` |
-| Commission | `montantContrat`, `commissionFixe`, `commissionExtra`, `commissionPourcentage`, `commissionTotale`, `commissionPayee`, `dateVente`, `datePaiementCommission` |
+| Commission | `montantContrat`, `commissionFixe`, `commissionExtra`, `commissionTotale`, `commissionPayee`, `dateVente`, `datePaiementCommission` |
+| Annulation | `motifAnnulation` (String — raison si `status === 'installation_annulee'`) |
 | Meta | `createdBy` (ref User), `createdAt`, `updatedAt` |
 
 ---
@@ -649,7 +650,6 @@ new → contacted → proposal → installation_en_cours → installe
 ```javascript
 commissionFixe         // Montant fixe (TND)
 commissionExtra        // Bonus supplémentaire (TND)
-commissionPourcentage  // % sur montantContrat (informatif, non utilisé dans calcul)
 commissionTotale       // = commissionFixe + commissionExtra (calculé frontend)
 commissionPayee        // Boolean
 dateVente              // Date de la vente
@@ -916,7 +916,8 @@ try {
   urgencyScore: Number (0-10),
   summary: String, notes: [String],
   montantContrat: Number, commissionFixe: Number, commissionExtra: Number,
-  commissionPourcentage: Number, commissionTotale: Number,
+  motifAnnulation: String,        // raison d'annulation (vide si non annulée)
+  commissionTotale: Number,
   commissionPayee: Boolean, dateVente: Date, datePaiementCommission: Date,
   createdBy: ObjectId (ref users),
   createdAt: Date, updatedAt: Date
@@ -1149,4 +1150,124 @@ try {
 ---
 
 *Ce rapport couvre l'intégralité du code source au 2026-05-16.*
+*Toute modification majeure doit être reflétée ici.*
+
+---
+
+---
+
+## 18. CHANGELOG — MODIFICATIONS 2026-05-17
+
+> **Session complète** : tri par dateVente, annulations avec motif, objectif annuel par année, fiches annulées en rouge, corrections de bugs et audit final.
+
+---
+
+### `server/models/Solutionexpress.js` — 2 modifications
+
+- **AJOUT** `motifAnnulation: { type: String, default: '' }` — champ persisté en base pour la raison d'annulation. Sans ce champ dans le schéma, Mongoose (mode strict) supprimait silencieusement le motif envoyé par le frontend. Les fiches annulées conservent maintenant leur motif après rechargement.
+- **SUPPRESSION** `commissionPourcentage: { type: Number, default: 0 }` — champ mort : jamais envoyé, jamais lu, jamais affiché par aucune page frontend.
+
+---
+
+### `server/routes/Solutionexpress.js` — 1 modification
+
+- **AJOUT** validation `VALID_STATUTS` dans le PUT route :
+  ```javascript
+  const VALID_STATUTS = ['new','contacted','proposal','installation_en_cours','installe','installation_annulee'];
+  if (updateFields.status && !VALID_STATUTS.includes(updateFields.status)) {
+    return res.status(400).json({ message: 'Statut invalide' });
+  }
+  ```
+  Double sécurité : API + enum Mongoose. Un statut invalide retourne HTTP 400 avant d'atteindre la base.
+
+---
+
+### `server/routes/settings.js` — 2 modifications
+
+- **AJOUT** dans DEFAULTS : `motifsAnnulation` (liste de 5 raisons par défaut) + `objectifAnnuel: {}` (objet vide — structure par année)
+- **AJOUT** dans PUT route : les deux nouveaux champs sont acceptés et sauvegardés.
+- **CHANGEMENT** `objectifAnnuel` passe de `Number` (valeur unique) à `Object` (clé = année, valeur = montant) : `{ '2025': 3000, '2026': 5000 }`. Permet un objectif différent par année.
+
+---
+
+### `client/src/pages/Dashboard.jsx` — 8 modifications
+
+- **FIX** Année par défaut : `useState('tout')` → `useState(String(new Date().getFullYear()))`. Dashboard s'ouvre toujours sur l'année courante. Dynamique (2027 en 2027, etc.).
+- **FIX** `annees` : toujours inclut `currentYear` → `[...new Set([currentYear, ...seFiches.map(...)])]`. Plus de risque que l'année courante soit absente du select si aucune fiche n'a encore été créée.
+- **FIX** Tri commissions : liste triée par `dateVente||createdAt` au rendu.
+- **AJOUT** `commActives` : fiches commission sans `installation_annulee`. Toutes les stats monétaires (total gagné, payé, en attente, max, min) utilisent `commActives` — les annulées ne polluent plus les chiffres.
+- **AJOUT** `commAnnulees` : compteur de fiches annulées dans la section commissions.
+- **AJOUT** Barre objectif annuel : `settings.objectifAnnuel[anneeGlobal]` — visible si objectif > 0 et année précise sélectionnée.
+- **AJOUT** 5e stat card "Annulées" (rouge `#be123c`, icône `XCircle`) — grille passe de 4 à 5 colonnes desktop.
+- **AJOUT** Header historique commissions : `N actives · X annulées` au lieu de `N entrées` — distingue clairement les actives des annulées.
+- **AJOUT** Fiches annulées en rouge dans la liste commissions : fond rouge discret, motif affiché en sous-titre, badge "❌ Annulée".
+
+---
+
+### `client/src/pages/Commissions.jsx` — 5 modifications
+
+- **FIX** Année par défaut : `useState(String(new Date().getFullYear()))` — même comportement que Dashboard.
+- **FIX** Option "Toutes" → "Toutes les années".
+- **AJOUT** Barre objectif annuel par année : `settings.objectifAnnuel[annee]` — exclut les fiches annulées du calcul (`gagneActif`).
+- **AJOUT** Bar chart couleurs par année en mode "Toutes les années" : palette `YEAR_COLORS`, chaque année a sa propre couleur.
+- **AJOUT** Fiches `installation_annulee` affichées en rouge dans la liste : fond rouge, badge "❌ Annulée", motif visible, bouton toggle remplacé par badge statique non-cliquable. Exclues des stats monétaires.
+
+---
+
+### `client/src/pages/SolutionExpress.jsx` — 5 modifications
+
+- **FIX** Tri par `dateVente||createdAt` dans les cas `date_desc` et `date_asc` (était `createdAt` seul).
+- **AJOUT** `motifAnnulation: ''` dans `EMPTY_FORM` — alignement avec le schéma Mongoose.
+- **AJOUT** Flux motif d'annulation :
+  - `changeStatus('installation_annulee')` intercepté → `setMotifPending({ fiche })` au lieu de PUT direct.
+  - Modal motif : liste `settings.motifsAnnulation` avec fallback hardcodé.
+  - `confirmAnnulation(motif)` → `PUT { status: 'installation_annulee', motifAnnulation: motif }`.
+- **AJOUT** Affichage motif sur la **petite carte** : tag rouge `✕ {motif}` sous les badges si `status === 'installation_annulee' && motifAnnulation`.
+- **AJOUT** Affichage motif dans la **grande fiche** (modal) : bloc `✕ Motif d'annulation : {motif}` dans le header sous les badges.
+- **FIX** Race condition `togglePaiement` : `toggleInProgress = useRef(new Set())` — guard clause `if (has(id)) return` + `finally { delete(id) }`. Double-clic impossible.
+
+---
+
+### `client/src/pages/Pipeline.jsx` — 2 modifications
+
+- **FIX** Tri par `dateVente||createdAt` dans `stageItems` (était `createdAt` seul).
+- **AJOUT** Flux motif d'annulation (drag & drop ET bouton Avancer) :
+  - `updateStatus(item, 'installation_annulee')` intercepté → `setMotifPending({ item, targetStage })`.
+  - `confirmAnnulation(motif)` → appelle `updateStatus` avec le motif en paramètre → `PUT { status, motifAnnulation }`.
+  - Modal identique à SolutionExpress, lit `settings.motifsAnnulation`.
+
+---
+
+### `client/src/pages/Database.jsx` — 1 modification
+
+- **FIX** Tri par `dateVente||createdAt` dans `displayData`.
+
+---
+
+### `client/src/pages/Parametres.jsx` — 2 ajouts
+
+- **AJOUT** Composant `ObjectifSection` : liste d'objectifs par année. Chaque entrée = `{ année: montant }`. Ajouter/supprimer une année. Persisté comme objet dans `settings.objectifAnnuel`.
+- **AJOUT** Section "Motifs d'annulation" : liste simple (SimpleSection) des raisons d'annulation. Ces motifs apparaissent dans le modal annulation de SolutionExpress et Pipeline.
+
+---
+
+### Audit final — résultat
+
+| Vérification | Résultat |
+|---|---|
+| EMPTY_FORM ↔ Schéma Mongoose | ✅ Exact match (motifAnnulation ajouté des deux côtés) |
+| motifAnnulation persisté en base | ✅ Schéma + PUT route + fetchFiches() |
+| Motif affiché petite carte + grande fiche | ✅ SolutionExpress (lignes 919-926 et 1070-1075) |
+| Modal motif Pipeline | ✅ Drag&drop + bouton Avancer interceptés |
+| Settings → filtres/formulaires dynamiques | ✅ 100% dynamique, zéro hardcoding |
+| Fiches annulées exclues des stats | ✅ Dashboard + Commissions utilisent `commActives` |
+| Objectif annuel par année | ✅ Dashboard + Commissions lisent `settings.objectifAnnuel[annee]` |
+| Tri par dateVente | ✅ SolutionExpress, Pipeline, Database, Dashboard, Commissions |
+| Race condition togglePaiement | ✅ `toggleInProgress` Set avec guard clause |
+| Validation statut serveur | ✅ `VALID_STATUTS` + Mongoose enum |
+| Code mort supprimé | ✅ `commissionPourcentage` retiré du schéma |
+
+---
+
+*Ce rapport couvre l'intégralité du code source au 2026-05-17.*
 *Toute modification majeure doit être reflétée ici.*
