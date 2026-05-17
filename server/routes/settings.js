@@ -273,7 +273,13 @@ router.get('/', auth, async (req, res) => {
 
 router.put('/', auth, async (req, res) => {
   try {
-    const { _id, ...update } = req.body;
+    const { villes, typeCommerce, typeLead, qualificationSysteme, services } = req.body;
+    const update = {};
+    if (villes               !== undefined) update.villes               = villes;
+    if (typeCommerce         !== undefined) update.typeCommerce         = typeCommerce;
+    if (typeLead             !== undefined) update.typeLead             = typeLead;
+    if (qualificationSysteme !== undefined) update.qualificationSysteme = qualificationSysteme;
+    if (services             !== undefined) update.services             = services;
     await col().updateOne({ _id: 'global' }, { $set: update }, { upsert: true });
     res.json({ ok: true });
   } catch (e) {

@@ -7,7 +7,8 @@
 // API        : GET /api/solution-express — filtre commissionTotale > 0
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import AnimatedNumber from '../components/AnimatedNumber';
 import api from '../api';
 import {
   CheckCircle, XCircle, ChevronLeft, ChevronRight,
@@ -30,31 +31,6 @@ function useIsMobile() {
     return () => window.removeEventListener('resize', handler);
   }, []);
   return isMobile;
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// COMPOSANT : AnimatedNumber
-// Chiffre qui compte de 0 à la valeur cible avec easing cubique
-// ════════════════════════════════════════════════════════════════════════════
-function AnimatedNumber({ value, decimals = 2, suffix = ' TND', color }) {
-  const [display, setDisplay] = useState(0);
-  const prev = useRef(0);
-  useEffect(() => {
-    const start = prev.current;
-    const end   = value || 0;
-    prev.current = end;
-    if (start === end) return;
-    const duration  = 900;
-    const startTime = performance.now();
-    const step = (now) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const ease     = 1 - Math.pow(1 - progress, 3);
-      setDisplay(start + (end - start) * ease);
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [value]);
-  return <span style={{ color }}>{display.toFixed(decimals)}{suffix}</span>;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -222,7 +198,6 @@ export default function Commissions() {
   const togglePaiement = async (fiche) => {
     try {
       await api.put(`/api/solution-express/${fiche._id}`, {
-        ...fiche,
         commissionPayee: !fiche.commissionPayee,
         datePaiementCommission: !fiche.commissionPayee ? new Date().toISOString() : null,
       });
@@ -233,7 +208,10 @@ export default function Commissions() {
   };
 
   // Années dynamiques — seulement celles qui ont des données
-  const annees = [...new Set(fiches.map(c => new Date(c.dateVente || c.createdAt).getUTCFullYear()))].sort((a,b) => b-a);
+  const annees = useMemo(() =>
+    [...new Set(fiches.map(c => new Date(c.dateVente || c.createdAt || Date.now()).getUTCFullYear()))].sort((a,b) => b-a),
+    [fiches]
+  );
 
   // Filtrage
   const filtered = fiches.filter(c => {
@@ -246,7 +224,7 @@ export default function Commissions() {
   // Stats
   const totalGagne = filtered.reduce((s,c) => s + (c.commissionTotale||0), 0);
   const totalPaye  = filtered.filter(c => c.commissionPayee).reduce((s,c) => s + (c.commissionTotale||0), 0);
-  const enAttente  = totalGagne - totalPaye;
+  const enAttente  = Math.max(0, totalGagne - totalPaye);
   const vals       = filtered.map(c => c.commissionTotale||0).filter(v => v > 0);
   const maximum    = vals.length > 0 ? Math.max(...vals) : 0;
   const minimum    = vals.length > 0 ? Math.min(...vals) : 0;
@@ -254,14 +232,17 @@ export default function Commissions() {
   // % payé pour la barre de progression dans le header
   const pctPaye = totalGagne > 0 ? Math.round((totalPaye / totalGagne) * 100) : 0;
 
-  // Graphique par mois
+  // Graphique : par année si "tout", par mois si année précise
   const MOIS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-  const chartData = MOIS.map((name, idx) => {
-    const moisFiches = filtered.filter(c => new Date(c.dateVente || c.createdAt).getUTCMonth() === idx);
-    const total = moisFiches.reduce((s,c) => s + (c.commissionTotale||0), 0);
-    const count = moisFiches.length;
-    return { name, total, count };
-  });
+  const chartData = annee === 'tout'
+    ? annees.map(yr => {
+        const yrFiches = filtered.filter(c => new Date(c.dateVente || c.createdAt).getUTCFullYear() === yr);
+        return { name: String(yr), total: yrFiches.reduce((s,c) => s + (c.commissionTotale||0), 0), count: yrFiches.length };
+      })
+    : MOIS.map((name, idx) => {
+        const moisFiches = filtered.filter(c => new Date(c.dateVente || c.createdAt).getUTCMonth() === idx);
+        return { name, total: moisFiches.reduce((s,c) => s + (c.commissionTotale||0), 0), count: moisFiches.length };
+      });
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', flexDirection:'column', gap:16 }}>

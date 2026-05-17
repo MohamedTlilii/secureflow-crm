@@ -6,11 +6,12 @@
 // DESIGN      : Header glassmorphism, ScoreRings animés, chiffres animés
 // FILTRE      : Un seul filtre année global — tout la page change selon l'année
 // LOGIQUE     : Fetch /api/solution-express + calcul frontend de toutes les stats
-// API         : GET /api/stats?periode=tout + GET /api/solution-express
+// API         : GET /api/solution-express + GET /api/settings
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import api from '../api';
+import AnimatedNumber from '../components/AnimatedNumber';
 import {
   Users, TrendingUp, CheckCircle, AlertCircle, Clock,
   MapPin, Zap, Building2, Shield, Wallet,
@@ -44,31 +45,6 @@ function ProgressBar({ value, max, color }) {
       <div style={{ height:'100%', borderRadius:3, background:color||'var(--accent)', width:`${pct}%`, transition:'width 0.8s ease' }}/>
     </div>
   );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// COMPOSANT : AnimatedNumber
-// Compte de 0 à la valeur avec easing cubique (900ms)
-// ════════════════════════════════════════════════════════════════════════════
-function AnimatedNumber({ value, decimals = 0, suffix = '', color }) {
-  const [display, setDisplay] = useState(0);
-  const prev = useRef(0);
-  useEffect(() => {
-    const start = prev.current;
-    const end   = value || 0;
-    prev.current = end;
-    if (start === end) return;
-    const duration  = 900;
-    const startTime = performance.now();
-    const step = (now) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const ease     = 1 - Math.pow(1 - progress, 3);
-      setDisplay(start + (end - start) * ease);
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [value]);
-  return <span style={{ color }}>{display.toFixed(decimals)}{suffix}</span>;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -114,7 +90,6 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
 
   // ── États ─────────────────────────────────────────────────────────────
-  const [stats, setStats]             = useState(null);
   const [loading, setLoading]         = useState(true);
   const [seFiches, setSeFiches]       = useState([]);
   const [settings, setSettings]       = useState({ services: [] });
@@ -123,13 +98,10 @@ export default function Dashboard() {
 
   // ── Fetch données ─────────────────────────────────────────────────────
   const fetchAll = useCallback(() => {
-    api.get('/api/stats?periode=tout')
-      .then(r => setStats(r.data))
-      .catch(err => console.error('Dashboard stats error:', err))
-      .finally(() => setLoading(false));
     api.get('/api/solution-express')
       .then(r => setSeFiches(Array.isArray(r.data) ? r.data : []))
-      .catch(err => console.error('SE fetch error:', err));
+      .catch(err => console.error('SE fetch error:', err))
+      .finally(() => setLoading(false));
     api.get('/api/settings')
       .then(r => setSettings(r.data || { services: [] }))
       .catch(() => {});
@@ -176,7 +148,6 @@ export default function Dashboard() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-  if (!stats) return <div style={{ textAlign:'center', padding:60, color:'#ffffff' }}>Erreur chargement</div>;
 
   // ── Années disponibles selon données réelles ──────────────────────────
   const annees = [...new Set(seFiches.map(f => new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()))].sort((a,b) => b-a);
@@ -184,7 +155,7 @@ export default function Dashboard() {
   // ── Fiches filtrées par année globale ─────────────────────────────────
   const fiches = anneeGlobal === 'tout'
     ? seFiches
-    : seFiches.filter(f => String(new Date(f.dateVente||f.createdAt).getUTCFullYear()) === anneeGlobal);
+    : seFiches.filter(f => String(new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()) === anneeGlobal);
 
   // ── Stats calculées depuis fiches filtrées ────────────────────────────
 
@@ -247,9 +218,9 @@ export default function Dashboard() {
     { name:'Install. annulée', value:seStatuts.installation_annulee,  color:'#be123c' },
   ].filter(x => x.value > 0);
 
-  // Commissions filtrées par année
-  const commissions = stats.commissions;
-  const commFiches = (commissions?.historique||[]).filter(c => {
+  // Commissions : calculées directement depuis seFiches (cohérent avec le filtre année)
+  const commHistorique = seFiches.filter(f => (f.commissionTotale||0) > 0 || (f.commissionFixe||0) > 0);
+  const commFiches = commHistorique.filter(c => {
     const yr = new Date(c.dateVente||c.createdAt).getUTCFullYear();
     const yearOk   = anneeGlobal === 'tout' || String(yr) === anneeGlobal;
     const statutOk = commFiltre === 'tout' ? true : commFiltre === 'payee' ? c.commissionPayee : !c.commissionPayee;
@@ -422,8 +393,7 @@ export default function Dashboard() {
           COMMISSIONS — filtrées par année globale
           $ → TND, DollarSign → Wallet
           ════════════════════════════════════════════════════════════════ */}
-      {commissions && (
-        <div style={{ marginBottom:24, animation:'fadeSlideUp 0.4s 0.15s ease both', padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#12b76a40,#61DAFB20,#a78bfa10)' }}>
+      <div style={{ marginBottom:24, animation:'fadeSlideUp 0.4s 0.15s ease both', padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#12b76a40,#61DAFB20,#a78bfa10)' }}>
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
             <div style={{ width:36, height:36, borderRadius:9, background:'rgba(18,183,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -483,53 +453,64 @@ export default function Dashboard() {
           {/* Historique commissions */}
           <div style={{ background:'var(--bg-card)', borderRadius:16, overflow:'hidden', border:'1px solid var(--border)', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
             <div style={{ display:'flex', borderBottom:'1px solid var(--border)', padding:'10px 16px', gap:8, flexWrap:'wrap' }}>
-              {[['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳ En attente']].map(([k,l]) => (
-                <button key={k} onClick={() => setCommFiltre(k)}
-                  style={{ padding:'4px 14px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
-                    border:`1px solid ${commFiltre===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)'):'var(--border)'}`,
-                    background: commFiltre===k?(k==='payee'?'rgba(18,183,106,0.1)':k==='non_payee'?'rgba(247,144,9,0.1)':'rgba(59,108,248,0.1)'):'transparent',
-                    color: commFiltre===k?(k==='payee'?'#12b76a':k==='non_payee'?'#f79009':'var(--accent)'):'#ffffff' }}>
-                  {l}
-                </button>
-              ))}
+              {[['tout','Tout'],['payee','✓ Payée'],['non_payee','⏳ En attente']].map(([k,l]) => {
+                const active = commFiltre === k;
+                const activeColor = k === 'payee' ? '#12b76a' : k === 'non_payee' ? '#f79009' : 'var(--accent)';
+                const activeBg = k === 'payee' ? 'rgba(18,183,106,0.1)' : k === 'non_payee' ? 'rgba(247,144,9,0.1)' : 'rgba(59,108,248,0.1)';
+                return (
+                  <button key={k} onClick={() => setCommFiltre(k)}
+                    style={{ padding:'4px 14px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
+                      border:`1px solid ${active ? activeColor : 'var(--border)'}`,
+                      background: active ? activeBg : 'transparent',
+                      color: active ? activeColor : '#ffffff' }}>
+                    {l}
+                  </button>
+                );
+              })}
               <div style={{ marginLeft:'auto', fontSize:11, color:'#ffffff', display:'flex', alignItems:'center' }}>
                 {commFiches.length} entrée{commFiches.length!==1?'s':''}
               </div>
             </div>
             <div style={{ padding:'8px 0' }}>
-              {commFiches.length > 0 ? commFiches.map((c,i,arr) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap: isMobile?10:12, padding: isMobile?'10px 14px':'10px 16px', borderBottom:i<arr.length-1?'1px solid var(--border)':'none', transition:'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background='var(--bg-secondary)'; if(!isMobile) e.currentTarget.style.transform='translateX(3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.transform='translateX(0)'; }}>
-                  <div style={{ width:38, height:38, borderRadius:9, background:c.commissionPayee?'rgba(18,183,106,0.1)':'rgba(247,144,9,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <Wallet size={15} color={c.commissionPayee?'#12b76a':'#f79009'}/>
+              {commFiches.length > 0 ? commFiches.map((c,i) => {
+                const paid = !!c.commissionPayee;
+                const fixed = c.commissionFixe || 0;
+                const extra = c.commissionExtra || 0;
+                const date = new Date(c.dateVente || c.createdAt).toLocaleDateString('fr-CA', { timeZone:'UTC' });
+                return (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap: isMobile?10:12, padding: isMobile?'10px 14px':'10px 16px', borderBottom:i < commFiches.length-1 ? '1px solid var(--border)' : 'none', transition:'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background='var(--bg-secondary)'; if(!isMobile) e.currentTarget.style.transform='translateX(3px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.transform='translateX(0)'; }}>
+                    <div style={{ width:38, height:38, borderRadius:9, background:paid ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <Wallet size={15} color={paid ? '#12b76a' : '#f79009'}/>
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'Sans nom'}
+                      </div>
+                      <div style={{ fontSize:11, color:'#ffffff', marginTop:1 }}>
+                        {c.ville||'—'} · {date}
+                      </div>
+                    </div>
+                    {!isMobile && fixed > 0 && (
+                      <div style={{ textAlign:'right', flexShrink:0 }}>
+                        <div style={{ fontSize:11, color:'#ffffff' }}>Fixe : {fixed.toFixed(2)} TND</div>
+                        {extra > 0 && <div style={{ fontSize:11, color:'#ffffff' }}>Extra : {extra.toFixed(2)} TND</div>}
+                      </div>
+                    )}
+                    <div style={{ textAlign:'right', flexShrink:0, minWidth: isMobile?80:90 }}>
+                      <div style={{ fontSize: isMobile?14:16, fontWeight:700, color:paid ? '#12b76a' : '#f79009' }}>
+                        {(c.commissionTotale||0).toFixed(2)} TND
+                      </div>
+                      <div style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, display:'inline-block', marginTop:2,
+                        background:paid ? 'rgba(18,183,106,0.1)' : 'rgba(247,144,9,0.1)',
+                        color:paid ? '#12b76a' : '#f79009' }}>
+                        {paid ? '✓ Payée' : '⏳ En attente'}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                      {c.entreprise||`${c.prenom||''} ${c.nom||''}`.trim()||'Sans nom'}
-                    </div>
-                    <div style={{ fontSize:11, color:'#ffffff', marginTop:1 }}>
-                      {c.ville||'—'} · {c.dateVente?new Date(c.dateVente).toLocaleDateString('fr-CA',{timeZone:'UTC'}):new Date(c.createdAt).toLocaleDateString('fr-CA',{timeZone:'UTC'})}
-                    </div>
-                  </div>
-                  {!isMobile && c.commissionFixe > 0 && (
-                    <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontSize:11, color:'#ffffff' }}>Fixe : {(c.commissionFixe||0).toFixed(2)} TND</div>
-                      {c.commissionExtra > 0 && <div style={{ fontSize:11, color:'#ffffff' }}>Extra : {(c.commissionExtra||0).toFixed(2)} TND</div>}
-                    </div>
-                  )}
-                  <div style={{ textAlign:'right', flexShrink:0, minWidth: isMobile?80:90 }}>
-                    <div style={{ fontSize: isMobile?14:16, fontWeight:700, color:c.commissionPayee?'#12b76a':'#f79009' }}>
-                      {(c.commissionTotale||0).toFixed(2)} TND
-                    </div>
-                    <div style={{ fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:20, display:'inline-block', marginTop:2,
-                      background:c.commissionPayee?'rgba(18,183,106,0.1)':'rgba(247,144,9,0.1)',
-                      color:c.commissionPayee?'#12b76a':'#f79009' }}>
-                      {c.commissionPayee?'✓ Payée':'⏳ En attente'}
-                    </div>
-                  </div>
-                </div>
-              )) : (
+                );
+              }) : (
                 <div style={{ textAlign:'center', padding:'24px 0', color:'#ffffff', fontSize:13 }}>
                   Aucune commission pour cette période
                 </div>
@@ -537,8 +518,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        </div>
-      )}
+      </div>
 
       {/* ════════════════════════════════════════════════════════════════
           PIPELINE + PRODUITS

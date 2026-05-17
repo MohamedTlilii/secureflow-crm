@@ -8,6 +8,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import AnimatedNumber from '../components/AnimatedNumber';
 import api from '../api';
 import {
   Fuel, CheckCircle, XCircle,
@@ -39,27 +40,6 @@ function useIsMobile() {
   return m;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// COMPOSANT : AnimatedNumber
-// ════════════════════════════════════════════════════════════════════════════
-function AnimatedNumber({ value, decimals = 3, suffix = ' TND', color }) {
-  const [display, setDisplay] = useState(0);
-  const prev = useRef(0);
-  useEffect(() => {
-    const start = prev.current, end = value || 0;
-    prev.current = end;
-    if (start === end) return;
-    const dur = 900, t0 = performance.now();
-    const step = now => {
-      const p = Math.min((now - t0) / dur, 1);
-      const e = 1 - Math.pow(1 - p, 3);
-      setDisplay(start + (end - start) * e);
-      if (p < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [value]);
-  return <span style={{ color }}>{display.toFixed(decimals)}{suffix}</span>;
-}
 
 // ════════════════════════════════════════════════════════════════════════════
 // COMPOSANT : NoteModal

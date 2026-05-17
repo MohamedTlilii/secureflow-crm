@@ -451,14 +451,29 @@ export default function Parametres() {
   const [loading, setLoading]       = useState(true);
 
   const dirty = JSON.stringify(settings) !== JSON.stringify(original);
+  const dirtyRef = useRef(false);
+
+  // ── Sync dirtyRef so visibilitychange handler always sees current value ─
+  useEffect(() => { dirtyRef.current = dirty; }, [dirty]);
 
   // ── Fetch ──────────────────────────────────────────────────────────────
-  useEffect(() => {
+  const fetchSettings = () => {
     api.get('/api/settings').then(r => {
       setSettings(r.data);
       setOriginal(JSON.parse(JSON.stringify(r.data)));
     }).catch(() => toast.error('Impossible de charger les paramètres'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchSettings(); }, []);
+
+  // ── Re-fetch when tab regains focus (only if no unsaved changes) ────────
+  useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden && !dirtyRef.current) fetchSettings();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
 
   // ── Save ───────────────────────────────────────────────────────────────

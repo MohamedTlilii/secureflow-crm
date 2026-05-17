@@ -66,7 +66,7 @@ router.put('/:id', auth, async (req, res) => {
     const fiche = await SolutionExpress.findByIdAndUpdate(
       req.params.id,
       { ...updateFields, updatedAt: Date.now() },
-      { new: true }
+      { new: true, runValidators: true }
     );
     if (!fiche) return res.status(404).json({ message: 'Fiche introuvable' });
     res.json(fiche);

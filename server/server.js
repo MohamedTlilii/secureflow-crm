@@ -44,7 +44,6 @@ mongoose.connect(process.env.MONGO_URI)
 app.use('/api/auth',            require('./routes/auth'));
 app.use('/api/database',        require('./routes/database'));
 app.use('/api/solution-express',require('./routes/Solutionexpress'));
-app.use('/api/stats', require('./routes/stats'));
 app.use('/api/essence',   require('./routes/essence'));
 app.use('/api/settings',  require('./routes/settings'));
 

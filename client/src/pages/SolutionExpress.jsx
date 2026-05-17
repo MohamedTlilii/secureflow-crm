@@ -9,6 +9,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import AnimatedNumber from '../components/AnimatedNumber';
 import api from '../api';
 import {
   Plus, MapPin, Phone, X, Edit2, Trash2,
@@ -31,31 +32,6 @@ function useIsMobile() {
     return () => window.removeEventListener('resize', handler);
   }, []);
   return isMobile;
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// COMPOSANT : AnimatedNumber
-// Compte de 0 à la valeur avec easing cubique (900ms)
-// ════════════════════════════════════════════════════════════════════════════
-function AnimatedNumber({ value, decimals = 0, suffix = '', color }) {
-  const [display, setDisplay] = useState(0);
-  const prev = useRef(0);
-  useEffect(() => {
-    const start = prev.current;
-    const end   = value || 0;
-    prev.current = end;
-    if (start === end) return;
-    const duration  = 900;
-    const startTime = performance.now();
-    const step = (now) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const ease     = 1 - Math.pow(1 - progress, 3);
-      setDisplay(start + (end - start) * ease);
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [value]);
-  return <span style={{ color }}>{display.toFixed(decimals)}{suffix}</span>;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -174,24 +150,7 @@ function DatePicker({ value, onChange, placeholder = 'Sélectionner une date' })
 const AV_COLORS = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
 
 
-const TYPE_COMMERCE_LABELS = {
-  restaurant:'Restaurant', pizzeria:'Pizzeria', boulangerie:'Boulangerie',
-  traiteur:'Traiteur', cafe:'Café', bar_resto:'Bar / Resto',
-  salon_coiffure:'Salon coiffure', esthetique:'Esthétique', spa:'Spa',
-  massotherapie:'Massothérapie', barbier:'Barbier',
-  garage_auto:'Garage auto', carrosserie:'Carrosserie', esthetique_auto:'Esthétique auto',
-  lave_auto:'Lave-auto', pneus:'Pneus', concessionnaire:'Concessionnaire',
-  clinique_dentaire:'Clinique dentaire', clinique_privee:'Clinique privée',
-  pharmacie:'Pharmacie', optometrie:'Optométrie', cabinet_infirmier:'Cabinet infirmier',
-  boutique:'Boutique', epicerie:'Épicerie', boucherie:'Boucherie',
-  librairie:'Librairie', quincaillerie:'Quincaillerie',
-  bureau:'Bureau', cabinet_comptable:'Cabinet comptable', agence:'Agence',
-  assurance:'Assurance', immobilier:'Immobilier',
-  garderie:'Garderie', ecole_privee:'École privée', centre_formation:'Centre formation',
-  gym:'Gym', centre_sportif:'Centre sportif', studio_yoga:'Studio yoga',
-  entrepot:'Entrepôt', transport:'Transport', manufacture:'Manufacture', construction:'Construction',
-  veterinaire:'Vétérinaire', animalerie:'Animalerie', autre:'Autre'
-};
+const TYPE_COMMERCE_LABELS = {};
 
 const STATUS_LABELS = {
   new:'Nouveau', contacted:'Contacté',
@@ -216,7 +175,9 @@ const LEAD_TYPES = {
   nouvelle_entreprise:'Nouvelle entreprise', demenagement:'Déménagement',
   reouverture:'Réouverture', commerce_existant:'Commerce existant', autre:'Autre'
 };
-const LEAD_COLORS = {
+const LEAD_PALETTE_COLORS = ['#12b76a','#0077b5','#f79009','#a764f8','#f04438','#61DAFB','#8b8b9e'];
+// Couleurs statiques de base utilisées comme fallback uniquement
+const LEAD_COLORS_STATIC = {
   nouvelle_entreprise:'#12b76a', demenagement:'#0077b5',
   reouverture:'#f79009', commerce_existant:'#a764f8', autre:'#8b8b9e'
 };
@@ -390,15 +351,37 @@ export default function SolutionExpress() {
   const [settings, setSettings]           = useState(null);
   const [anneeFiltre, setAnneeFiltre]     = useState(String(new Date().getFullYear()));
 
-  // ── Chargement settings dynamiques ───────────────────────────────────
+  // ── Chargement settings dynamiques — rechargé au retour sur l'onglet ──
   useEffect(() => {
-    api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
+    const loadSettings = () => api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
+    loadSettings();
+    const onVisible = () => { if (document.visibilityState === 'visible') loadSettings(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
 
   const dVilles   = useMemo(() => settings?.villes || [], [settings]);
   const dCommerce = useMemo(() => settings ? fromArr(settings.typeCommerce) : TYPE_COMMERCE_LABELS, [settings]);
   const dLead     = useMemo(() => settings ? fromArr(settings.typeLead) : LEAD_TYPES, [settings]);
   const dQualif   = useMemo(() => settings ? fromArr(settings.qualificationSysteme) : QUALIF_LABELS, [settings]);
+
+  // Couleurs dynamiques des types de lead — indexées par position dans settings
+  const dLeadColors = useMemo(() => {
+    const types = settings?.typeLead || Object.keys(LEAD_TYPES).map(key => ({ key }));
+    const map = {};
+    types.forEach((t, i) => {
+      map[t.key] = LEAD_PALETTE_COLORS[i % LEAD_PALETTE_COLORS.length];
+    });
+    // Garde les couleurs statiques en fallback pour les clés non trouvées dans settings
+    return { ...LEAD_COLORS_STATIC, ...map };
+  }, [settings]);
+
+  // Villes disponibles pour le FILTRE (issues des données réelles, pas des settings)
+  const dFiltrVilles = useMemo(() =>
+    [...new Set(fiches.map(f => f.ville).filter(Boolean))].sort(),
+    [fiches]
+  );
+
   const dServices = useMemo(() => {
     const svcs = settings?.services || DEFAULT_SERVICES;
     return svcs.map(s => ({
@@ -485,7 +468,7 @@ export default function SolutionExpress() {
     [fiches]
   );
   const fichesByAnnee = useMemo(() =>
-    anneeFiltre === 'tout' ? fiches : fiches.filter(f => String(new Date(f.dateVente||f.createdAt).getUTCFullYear()) === anneeFiltre),
+    anneeFiltre === 'tout' ? fiches : fiches.filter(f => String(new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()) === anneeFiltre),
     [fiches, anneeFiltre]
   );
 
@@ -570,7 +553,7 @@ export default function SolutionExpress() {
       };
       if (modal === 'add') { await api.post('/api/solution-express', payload); toast.success('Fiche ajoutée !'); }
       else { await api.put(`/api/solution-express/${selected._id}`, payload); toast.success('Mis à jour !'); }
-      setModal(null); fetchFiches();
+      setModal(null); await fetchFiches();
     } catch (err) { toast.error(err.response?.data?.message || 'Erreur'); }
   };
 
@@ -578,7 +561,7 @@ export default function SolutionExpress() {
   const handleDelete = async (p, e) => {
     if(e) e.stopPropagation();
     if (!confirm('Supprimer cette fiche ?')) return;
-    try { await api.delete(`/api/solution-express/${p._id}`); toast.success('Supprimé'); setModal(null); fetchFiches(); }
+    try { await api.delete(`/api/solution-express/${p._id}`); toast.success('Supprimé'); setModal(null); await fetchFiches(); }
     catch { toast.error('Erreur suppression'); }
   };
 
@@ -587,11 +570,11 @@ export default function SolutionExpress() {
     if (!noteText.trim()) return;
     try {
       const updatedNotes = [...(p.notes||[]), noteText.trim()];
-      await api.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
+      await api.put(`/api/solution-express/${p._id}`, { notes: updatedNotes });
       toast.success('Note ajoutée ✓');
       setNoteText('');
       setSelected(prev => ({ ...prev, notes: updatedNotes }));
-      fetchFiches();
+      await fetchFiches();
     } catch { toast.error('Erreur note'); }
   };
 
@@ -600,19 +583,19 @@ export default function SolutionExpress() {
     if (!confirm('Supprimer cette note ?')) return;
     try {
       const updatedNotes = (p.notes||[]).filter((_,i) => i !== idx);
-      await api.put(`/api/solution-express/${p._id}`, { ...p, notes: updatedNotes });
+      await api.put(`/api/solution-express/${p._id}`, { notes: updatedNotes });
       toast.success('Note supprimée');
       setSelected(prev => ({ ...prev, notes: updatedNotes }));
-      fetchFiches();
+      await fetchFiches();
     } catch { toast.error('Erreur suppression note'); }
   };
 
   // ── Changer statut depuis l'ultra-fiche ───────────────────────────────
   const changeStatus = async (p, newStatus) => {
     try {
-      await api.put(`/api/solution-express/${p._id}`, { ...p, status: newStatus });
+      await api.put(`/api/solution-express/${p._id}`, { status: newStatus });
       setSelected(prev => ({ ...prev, status: newStatus }));
-      fetchFiches(); toast.success('Statut mis à jour');
+      await fetchFiches(); toast.success('Statut mis à jour');
     } catch { toast.error('Erreur statut'); }
   };
 
@@ -743,7 +726,7 @@ export default function SolutionExpress() {
                 ['status',    'Statut',      STATUS_LABELS],
                 ['typeClient','Type client', {'b2b':'🏢 B2B','b2c':'🏠 B2C'}],
                 ['leadType',  'Type lead',   dLead],
-                ['ville',     'Ville',       Object.fromEntries(dVilles.filter(v=>v).map(v=>[v,v]))],
+                ['ville',     'Ville',       Object.fromEntries(dFiltrVilles.map(v=>[v,v]))],
               ].map(([k, l, opts]) => (
                 <div key={k}>
                   <div style={{ fontSize:10, color:'#ffffff', marginBottom:4, fontWeight:600, textTransform:'uppercase' }}>{l}</div>
@@ -876,7 +859,7 @@ export default function SolutionExpress() {
         <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(300px,1fr))', gap: isMobile?12:16 }}>
           {sorted.map((p, i) => {
             const statusColor = STATUS_COLORS[p.status] || '#8b8b9e';
-            const leadColor   = LEAD_COLORS[p.leadType] || '#8b8b9e';
+            const leadColor   = dLeadColors[p.leadType] || '#8b8b9e';
             const lastNote    = dernNote(p);
             return (
               <div key={p._id}
@@ -1060,7 +1043,7 @@ export default function SolutionExpress() {
                     </div>
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                       <span className={`badge ${STATUS_CLASS[selected.status]||'badge-p0'}`}>{STATUS_LABELS[selected.status]}</span>
-                      <span style={{ fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:20, background:`${LEAD_COLORS[selected.leadType]||'#8b8b9e'}20`, color:LEAD_COLORS[selected.leadType]||'#8b8b9e' }}>{dLead[selected.leadType]||selected.leadType}</span>
+                      <span style={{ fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:20, background:`${dLeadColors[selected.leadType]||'#8b8b9e'}20`, color:dLeadColors[selected.leadType]||'#8b8b9e' }}>{dLead[selected.leadType]||selected.leadType}</span>
                       {(selected.produits||[]).map(code => {
                         const svc = dServices.find(s => s.id === code);
                         if (!svc) return null;

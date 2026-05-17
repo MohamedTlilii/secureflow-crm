@@ -8,8 +8,9 @@
 // SOURCES     : Solution Express uniquement
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import api from '../api';
+import AnimatedNumber from '../components/AnimatedNumber';
 import { ArrowRight, MapPin, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,31 +24,6 @@ function useIsMobile() {
     return () => window.removeEventListener('resize', handler);
   }, []);
   return isMobile;
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// COMPOSANT : AnimatedNumber
-// Compte de 0 à la valeur avec easing cubique
-// ════════════════════════════════════════════════════════════════════════════
-function AnimatedNumber({ value, decimals = 0, color }) {
-  const [display, setDisplay] = useState(0);
-  const prev = useRef(0);
-  useEffect(() => {
-    const start = prev.current;
-    const end   = value || 0;
-    prev.current = end;
-    if (start === end) return;
-    const duration  = 900;
-    const startTime = performance.now();
-    const step = (now) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const ease     = 1 - Math.pow(1 - progress, 3);
-      setDisplay(start + (end - start) * ease);
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [value]);
-  return <span style={{ color }}>{display.toFixed(decimals)}</span>;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -88,9 +64,7 @@ export default function Pipeline() {
   // ── Fetch Solution Express ────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
     try {
-      const [se] = await Promise.all([
-        api.get('/api/solution-express').catch(() => ({ data: [] })),
-      ]);
+      const se = await api.get('/api/solution-express').catch(() => ({ data: [] }));
       const all = [
         ...se.data.map(x => ({
           ...x,
@@ -107,6 +81,9 @@ export default function Pipeline() {
   useEffect(() => {
     fetchAll();
     api.get('/api/settings').then(r => setSettings(r.data || { services: [] })).catch(() => {});
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [fetchAll]);
 
   const svcMap = useMemo(() =>
@@ -128,8 +105,7 @@ export default function Pipeline() {
 const updateStatus = async (item, targetStage) => {
     const newStatus = targetStage;
     try {
-      const { stage, source, displayName, ...cleanItem } = item;
-      await api.put(`/api/solution-express/${item._id}`, { ...cleanItem, status: newStatus });
+      await api.put(`/api/solution-express/${item._id}`, { status: newStatus });
       toast.success(`→ ${STAGES.find(s => s.key === targetStage)?.label}`);
       fetchAll();
     } catch (err) {
@@ -325,7 +301,6 @@ const updateStatus = async (item, targetStage) => {
                 {/* ── Cards de la colonne ── */}
                 <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1 }}>
                   {stageItems.map((p, i) => {
-                    const isSE      = p.source === 'solution_express';
                     const isDragging = dragging === p._id;
 
                     return (
@@ -378,7 +353,7 @@ const updateStatus = async (item, targetStage) => {
                         )}
 
                         {/* Produits Solution Express */}
-                        {isSE && (p.produits||[]).length > 0 && (
+                        {(p.produits||[]).length > 0 && (
                           <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:7 }}>
                             {p.produits.slice(0,3).map(code => {
                               const svc = svcMap[code];

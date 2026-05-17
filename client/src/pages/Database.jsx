@@ -8,7 +8,8 @@
 // API         : GET /api/solution-express + GET /api/database/stats
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import AnimatedNumber from '../components/AnimatedNumber';
 import {
   Trash2, Database as DbIcon, MapPin, HardDrive,
   Building2, Filter
@@ -25,31 +26,6 @@ function useIsMobile() {
     return () => window.removeEventListener('resize', handler);
   }, []);
   return isMobile;
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// COMPOSANT : AnimatedNumber
-// Compte de 0 à la valeur avec easing cubique
-// ════════════════════════════════════════════════════════════════════════════
-function AnimatedNumber({ value, decimals = 0, color }) {
-  const [display, setDisplay] = useState(0);
-  const prev = useRef(0);
-  useEffect(() => {
-    const start = prev.current;
-    const end   = value || 0;
-    prev.current = end;
-    if (start === end) return;
-    const duration  = 900;
-    const startTime = performance.now();
-    const step = (now) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const ease     = 1 - Math.pow(1 - progress, 3);
-      setDisplay(start + (end - start) * ease);
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [value]);
-  return <span style={{ color }}>{display.toFixed(decimals)}</span>;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -73,7 +49,6 @@ export default function Database() {
   const [leads, setLeads]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [dbStats, setDbStats]     = useState(null);
-  const [settings, setSettings]   = useState(null);
   const [anneeFiltre, setAnneeFiltre] = useState(String(new Date().getFullYear()));
   const [filters, setFilters] = useState({
     prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:''
@@ -100,16 +75,19 @@ export default function Database() {
   useEffect(() => {
     fetchLeads();
     fetchDbStats();
-    api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
   }, []);
 
-  const dVilles = useMemo(() => settings?.villes || [], [settings]);
+  // Villes pour le filtre : issues des fiches réelles, pas des settings
+  const dFiltrVilles = useMemo(() =>
+    [...new Set(leads.map(f => f.ville).filter(Boolean))].sort(),
+    [leads]
+  );
   const annees  = useMemo(() =>
     [...new Set(leads.map(f => new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()))].sort((a,b) => b-a),
     [leads]
   );
   const fichesByAnnee = useMemo(() =>
-    anneeFiltre === 'tout' ? leads : leads.filter(f => String(new Date(f.dateVente||f.createdAt).getUTCFullYear()) === anneeFiltre),
+    anneeFiltre === 'tout' ? leads : leads.filter(f => String(new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()) === anneeFiltre),
     [leads, anneeFiltre]
   );
 
@@ -348,7 +326,7 @@ export default function Database() {
                   <div style={{ fontSize:10, marginBottom:5, letterSpacing:0.8 }}>VILLE</div>
                   <select style={inputSt} value={filters.ville} onChange={e => setF('ville', e.target.value)}>
                     <option value="">Toutes</option>
-                    {dVilles.filter(v=>v).map(v => <option key={v} value={v}>{v}</option>)}
+                    {dFiltrVilles.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </th>
                 {/* Actions */}

@@ -1093,5 +1093,103 @@ try {
 
 ---
 
+---
+
+## 17. CHANGELOG — CORRECTIONS 2026-05-16 (Session audit complet)
+
+> **22 problèmes corrigés** suite à un audit ligne par ligne de tous les fichiers.  
+> Aucune fonctionnalité modifiée. Uniquement des corrections de bugs, risques et code mort.
+
+---
+
+### `client/src/pages/Dashboard.jsx` — 4 corrections
+
+- **FIX** Parsing JSX cassé : suppression du `</div>` orphelin ligne 521 — la page ne compilait plus.
+- **FIX** Filtre année : `new Date(f.dateVente||f.createdAt).getUTCFullYear()` → `||Date.now()` ajouté — les fiches sans date valide ne disparaissent plus du filtre.
+- **NETTOYAGE** `useRef` supprimé de l'import (jamais utilisé dans le composant).
+- **NETTOYAGE** Commentaire ligne 9 corrigé : `GET /api/stats` remplacé par `GET /api/solution-express + GET /api/settings` (l'endpoint `/api/stats` n'était pas monté).
+
+---
+
+### `client/src/pages/Pipeline.jsx` — 4 corrections
+
+- **FIX** Refresh automatique : ajout d'un listener `visibilitychange` — Pipeline se rafraîchit dès que l'utilisateur revient sur l'onglet (avant : les changements de statut faits dans SolutionExpress n'étaient jamais visibles sans rechargement complet).
+- **FIX** Filtre année : `||Date.now()` ajouté (même correction que Dashboard).
+- **NETTOYAGE** `Promise.all([api.get(...)])` avec un seul élément simplifié en `await api.get(...)`.
+- **NETTOYAGE** Variable `isSE` (toujours `true`) supprimée, condition simplifiée directement.
+
+---
+
+### `client/src/pages/Commissions.jsx` — 3 corrections
+
+- **FIX** Graphique trompeur : quand filtre = "Toutes les années", les mois de 2024 et 2025 étaient additionnés dans la même barre "Jan". Corrigé : graphique **par année** si filtre = "tout", **par mois** si année précise sélectionnée.
+- **FIX** `enAttente` pouvait être négatif (`-0.00 TND`) sur des valeurs décimales. Corrigé : `Math.max(0, totalGagne - totalPaye)`.
+- **PERF** `annees` wrappé dans `useMemo([fiches])` — plus recalculé sur chaque render.
+
+---
+
+### `client/src/pages/SolutionExpress.jsx` — 8 corrections
+
+- **FIX** Filtre année : `||Date.now()` ajouté dans `fichesByAnnee`.
+- **FIX** Settings non rechargés au retour : ajout de `visibilitychange` sur le fetch settings — si l'utilisateur modifie Paramètres et revient, les dropdowns (ville, typeCommerce, services...) se rechargent automatiquement.
+- **FIX** `addNote` et `deleteNote` envoyaient `{ ...p, notes }` (toute la fiche). Corrigé : envoi uniquement de `{ notes: updatedNotes }`.
+- **FIX** `changeStatus` envoyait `{ ...p, status }` (toute la fiche). Corrigé : envoi uniquement de `{ status: newStatus }`.
+- **FIX** `handleSubmit` : `fetchFiches()` sans `await` → `await fetchFiches()`.
+- **FIX** `handleDelete` : `fetchFiches()` sans `await` → `await fetchFiches()`.
+- **FIX** `addNote` : `fetchFiches()` sans `await` → `await fetchFiches()`.
+- **FIX** `deleteNote` : `fetchFiches()` sans `await` → `await fetchFiches()`.
+- **NETTOYAGE** `TYPE_COMMERCE_LABELS` (18 entrées avec de mauvaises clés) remplacé par `{}` — en cas d'échec de l'API settings, le dropdown est vide (honnête) au lieu d'afficher de faux labels.
+
+---
+
+### `client/src/pages/Database.jsx` — 1 correction
+
+- **FIX** Filtre année : `||Date.now()` ajouté dans `fichesByAnnee`.
+
+---
+
+### `client/src/components/AnimatedNumber.jsx` — 1 correction
+
+- **FIX** Fuite mémoire : le `requestAnimationFrame` continuait de tourner après le démontage du composant. Corrigé : ajout de `cancelAnimationFrame(rafId)` dans le cleanup du `useEffect`.
+
+---
+
+### `server/routes/Solutionexpress.js` — 1 correction
+
+- **FIX** `findByIdAndUpdate` sans `runValidators: true` — les validations enum du schéma Mongoose étaient ignorées sur les mises à jour. Corrigé : `{ new: true, runValidators: true }`.
+
+---
+
+### `server/routes/settings.js` — 1 correction
+
+- **SÉCURITÉ** Le `PUT /api/settings` acceptait n'importe quel champ dans le body. Corrigé : whitelist explicite — seuls les 5 champs légitimes sont acceptés (`villes`, `typeCommerce`, `typeLead`, `qualificationSysteme`, `services`).
+
+---
+
+### `server/routes/stats.js` — SUPPRIMÉ
+
+- **SUPPRIMÉ** Fichier entier (132 lignes). Routes complètes jamais montées dans `server.js` (aucune ligne `app.use('/api/stats', ...)` n'existait). Aucun frontend n'appelait ces routes. Code mort total.
+
+---
+
+### État final après corrections
+
+| Catégorie | État |
+|---|---|
+| Données réelles depuis DB | ✅ Toutes les pages |
+| Propagation Paramètres vers dropdowns | ✅ Au retour sur l'onglet |
+| Refresh automatique (visibilitychange) | ✅ Pipeline + SolutionExpress + Dashboard |
+| Graphiques corrects (Commissions) | ✅ Par année / par mois selon filtre |
+| Validation serveur sur PUT | ✅ runValidators actif |
+| Sécurité settings PUT | ✅ Whitelist 5 champs |
+| Race conditions fetch | ✅ Tous les fetchFiches() awaités |
+| Code mort | ✅ Supprimé (stats.js + variables inutiles) |
+| Fuite mémoire RAF | ✅ cancelAnimationFrame au démontage |
+| Imports inutiles | ✅ Nettoyés (useRef Dashboard) |
+| enAttente négatif | ✅ Math.max(0, ...) |
+| Fiches disparaissant sur filtre année | ✅ Fallback Date.now() sur 4 fichiers |
+
+---
+
 *Ce rapport couvre l'intégralité du code source au 2026-05-16.*
 *Toute modification majeure doit être reflétée ici.*
