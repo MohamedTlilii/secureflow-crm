@@ -731,14 +731,16 @@ export default function Dashboard() {
             const name      = p.entreprise||`${p.prenom||''} ${p.nom||''}`.trim()||'Sans nom';
             const ini       = (name[0]||'?').toUpperCase();
             const statColor = STATUS_COLORS[p.status]||'#8b8b9e';
+            const annulee   = p.status === 'installation_annulee';
             return (
-              <div key={i} style={{ display:'flex', alignItems:'center', gap: isMobile?10:12, padding:'10px 0', borderBottom:i<recentProspects.length-1?'1px solid var(--border)':'none', transition:'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background='var(--bg-secondary)'; e.currentTarget.style.borderRadius='8px'; e.currentTarget.style.padding='10px 8px'; }}
-                onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.padding='10px 0'; }}>
+              <div key={i} style={{ display:'flex', alignItems:'center', gap: isMobile?10:12, padding:'10px 0', borderBottom:i<recentProspects.length-1?'1px solid var(--border)':'none', transition:'all 0.15s', background: annulee?'rgba(190,18,60,0.04)':'transparent', borderRadius: annulee?8:0 }}
+                onMouseEnter={e => { e.currentTarget.style.background= annulee?'rgba(190,18,60,0.08)':'var(--bg-secondary)'; e.currentTarget.style.borderRadius='8px'; e.currentTarget.style.padding='10px 8px'; }}
+                onMouseLeave={e => { e.currentTarget.style.background= annulee?'rgba(190,18,60,0.04)':'transparent'; e.currentTarget.style.borderRadius= annulee?'8px':'0'; e.currentTarget.style.padding='10px 0'; }}>
                 <div className={`avatar ${avs[i%avs.length]}`} style={{ width:36, height:36, fontSize:13, flexShrink:0 }}>{ini}</div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:13, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{name}</div>
+                  <div style={{ fontSize:13, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', color: annulee?'#be123c':undefined }}>{name}</div>
                   <div style={{ fontSize:11, color:'#ffffff' }}>{p.ville||'—'} · {new Date(p.createdAt).toLocaleDateString('fr-CA')}</div>
+                  {annulee && p.motifAnnulation && <div style={{ fontSize:10, color:'#be123c', marginTop:1 }}>✕ {p.motifAnnulation}</div>}
                 </div>
                 <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'rgba(18,183,106,0.1)', color:'#12b76a', flexShrink:0 }}>🏢</span>
                 <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:`${statColor}15`, color:statColor, flexShrink:0 }}>{STATUS_LABELS_FR[p.status]||p.status}</span>

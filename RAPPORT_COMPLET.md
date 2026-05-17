@@ -1333,3 +1333,54 @@ try {
 
 *Ce rapport couvre l'intégralité du code source au 2026-05-17 (session 2).*
 *Toute modification majeure doit être reflétée ici.*
+
+---
+
+## 20. CHANGELOG — MODIFICATIONS 2026-05-17 (session 3)
+
+> **Session** : graphique commissions par fiche, leads récents rouge, fixes visibilitychange, montantContrat EMPTY_FORM.
+
+---
+
+### `client/src/pages/Dashboard.jsx` — 1 modification
+
+- **AJOUT** Section "Leads récents" : les fiches avec `status === 'installation_annulee'` affichent maintenant un fond rouge (`rgba(190,18,60,0.04)`), le nom en rouge, et le motif d'annulation en dessous (`✕ motif`). Avant : apparence identique aux fiches actives.
+
+---
+
+### `client/src/pages/Commissions.jsx` — 1 modification
+
+- **CHANGEMENT** Graphique "Commissions par mois" : en mode année précise sélectionnée, le graphique passe d'une vue **par mois** (12 barres Jan→Déc) à une vue **par fiche individuelle** (1 barre par fiche, triées par date). Chaque barre est colorée en **vert** (installé) ou **rouge** (annulée). L'axe X affiche la date (`15 Avr`, `20 Mai`). Tooltip : nom complet, montant, statut, motif si annulée, payé ou non. En mode "Toutes les années" : comportement inchangé (1 barre par année).
+
+---
+
+### `client/src/pages/SolutionExpress.jsx` — 2 modifications
+
+- **FIX** visibilitychange listener : au retour sur l'onglet, `fetchFiches()` est maintenant appelé en plus de `loadSettings()`. Avant : seuls les settings se rafraîchissaient — les fiches restaient obsolètes si modifiées depuis une autre page.
+- **FIX** EMPTY\_FORM : ajout de `montantContrat: 0` — alignement exact avec le schéma Mongoose. Le champ existait dans le schéma mais était absent du formulaire.
+
+---
+
+### `client/src/pages/Pipeline.jsx` — 1 modification
+
+- **FIX** visibilitychange listener : `loadSettings()` est maintenant appelé en plus de `fetchAll()`. Avant : les settings (notamment `motifsAnnulation`) ne se rafraîchissaient pas au retour sur l'onglet — un motif ajouté dans Paramètres n'apparaissait pas dans le modal d'annulation jusqu'au rechargement complet.
+
+---
+
+### Audit final session 3 — résultat
+
+| Vérification | Résultat |
+|---|---|
+| Leads récents annulées en rouge | ✅ Fond rouge + motif affiché |
+| Graphique Commissions par fiche | ✅ 1 barre/fiche, vert/rouge, date X-axis |
+| visibilitychange SolutionExpress | ✅ Recharge fiches + settings |
+| visibilitychange Pipeline | ✅ Recharge fiches + settings |
+| EMPTY\_FORM ↔ schéma Mongoose | ✅ Exact match (montantContrat ajouté) |
+| Toutes les pages | ✅ Données 100% depuis API, zéro hardcode |
+| Code mort | ✅ Zéro |
+| Race conditions | ✅ Zéro |
+
+---
+
+*Ce rapport couvre l'intégralité du code source au 2026-05-17 (session 3).*
+*Toute modification majeure doit être reflétée ici.*

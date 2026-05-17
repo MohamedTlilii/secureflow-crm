@@ -81,8 +81,9 @@ export default function Pipeline() {
 
   useEffect(() => {
     fetchAll();
-    api.get('/api/settings').then(r => setSettings(r.data || { services: [] })).catch(() => {});
-    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll(); };
+    const loadSettings = () => api.get('/api/settings').then(r => setSettings(r.data || { services: [] })).catch(() => {});
+    loadSettings();
+    const onVisible = () => { if (document.visibilityState === 'visible') { fetchAll(); loadSettings(); } };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [fetchAll]);

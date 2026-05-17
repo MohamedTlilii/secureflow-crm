@@ -234,6 +234,7 @@ const EMPTY_FORM = {
   equipements:  {},
   status:'new', urgencyScore:0, summary:'',
   motifAnnulation:'',
+  montantContrat:0,
   commissionFixe:0, commissionExtra:0,
   commissionTotale:0, commissionPayee:false,
   dateVente:'', datePaiementCommission:'',
@@ -358,7 +359,7 @@ export default function SolutionExpress() {
   useEffect(() => {
     const loadSettings = () => api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
     loadSettings();
-    const onVisible = () => { if (document.visibilityState === 'visible') loadSettings(); };
+    const onVisible = () => { if (document.visibilityState === 'visible') { loadSettings(); fetchFiches(); } };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);

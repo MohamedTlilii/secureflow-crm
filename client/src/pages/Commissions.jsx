@@ -232,18 +232,30 @@ export default function Commissions() {
   // % payé pour la barre de progression dans le header
   const pctPaye = totalGagne > 0 ? Math.round((totalPaye / totalGagne) * 100) : 0;
 
-  // Graphique : par année si "tout", par mois si année précise
-  const MOIS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  // Graphique : par année si "tout", une barre par fiche si année précise
+  const MOIS_COURT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
   const YEAR_COLORS = ['#12b76a','#3b6cf8','#f79009','#a764f8','#f04438','#61DAFB','#f97316'];
   const chartData = annee === 'tout'
     ? annees.map((yr, i) => {
         const yrFiches = filtered.filter(c => new Date(c.dateVente || c.createdAt).getUTCFullYear() === yr);
         return { name: String(yr), total: yrFiches.reduce((s,c) => s + (c.commissionTotale||0), 0), count: yrFiches.length, color: YEAR_COLORS[i % YEAR_COLORS.length] };
       })
-    : MOIS.map((name, idx) => {
-        const moisFiches = filtered.filter(c => new Date(c.dateVente || c.createdAt).getUTCMonth() === idx);
-        return { name, total: moisFiches.reduce((s,c) => s + (c.commissionTotale||0), 0), count: moisFiches.length };
-      });
+    : [...filtered]
+        .sort((a,b) => new Date(a.dateVente||a.createdAt) - new Date(b.dateVente||b.createdAt))
+        .map(c => {
+          const d       = new Date(c.dateVente || c.createdAt);
+          const label   = `${d.getUTCDate()} ${MOIS_COURT[d.getUTCMonth()]}`;
+          const annulee = c.status === 'installation_annulee';
+          return {
+            name:    label,
+            total:   c.commissionTotale || 0,
+            color:   annulee ? '#be123c' : '#12b76a',
+            annulee,
+            fullNom: c.entreprise || `${c.prenom||''} ${c.nom||''}`.trim() || '?',
+            motif:   c.motifAnnulation || '',
+            payee:   c.commissionPayee,
+          };
+        });
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', flexDirection:'column', gap:16 }}>
@@ -433,20 +445,24 @@ export default function Commissions() {
                 const d = payload[0].payload;
                 if (!d.total) return null;
                 return (
-                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px', fontSize:12 }}>
-                    <div style={{ color:'#12b76a', fontWeight:700, marginBottom:4 }}>{fmtMoney(d.total)}</div>
-                    <div style={{ color:'#ffffff' }}>{d.count} installation{d.count > 1 ? 's' : ''}</div>
+                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px', fontSize:12, maxWidth:200 }}>
+                    {annee !== 'tout' && <div style={{ color:'var(--text-primary)', fontWeight:700, marginBottom:4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{d.fullNom}</div>}
+                    <div style={{ color: d.color || '#12b76a', fontWeight:700, marginBottom:4 }}>{fmtMoney(d.total)}</div>
+                    {annee !== 'tout' ? (
+                      <>
+                        <div style={{ color: d.annulee ? '#be123c' : '#12b76a' }}>{d.annulee ? '❌ Annulée' : '✅ Installé'}</div>
+                        {d.annulee && d.motif && <div style={{ color:'#be123c', fontSize:11, marginTop:2 }}>✕ {d.motif}</div>}
+                        <div style={{ color: d.payee ? '#12b76a' : '#f79009', fontSize:11, marginTop:2 }}>{d.payee ? '✓ Payée' : '⏳ Non payée'}</div>
+                      </>
+                    ) : (
+                      <div style={{ color:'#ffffff' }}>{d.count} installation{d.count > 1 ? 's' : ''}</div>
+                    )}
                   </div>
                 );
               }}
               cursor={{ fill:'rgba(255,255,255,0.04)' }}/>
-            <Bar dataKey="total" radius={[6,6,0,0]}
-              label={{ content: ({ x, y, width, value, index }) => {
-                const c = chartData[index]?.count;
-                if (!c) return null;
-                return <text x={x + width / 2} y={y - 4} textAnchor="middle" fill="#ffffff" fontSize={10} fontWeight={700}>{c}</text>;
-              }}}>
-              {chartData.map((e,i) => <Cell key={i} fill={e.total > 0 ? (e.color || '#12b76a') : 'var(--bg-secondary)'}/>)}
+            <Bar dataKey="total" radius={[6,6,0,0]}>
+              {chartData.map((e,i) => <Cell key={i} fill={e.total > 0 ? (e.color || '#12b76a') : 'rgba(255,255,255,0.06)'}/>)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
