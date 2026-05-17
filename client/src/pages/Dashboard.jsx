@@ -93,7 +93,7 @@ export default function Dashboard() {
   const [loading, setLoading]         = useState(true);
   const [seFiches, setSeFiches]       = useState([]);
   const [settings, setSettings]       = useState({ services: [] });
-  const [anneeGlobal, setAnneeGlobal] = useState('tout');
+  const [anneeGlobal, setAnneeGlobal] = useState(String(new Date().getFullYear()));
   const [commFiltre, setCommFiltre]   = useState('tout');
 
   // ── Fetch données ─────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ export default function Dashboard() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [fetchAll]);
 
-  // ── Lookups dynamiques depuis settings ────────────────────────────────
+// ── Lookups dynamiques depuis settings ────────────────────────────────
   const qualifLbl = useMemo(() =>
     Object.fromEntries((settings.qualificationSysteme||[]).map(q => [q.key, q.label])),
     [settings.qualificationSysteme]
@@ -149,8 +149,9 @@ export default function Dashboard() {
     </div>
   );
 
-  // ── Années disponibles selon données réelles ──────────────────────────
-  const annees = [...new Set(seFiches.map(f => new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()))].sort((a,b) => b-a);
+  // ── Années disponibles — toujours inclure l'année courante ───────────
+  const currentYear = new Date().getFullYear();
+  const annees = [...new Set([currentYear, ...seFiches.map(f => new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear())])].sort((a,b) => b-a);
 
   // ── Fiches filtrées par année globale ─────────────────────────────────
   const fiches = anneeGlobal === 'tout'

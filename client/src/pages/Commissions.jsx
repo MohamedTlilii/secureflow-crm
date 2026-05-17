@@ -162,7 +162,7 @@ export default function Commissions() {
   const [fiches, setFiches]                 = useState([]);
   const [loading, setLoading]               = useState(true);
   const [filtre, setFiltre]                 = useState('tout');
-  const [annee, setAnnee]                   = useState('tout');
+  const [annee, setAnnee]                   = useState(String(new Date().getFullYear()));
   const [selectedDate, setSelectedDate]     = useState(null);
   const [selectedVentes, setSelectedVentes] = useState([]);
   const [resumeFiche, setResumeFiche]       = useState(null);
@@ -208,10 +208,10 @@ export default function Commissions() {
   };
 
   // Années dynamiques — seulement celles qui ont des données
-  const annees = useMemo(() =>
-    [...new Set(fiches.map(c => new Date(c.dateVente || c.createdAt || Date.now()).getUTCFullYear()))].sort((a,b) => b-a),
-    [fiches]
-  );
+  const annees = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return [...new Set([currentYear, ...fiches.map(c => new Date(c.dateVente || c.createdAt || Date.now()).getUTCFullYear())])].sort((a,b) => b-a);
+  }, [fiches]);
 
   // Filtrage
   const filtered = fiches.filter(c => {
@@ -297,10 +297,16 @@ export default function Commissions() {
                 </button>
               ))}
             </div>
+            {/* Date courante — desktop seulement */}
+            {!isMobile && (
+              <div style={{ fontSize:12, color:'#efefef', background:'var(--bg-card)', padding:'6px 14px', borderRadius:8, border:'1px solid var(--border)', textTransform:'capitalize' }}>
+                {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+              </div>
+            )}
             {/* Année */}
             <select value={annee} onChange={e => setAnnee(e.target.value)}
               style={{ fontSize:12, padding:'7px 12px', borderRadius:9, border:'1px solid rgba(18,183,106,0.25)', background:'var(--bg-card)', color:'var(--text-primary)', cursor:'pointer', outline:'none', fontWeight:700 }}>
-              <option value="tout">Toutes</option>
+              <option value="tout">Toutes les années</option>
               {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}
             </select>
           </div>
