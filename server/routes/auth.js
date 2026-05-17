@@ -75,7 +75,7 @@ router.get('/me', auth, (req, res) => {
 
   // Extra avatar sanitization — catches any bad values that slipped past the model setter
   // Add more invalid patterns here if needed
-  if (!user.avatar || user.avatar === 'https://freepik.com' || !user.avatar.startsWith('https://img')) {
+  if (!user.avatar || user.avatar === 'https://freepik.com' || !user.avatar.startsWith('http')) {
     user.avatar = DEFAULT_AVATAR; // ← Change DEFAULT_AVATAR at the top to update fallback
   }
 

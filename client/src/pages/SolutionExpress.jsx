@@ -393,13 +393,12 @@ export default function SolutionExpress() {
     }));
   }, [settings]);
 
-  // eslint-disable-next-line no-inner-declarations
-  function getFournLabel(svcId, val) {
+  const getFournLabel = (svcId, val) => {
     if (!val || val === 'inconnu' || val === 'aucun') return null;
     const svc = dServices.find(s => s.id === svcId);
     if (!svc) return val;
     return svc.actuelMap[val] || svc.proposeMap[val] || val;
-  }
+  };
 
   // ── Fetch toutes les fiches ───────────────────────────────────────────
   const fetchFiches = useCallback(async () => {

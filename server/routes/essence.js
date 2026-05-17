@@ -52,17 +52,12 @@ router.get('/', auth, async (req, res) => {
 });
 
 // ─── GET /api/essence/annees  → liste des années disponibles ─────────────────
-router.get('/annees', auth, async (req, res) => {
-  try {
-    const currentYear = new Date().getFullYear();
-    // Années dynamiques depuis 2026 jusqu'à l'année actuelle
-    const annees = [];
-    const startYear = 2026;
-    for (let y = startYear; y <= currentYear; y++) annees.push(y);
-    res.json(annees);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+router.get('/annees', auth, (req, res) => {
+  const currentYear = new Date().getFullYear();
+  const annees = [];
+  const startYear = 2026;
+  for (let y = startYear; y <= currentYear; y++) annees.push(y);
+  res.json(annees);
 });
 
 // ─── GET /api/essence/stats?annee=2026  → stats rapides ─────────────────────

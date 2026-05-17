@@ -92,7 +92,7 @@ export default function Pipeline() {
   );
 
   // ── Drag & Drop ───────────────────────────────────────────────────────
-  const onDragStart = (e, id, source, item) => {
+  const onDragStart = (e, id, source) => {
     e.dataTransfer.setData('itemId', id);
     e.dataTransfer.setData('itemSource', source);
     setDragging(id);
@@ -306,7 +306,7 @@ const updateStatus = async (item, targetStage) => {
                     return (
                       <div key={p._id}
                         draggable
-                        onDragStart={e => onDragStart(e, p._id, p.source, p)}
+                        onDragStart={e => onDragStart(e, p._id, p.source)}
                         onDragEnd={onDragEnd}
                         style={{
                           background:'rgba(4,10,24,0.97)',
