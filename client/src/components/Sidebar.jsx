@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Kanban, LogOut, Database, Building2, Wallet, Fuel, Settings } from 'lucide-react';
+import { LayoutDashboard, Kanban, LogOut, Database, Building2, Wallet, Fuel, Settings, Calendar, TrendingUp, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../api';
 import toast from 'react-hot-toast';
 
 const NAV = [
@@ -28,11 +29,70 @@ export default function Sidebar() {
   const { user, logout }  = useAuth();
   const navigate          = useNavigate();
   const isMobile          = useIsMobile();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded]           = useState(false);
+  const [showProfile, setShowProfile]     = useState(false);
+  const [stats, setStats]                 = useState(null);
+  const [showAnniv, setShowAnniv]         = useState(false);
+  const avatarRef                         = useRef(null);
+  const panelRef                          = useRef(null);
 
   const handleLogout = () => { logout(); toast.success('Déconnecté'); navigate('/login'); };
 
-  const w = expanded ? '240px' : '70px';
+  // Fermer sidebar quand le modal anniv est ouvert
+  useEffect(() => { if (showAnniv) setExpanded(false); }, [showAnniv]);
+
+  // Félicitations anniversaire — une seule fois par an
+  useEffect(() => {
+    const today = new Date();
+    if (today.getMonth() !== 5 || today.getDate() !== 15) return; // 15 juin uniquement
+    const key = `sf_anniv_${today.getFullYear()}`;
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+    setTimeout(() => setShowAnniv(true), 1200); // petit délai au chargement
+  }, []);
+
+  // Reset cache stats à chaque fermeture pour toujours avoir des données fraîches
+  useEffect(() => { if (!showProfile) setStats(null); }, [showProfile]);
+
+  // Fermer le panel au clic extérieur (ni avatar, ni panel)
+  useEffect(() => {
+    if (!showProfile) return;
+    const handler = (e) => {
+      if (
+        avatarRef.current && !avatarRef.current.contains(e.target) &&
+        panelRef.current  && !panelRef.current.contains(e.target)
+      ) setShowProfile(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showProfile]);
+
+  const DEBUT = new Date('2025-06-15');
+
+  // Charger les stats SE quand on ouvre le panel
+  useEffect(() => {
+    if (!showProfile || stats) return;
+    api.get('/api/solution-express').then(res => {
+      const fiches = res.data || [];
+      if (!fiches.length) { setStats({}); return; }
+      const totalPaye  = fiches.filter(f => f.commissionPayee).reduce((s, f) => s + (f.commissionTotale || 0), 0);
+      const enAttente  = fiches.filter(f => !f.commissionPayee && (f.commissionTotale || 0) > 0).reduce((s, f) => s + (f.commissionTotale || 0), 0);
+      setStats({ total: fiches.length, totalPaye, enAttente });
+    }).catch(() => setStats({}));
+  }, [showProfile]);
+
+  const fmtDebut = (d) =>
+    d.toLocaleDateString('fr-CA', { day:'numeric', month:'long', year:'numeric' });
+
+  const anciennete = () => {
+    const diff = Math.floor((Date.now() - DEBUT) / 86400000);
+    if (diff < 30)  return { label:`${diff} jour${diff>1?'s':''}`,      suffix:"d'activité" };
+    if (diff < 365) return { label:`${Math.floor(diff/30)} mois`,        suffix:"d'activité" };
+    const y = Math.floor(diff/365);
+    return { label:`${y} ans`, suffix:'dans le poste' };
+  };
+
+  const w = (expanded && !showAnniv) ? '240px' : '70px';
   document.documentElement.style.setProperty('--sidebar-w', isMobile ? '0px' : w);
 
   // ── MOBILE — bottom nav ──────────────────────────────────────────────────
@@ -88,8 +148,9 @@ export default function Sidebar() {
 
   // ── DESKTOP — collapsible sidebar ────────────────────────────────────────
   return (
+    <>
     <aside
-      onMouseEnter={() => setExpanded(true)}
+      onMouseEnter={() => { if (!showAnniv) setExpanded(true); }}
       onMouseLeave={() => setExpanded(false)}
       style={{
         width: w,
@@ -213,16 +274,20 @@ export default function Sidebar() {
       <div style={{ padding:'12px 9px', borderTop:'1px solid rgba(255,255,255,0.05)', flexShrink:0 }}>
 
         {/* Avatar card */}
-        <div style={{
-          display:'flex', alignItems:'center', gap:10,
-          padding:'9px 11px', borderRadius:10,
-          background:'rgba(16,185,129,0.06)',
-          border:`1px solid ${expanded ? 'rgba(16,185,129,0.18)' : 'rgba(16,185,129,0.1)'}`,
-          marginBottom:6,
-          transition:'border-color 0.25s, box-shadow 0.25s',
-          boxShadow: expanded ? '0 2px 16px rgba(16,185,129,0.1)' : 'none',
-          overflow:'hidden'
-        }}>
+        <div ref={avatarRef} onClick={() => setShowProfile(p => !p)}
+          style={{
+            display:'flex', alignItems:'center', gap:10,
+            padding:'9px 11px', borderRadius:10,
+            background: showProfile ? 'rgba(18,183,106,0.1)' : 'rgba(16,185,129,0.06)',
+            border:`1px solid ${showProfile ? 'rgba(18,183,106,0.35)' : expanded ? 'rgba(16,185,129,0.18)' : 'rgba(16,185,129,0.1)'}`,
+            marginBottom:6,
+            transition:'all 0.2s',
+            boxShadow: showProfile ? '0 0 20px rgba(18,183,106,0.15)' : expanded ? '0 2px 16px rgba(16,185,129,0.1)' : 'none',
+            overflow:'hidden',
+            cursor:'pointer',
+          }}
+          onMouseEnter={e => { if(!showProfile){ e.currentTarget.style.background='rgba(18,183,106,0.09)'; e.currentTarget.style.borderColor='rgba(18,183,106,0.25)'; }}}
+          onMouseLeave={e => { if(!showProfile){ e.currentTarget.style.background='rgba(16,185,129,0.06)'; e.currentTarget.style.borderColor=expanded?'rgba(16,185,129,0.18)':'rgba(16,185,129,0.1)'; }}}>
           <img src="/logo.jpg" alt="Logo"
             style={{ minWidth:30, height:30, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'1.5px solid rgba(16,185,129,0.3)' }}/>
           <div style={{
@@ -233,7 +298,7 @@ export default function Sidebar() {
             pointerEvents: expanded ? 'auto' : 'none'
           }}>
             <div style={{ fontSize:12.5, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', color:'var(--text-primary)' }}>{user?.name}</div>
-            <div style={{ fontSize:10.5, color:'var(--text-muted)', textTransform:'capitalize', marginTop:1 }}>{user?.role}</div>
+            <div style={{ fontSize:10.5, color:'#12b76a', fontWeight:600, textTransform:'capitalize', marginTop:1 }}>{user?.role}</div>
           </div>
         </div>
 
@@ -262,6 +327,131 @@ export default function Sidebar() {
           </span>
         </button>
       </div>
+
+      <style>{`
+        @keyframes profileSlideUp {
+          from { opacity:0; transform:translateY(10px) scale(0.97); }
+          to   { opacity:1; transform:translateY(0)    scale(1);    }
+        }
+      `}</style>
     </aside>
+
+    {/* ── Profile panel — fixed, indépendant de la sidebar ────────────── */}
+    {showProfile && (
+      <div ref={panelRef} style={{
+        position:'fixed', bottom:88, left:9, width:222, maxWidth:'calc(100vw - 18px)',
+        background:'rgba(3,8,26,0.98)',
+        border:'1px solid rgba(18,183,106,0.25)',
+        borderRadius:16,
+        boxShadow:'0 -8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(18,183,106,0.08)',
+        backdropFilter:'blur(32px)',
+        overflow:'hidden',
+        animation:'profileSlideUp 0.22s cubic-bezier(0.34,1.56,0.64,1) both',
+        zIndex:300
+      }}>
+        {/* Header */}
+        <div style={{ background:'linear-gradient(135deg,rgba(18,183,106,0.12),transparent)', padding:'18px 16px 14px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', gap:12 }}>
+          <img src="/logo.jpg" alt="Logo" style={{ width:46, height:46, borderRadius:12, objectFit:'cover', border:'2px solid rgba(18,183,106,0.4)', boxShadow:'0 0 16px rgba(18,183,106,0.25)', flexShrink:0 }}/>
+          <div style={{ minWidth:0, flex:1 }}>
+            <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name}</div>
+            <div style={{ fontSize:11, color:'#12b76a', fontWeight:600, textTransform:'capitalize', marginTop:2 }}>{user?.role}</div>
+          </div>
+          <button onClick={() => setShowProfile(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.3)', padding:4, borderRadius:6, flexShrink:0, display:'flex', alignItems:'center' }}
+            onMouseEnter={e=>e.currentTarget.style.color='#fff'}
+            onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.3)'}>
+            <X size={13}/>
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, background:'rgba(18,183,106,0.06)', border:'1px solid rgba(18,183,106,0.12)' }}>
+            <div style={{ width:30, height:30, borderRadius:8, background:'rgba(18,183,106,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <Calendar size={14} color="#12b76a"/>
+            </div>
+            <div style={{ minWidth:0 }}>
+              <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
+              <div style={{ fontSize:12.5, color:'var(--text-primary)', fontWeight:700, marginTop:2 }}>{fmtDebut(DEBUT)}</div>
+              <div style={{ fontSize:10.5, color:'#12b76a', marginTop:1 }}>{anciennete().label} {anciennete().suffix}</div>
+            </div>
+          </div>
+
+          {stats && (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {[
+                { label:'✓ Payé',        value:`${(stats.totalPaye||0).toFixed(0)} TND`,  color:'#12b76a', bg:'rgba(18,183,106,0.06)',  border:'rgba(18,183,106,0.15)' },
+                { label:'⏳ En attente', value:`${(stats.enAttente||0).toFixed(0)} TND`, color:'#f79009', bg:'rgba(247,144,9,0.06)',   border:'rgba(247,144,9,0.15)'  },
+              ].map(s => (
+                <div key={s.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', borderRadius:9, background:s.bg, border:`1px solid ${s.border}` }}>
+                  <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', fontWeight:600 }}>{s.label}</div>
+                  <div style={{ fontSize:14, fontWeight:800, color:s.color }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* ── Modal félicitations anniversaire ─────────────────────────────── */}
+    {showAnniv && (() => {
+      const years = new Date().getFullYear() - 2025;
+      return (
+        <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:20, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', animation:'annexFadeIn 0.3s ease both' }}>
+          <div style={{ position:'relative', background:'rgba(3,8,26,0.98)', borderRadius:24, maxWidth:420, width:'100%', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(18,183,106,0.2)', animation:'annexPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both' }}>
+
+            {/* Confettis CSS */}
+            <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
+              {['#12b76a','#f79009','#818cf8','#38bdf8','#f04438','#a764f8'].map((c,i) => (
+                <div key={i} style={{ position:'absolute', top:'-10%', left:`${10+i*15}%`, width:8, height:8, borderRadius:i%2?'50%':3, background:c, animation:`confetti${i} ${1.8+i*0.3}s ease-in ${i*0.15}s infinite`, opacity:0.8 }}/>
+              ))}
+            </div>
+
+            {/* Header doré */}
+            <div style={{ background:'linear-gradient(135deg,rgba(18,183,106,0.18),rgba(247,144,9,0.1),transparent)', padding:'36px 28px 24px', textAlign:'center', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontSize:52, marginBottom:12, animation:'bounceEmoji 1s ease infinite alternate' }}>🎉</div>
+              <div style={{ fontSize:11, fontWeight:700, color:'#f79009', textTransform:'uppercase', letterSpacing:2, marginBottom:8 }}>Félicitations</div>
+              <h2 style={{ margin:'0 0 6px', fontSize:22, fontWeight:800, background:'linear-gradient(135deg,#e8fff5,#12b76a,#f79009)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+                {user?.name} !
+              </h2>
+              <div style={{ fontSize:15, color:'rgba(255,255,255,0.75)', fontWeight:500 }}>
+                Aujourd'hui tu célèbres
+              </div>
+              <div style={{ fontSize:32, fontWeight:900, color:'#12b76a', margin:'10px 0 4px', textShadow:'0 0 30px rgba(18,183,106,0.5)' }}>
+                {years} ans
+              </div>
+              <div style={{ fontSize:14, color:'rgba(255,255,255,0.6)' }}>dans le poste 🚀</div>
+            </div>
+
+            {/* Corps */}
+            <div style={{ padding:'22px 28px 28px', textAlign:'center' }}>
+              <div style={{ fontSize:13.5, color:'rgba(255,255,255,0.65)', lineHeight:1.7, marginBottom:22 }}>
+                Une année de terrain, de clients, de commissions et de persévérance.<br/>
+                <span style={{ color:'#12b76a', fontWeight:600 }}>Continue comme ça, c'est du solide. 💪</span>
+              </div>
+              <button onClick={() => setShowAnniv(false)}
+                style={{ width:'100%', padding:'13px', borderRadius:14, border:'none', cursor:'pointer', fontSize:14, fontWeight:700, background:'linear-gradient(135deg,#12b76a,#0ea472)', color:'#fff', boxShadow:'0 4px 20px rgba(18,183,106,0.35)', transition:'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.transform='scale(1.02)'; e.currentTarget.style.boxShadow='0 6px 28px rgba(18,183,106,0.5)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform='scale(1)';    e.currentTarget.style.boxShadow='0 4px 20px rgba(18,183,106,0.35)'; }}>
+                Merci 🙏
+              </button>
+            </div>
+          </div>
+
+          <style>{`
+            @keyframes annexFadeIn { from{opacity:0} to{opacity:1} }
+            @keyframes annexPop    { from{opacity:0;transform:scale(0.8) translateY(30px)} to{opacity:1;transform:scale(1) translateY(0)} }
+            @keyframes bounceEmoji { from{transform:translateY(0)} to{transform:translateY(-8px)} }
+            @keyframes confetti0 { 0%{transform:translateY(0) rotate(0deg);opacity:0.8} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
+            @keyframes confetti1 { 0%{transform:translateY(0) rotate(0deg);opacity:0.8} 100%{transform:translateY(110vh) rotate(-540deg);opacity:0} }
+            @keyframes confetti2 { 0%{transform:translateY(0) rotate(0deg);opacity:0.8} 100%{transform:translateY(110vh) rotate(900deg);opacity:0} }
+            @keyframes confetti3 { 0%{transform:translateY(0) rotate(0deg);opacity:0.8} 100%{transform:translateY(110vh) rotate(-720deg);opacity:0} }
+            @keyframes confetti4 { 0%{transform:translateY(0) rotate(0deg);opacity:0.8} 100%{transform:translateY(110vh) rotate(540deg);opacity:0} }
+            @keyframes confetti5 { 0%{transform:translateY(0) rotate(0deg);opacity:0.8} 100%{transform:translateY(110vh) rotate(-900deg);opacity:0} }
+          `}</style>
+        </div>
+      );
+    })()}
+    </>
   );
 }

@@ -3,21 +3,24 @@
 // GET /api/database/stats — MongoDB storage + compteurs des vraies collections
 // ════════════════════════════════════════════════════════════════════════════
 
-const express  = require('express');
-const router   = express.Router();
-const mongoose = require('mongoose');
-const auth     = require('../middleware/auth');
+const express          = require('express');
+const router           = express.Router();
+const mongoose         = require('mongoose');
+const auth             = require('../middleware/auth');
+const SolutionExpress  = require('../models/Solutionexpress');
+const User             = require('../models/User');
+const Essence          = require('../models/Essence');
 
 // ── GET /api/database/stats ───────────────────────────────────────────────
 router.get('/stats', auth, async (req, res) => {
   try {
     const db = mongoose.connection.db;
 
-    // Collections réelles utilisées par l'application
+    // Utilise les modèles Mongoose pour avoir le bon nom de collection
     const [seCount, usersCount, essenceCount] = await Promise.all([
-      db.collection('solutionexpresses').countDocuments(),
-      db.collection('users').countDocuments(),
-      db.collection('essences').countDocuments(),
+      SolutionExpress.countDocuments(),
+      User.countDocuments(),
+      Essence.countDocuments(),
     ]);
 
     // Statistiques de stockage MongoDB

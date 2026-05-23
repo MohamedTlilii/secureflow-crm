@@ -25,11 +25,13 @@ const slugify = s =>
    .trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 
 const TABS = [
-  { id:'villes',        label:'Villes',        icon:MapPin,     color:'#38bdf8', simple:true  },
-  { id:'typeCommerce',  label:'Commerce',      icon:Building2,  color:'#f79009', simple:false },
-  { id:'typeLead',      label:'Lead',          icon:TrendingUp, color:'#a764f8', simple:false },
-  { id:'qualification', label:'Qualification', icon:Star,       color:'#f04438', simple:false },
-  { id:'services',      label:'Services',      icon:Shield,     color:'#6366f1', simple:false },
+  { id:'villes',          label:'Villes',               icon:MapPin,      color:'#38bdf8' },
+  { id:'typeCommerce',    label:'Commerce',             icon:Building2,   color:'#f79009' },
+  { id:'typeLead',        label:'Lead',                 icon:TrendingUp,  color:'#a764f8' },
+  { id:'qualification',   label:'Qualification',        icon:Star,        color:'#f04438' },
+  { id:'services',        label:'Services',             icon:Shield,      color:'#6366f1' },
+  { id:'objectifAnnuel',  label:'Objectif annuel',      icon:TrendingUp,  color:'#12b76a' },
+  { id:'motifsAnnulation',label:"Motifs d'annulation",  icon:AlertCircle, color:'#f04438' },
 ];
 
 const ICON_OPTIONS = [
@@ -183,9 +185,7 @@ function ObjectifSection({ objectifs, onAdd, onRemove }) {
         {entries.map(([yr, mt]) => (
           <div key={yr} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:10, background:'rgba(18,183,106,0.05)', border:'1px solid rgba(18,183,106,0.15)' }}>
             <div style={{ fontSize:13, fontWeight:700, color:'#12b76a', minWidth:40 }}>{yr}</div>
-            <div style={{ flex:1, height:5, borderRadius:3, background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
-              <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#3b6cf8,#12b76a)', width:'60%' }}/>
-            </div>
+            <div style={{ flex:1, height:5, borderRadius:3, background:'rgba(255,255,255,0.06)' }}/>
             <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{mt.toLocaleString()} TND</div>
             <button onClick={() => onRemove(yr)}
               style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.3)', padding:4, borderRadius:6, display:'flex', alignItems:'center', transition:'color 0.15s' }}
@@ -747,36 +747,26 @@ export default function Parametres() {
             isMobile={isMobile}
           />
         )}
-      </div>
 
-      {/* ── Objectif annuel ─────────────────────────────────────────────── */}
-      <div style={{ marginTop:16, background:'rgba(2,8,16,0.97)', borderRadius:18, padding: isMobile?'18px 16px':'24px 28px', border:'1px solid rgba(255,255,255,0.07)', backdropFilter:'blur(20px)', boxShadow:'0 4px 24px rgba(0,0,0,0.3)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-          <TrendingUp size={18} color="#12b76a"/>
-          <h2 style={{ margin:0, fontSize:16, fontWeight:700, color:'#12b76a' }}>Objectif annuel</h2>
-          <div style={{ flex:1, height:1, background:'linear-gradient(90deg,#12b76a40,transparent)' }}/>
-        </div>
-        <ObjectifSection
-          objectifs={typeof settings.objectifAnnuel === 'object' && !Array.isArray(settings.objectifAnnuel) ? settings.objectifAnnuel : {}}
-          onAdd={(annee, montant) => updateKey('objectifAnnuel', { ...(typeof settings.objectifAnnuel === 'object' && !Array.isArray(settings.objectifAnnuel) ? settings.objectifAnnuel : {}), [annee]: montant })}
-          onRemove={annee => { const next = { ...(typeof settings.objectifAnnuel === 'object' && !Array.isArray(settings.objectifAnnuel) ? settings.objectifAnnuel : {}) }; delete next[annee]; updateKey('objectifAnnuel', next); }}
-        />
-      </div>
+        {/* ── Objectif annuel ── */}
+        {activeTab === 'objectifAnnuel' && (
+          <ObjectifSection
+            objectifs={typeof settings.objectifAnnuel === 'object' && !Array.isArray(settings.objectifAnnuel) ? settings.objectifAnnuel : {}}
+            onAdd={(annee, montant) => updateKey('objectifAnnuel', { ...(typeof settings.objectifAnnuel === 'object' && !Array.isArray(settings.objectifAnnuel) ? settings.objectifAnnuel : {}), [annee]: montant })}
+            onRemove={annee => { const next = { ...(typeof settings.objectifAnnuel === 'object' && !Array.isArray(settings.objectifAnnuel) ? settings.objectifAnnuel : {}) }; delete next[annee]; updateKey('objectifAnnuel', next); }}
+          />
+        )}
 
-      {/* ── Motifs d'annulation ──────────────────────────────────────────── */}
-      <div style={{ marginTop:16, background:'rgba(2,8,16,0.97)', borderRadius:18, padding: isMobile?'18px 16px':'24px 28px', border:'1px solid rgba(255,255,255,0.07)', backdropFilter:'blur(20px)', boxShadow:'0 4px 24px rgba(0,0,0,0.3)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-          <AlertCircle size={18} color="#f04438"/>
-          <h2 style={{ margin:0, fontSize:16, fontWeight:700, color:'#f04438' }}>Motifs d'annulation</h2>
-          <div style={{ flex:1, height:1, background:'linear-gradient(90deg,#f0443840,transparent)' }}/>
-        </div>
-        <SimpleSection
-          items={settings.motifsAnnulation || []}
-          color="#f04438"
-          placeholder="Ex: Prix trop élevé, Concurrent..."
-          onAdd={v => addSimple('motifsAnnulation', v)}
-          onRemove={i => removeSimple('motifsAnnulation', i)}
-        />
+        {/* ── Motifs d'annulation ── */}
+        {activeTab === 'motifsAnnulation' && (
+          <SimpleSection
+            items={settings.motifsAnnulation || []}
+            color="#f04438"
+            placeholder="Ex: Prix trop élevé, Concurrent..."
+            onAdd={v => addSimple('motifsAnnulation', v)}
+            onRemove={i => removeSimple('motifsAnnulation', i)}
+          />
+        )}
       </div>
 
       {/* ── FAB mobile Sauvegarder ──────────────────────────────────────── */}

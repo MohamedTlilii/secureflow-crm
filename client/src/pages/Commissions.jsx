@@ -179,10 +179,17 @@ export default function Commissions() {
     finally { setLoading(false); }
   }, []);
 
+  const fetchSettings = useCallback(() => {
+    api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetchFiches();
-    api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
-  }, [fetchFiches]);
+    fetchSettings();
+    const onVisible = () => { if (!document.hidden) { fetchFiches(); fetchSettings(); } };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [fetchFiches, fetchSettings]);
 
   const commerceLbl = useMemo(() =>
     Object.fromEntries((settings.typeCommerce||[]).map(t => [t.key, t.label])),

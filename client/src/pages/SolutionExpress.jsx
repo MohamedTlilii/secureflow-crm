@@ -150,7 +150,7 @@ function DatePicker({ value, onChange, placeholder = 'Sélectionner une date' })
 const AV_COLORS = ['av-blue','av-teal','av-amber','av-coral','av-purple'];
 
 
-const TYPE_COMMERCE_LABELS = {};
+const TYPE_COMMERCE_LABELS = { coiffure_esthetique:'Coiffure et esthétique', salle_de_sport:'Salle de sport', cafe:'Café', restaurant:'Restaurant', epicerie:'Épicerie', boucherie:'Boucherie', depanneur:'Dépanneur', mecanique_pneus:'Mécanique et pneus', autre:'Autre' };
 
 const STATUS_LABELS = {
   new:'Nouveau', contacted:'Contacté',

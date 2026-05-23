@@ -140,6 +140,10 @@ export default function Essence() {
 
   // ── Toggle reçu ───────────────────────────────────────────────────────────
 const toggleRecu = async (doc) => {
+  if (!doc.recu && doc.mois === 11) {
+    const ok = window.confirm(`Marquer Décembre comme reçu va clôturer l'année ${doc.annee} et supprimer toutes ses données. Continuer ?`);
+    if (!ok) return;
+  }
   try {
     const res = await api.put(`/api/essence/${doc._id}`, { recu: !doc.recu });
     toast.success(!doc.recu ? '✅ Marqué reçu !' : 'Marqué en attente');

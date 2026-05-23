@@ -396,7 +396,7 @@ export default function Pipeline() {
                         {(p.commissionTotale||0) > 0 && (
                           <div style={{ marginBottom: stage.key!=='installe'&&stage.key!=='installation_annulee' ? 8 : 0 }}>
                             <span style={{ fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'rgba(18,183,106,0.12)', color:'#12b76a', border:'1px solid rgba(18,183,106,0.25)' }}>
-                              💰 {p.commissionTotale} $
+                              💰 {p.commissionTotale} TND
                             </span>
                           </div>
                         )}
