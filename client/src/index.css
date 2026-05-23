@@ -126,7 +126,7 @@ a { color:inherit; text-decoration:none; }
   .main-content {
     margin-left: 0 !important;
     width: 100% !important;
-    padding: 18px 14px 96px;
+    padding: 74px 14px 96px; /* 56px top header + 18px gap / 96px bottom nav */
   }
 }
 

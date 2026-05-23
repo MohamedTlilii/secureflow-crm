@@ -95,54 +95,225 @@ export default function Sidebar() {
   const w = (expanded && !showAnniv) ? '240px' : '70px';
   document.documentElement.style.setProperty('--sidebar-w', isMobile ? '0px' : w);
 
-  // ── MOBILE — bottom nav ──────────────────────────────────────────────────
+  // ── MOBILE — top header + bottom nav + profile panel ────────────────────
   if (isMobile) {
     return (
-      <nav style={{
-        position:'fixed', bottom:0, left:0, right:0, zIndex:200,
-        background:'rgba(2,8,16,0.97)',
-        borderTop:'1px solid rgba(59,130,246,0.12)',
-        backdropFilter:'blur(28px)',
-        display:'flex', alignItems:'center',
-        padding:'6px 2px 14px',
-        boxShadow:'0 -8px 40px rgba(0,0,0,0.45)'
-      }}>
-        {NAV.map(({ to, icon: Icon, label, color }) => (
-          <NavLink key={to} to={to} end={to === '/'} style={({ isActive }) => ({
-            flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-            padding:'6px 2px', borderRadius:10,
-            color: isActive ? color : 'rgba(139,154,184,0.7)',
-            textDecoration:'none',
-            transition:'color 0.2s',
-            position:'relative'
-          })}>
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <div style={{
-                    position:'absolute', top:-6, left:'50%', transform:'translateX(-50%)',
-                    width:20, height:2.5, borderRadius:2,
-                    background:`linear-gradient(90deg,${color},${color}aa)`,
-                    boxShadow:`0 0 10px ${color}99`
-                  }}/>
-                )}
-                <div style={{
-                  width:34, height:34, borderRadius:9,
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  background: isActive ? `${color}1a` : 'transparent',
-                  transition:'background 0.2s, transform 0.2s',
-                  transform: isActive ? 'scale(1.12)' : 'scale(1)'
-                }}>
-                  <Icon size={18} style={{ filter: isActive ? `drop-shadow(0 0 5px ${color}99)` : 'none', transition:'filter 0.2s' }}/>
+      <>
+        {/* ── Top header mobile ── */}
+        <header style={{
+          position:'fixed', top:0, left:0, right:0, zIndex:200,
+          background:'rgba(2,8,16,0.97)',
+          borderBottom:'1px solid rgba(59,130,246,0.12)',
+          backdropFilter:'blur(28px)',
+          display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'0 16px',
+          height:56,
+          boxShadow:'0 4px 24px rgba(0,0,0,0.45)'
+        }}>
+          {/* Logo mark + nom app */}
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{
+              width:34, height:34, borderRadius:10,
+              background:'linear-gradient(145deg,#041612 0%,#073322 55%,#041612 100%)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              boxShadow:'0 0 14px rgba(18,183,106,0.38)',
+              flexShrink:0
+            }}>
+              <svg viewBox="0 0 100 100" width="19" height="19" style={{ overflow:'visible' }}>
+                <defs>
+                  <linearGradient id="mh_lg1" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#12b76a"/>
+                    <stop offset="100%" stopColor="#61DAFB"/>
+                  </linearGradient>
+                  <linearGradient id="mh_lg2" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#61DAFB" stopOpacity="0.95"/>
+                    <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.75"/>
+                  </linearGradient>
+                </defs>
+                <polygon points="94,50 72,88 28,88 6,50 28,12 72,12"
+                  fill="none" stroke="url(#mh_lg1)" strokeWidth="3.5" strokeLinejoin="round"/>
+                <polyline points="22,76 36,61 50,49 64,37 77,24"
+                  fill="none" stroke="url(#mh_lg1)" strokeWidth="4"
+                  strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M77,14 C77,14 70,22 70,27 C70,30.9 73.1,34 77,34 C80.9,34 84,30.9 84,27 C84,22 77,14 77,14Z"
+                  fill="url(#mh_lg2)"/>
+              </svg>
+            </div>
+            <div style={{
+              fontFamily:'var(--font-display)', fontWeight:800, fontSize:15,
+              letterSpacing:'-0.3px',
+              background:'linear-gradient(135deg,#e8fff5 0%,#12b76a 30%,#61DAFB 70%,#a78bfa 100%)',
+              WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text'
+            }}>
+              SecureFlow
+            </div>
+          </div>
+
+          {/* Avatar + nom + rôle — CLIQUABLE → ouvre le panel profil */}
+          <div ref={avatarRef} onClick={() => setShowProfile(p => !p)}
+            style={{
+              display:'flex', alignItems:'center', gap:9, minWidth:0,
+              padding:'5px 8px', borderRadius:10, cursor:'pointer',
+              background: showProfile ? 'rgba(18,183,106,0.12)' : 'transparent',
+              border:`1px solid ${showProfile ? 'rgba(18,183,106,0.35)' : 'transparent'}`,
+              transition:'all 0.2s',
+            }}>
+            <div style={{ textAlign:'right', minWidth:0, overflow:'hidden' }}>
+              <div style={{ fontSize:12.5, fontWeight:700, color:'var(--text-primary)', lineHeight:1.25, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:130 }}>{user?.name}</div>
+              <div style={{ fontSize:10.5, color:'#12b76a', fontWeight:600, textTransform:'capitalize', lineHeight:1.25 }}>{user?.role}</div>
+            </div>
+            <img src="/logo.jpg" alt="Logo"
+              style={{ width:33, height:33, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:`2px solid ${showProfile ? 'rgba(18,183,106,0.6)' : 'rgba(16,185,129,0.35)'}`, boxShadow: showProfile ? '0 0 14px rgba(18,183,106,0.4)' : '0 0 10px rgba(18,183,106,0.25)', transition:'all 0.2s' }}/>
+          </div>
+        </header>
+
+        {/* ── Panel profil mobile — apparaît sous le header, coin droit ── */}
+        {showProfile && (
+          <div ref={panelRef} style={{
+            position:'fixed', top:66, right:12,
+            width:250, maxWidth:'calc(100vw - 24px)',
+            background:'rgba(3,8,26,0.98)',
+            border:'1px solid rgba(18,183,106,0.25)',
+            borderRadius:16,
+            boxShadow:'0 8px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(18,183,106,0.08)',
+            backdropFilter:'blur(32px)',
+            overflow:'hidden',
+            animation:'profileSlideDown 0.22s cubic-bezier(0.34,1.56,0.64,1) both',
+            zIndex:300
+          }}>
+            {/* Header panel */}
+            <div style={{ background:'linear-gradient(135deg,rgba(18,183,106,0.12),transparent)', padding:'16px 14px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', gap:11 }}>
+              <img src="/logo.jpg" alt="Logo" style={{ width:44, height:44, borderRadius:11, objectFit:'cover', border:'2px solid rgba(18,183,106,0.4)', boxShadow:'0 0 16px rgba(18,183,106,0.25)', flexShrink:0 }}/>
+              <div style={{ minWidth:0, flex:1 }}>
+                <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name}</div>
+                <div style={{ fontSize:11, color:'#12b76a', fontWeight:600, textTransform:'capitalize', marginTop:2 }}>{user?.role}</div>
+              </div>
+              <button onClick={() => setShowProfile(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.3)', padding:4, borderRadius:6, flexShrink:0, display:'flex', alignItems:'center' }}
+                onTouchStart={e=>e.currentTarget.style.color='#fff'}
+                onTouchEnd={e=>e.currentTarget.style.color='rgba(255,255,255,0.3)'}>
+                <X size={14}/>
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:9 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, background:'rgba(18,183,106,0.06)', border:'1px solid rgba(18,183,106,0.12)' }}>
+                <div style={{ width:30, height:30, borderRadius:8, background:'rgba(18,183,106,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <Calendar size={14} color="#12b76a"/>
                 </div>
-                <span style={{ fontSize:9, fontWeight: isActive ? 700 : 500, letterSpacing:0.2, opacity: isActive ? 1 : 0.7, transition:'opacity 0.2s' }}>
-                  {label.split(' ')[0]}
-                </span>
-              </>
-            )}
-          </NavLink>
-        ))}
-      </nav>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Actif depuis</div>
+                  <div style={{ fontSize:12, color:'var(--text-primary)', fontWeight:700, marginTop:2 }}>{fmtDebut(DEBUT)}</div>
+                  <div style={{ fontSize:10.5, color:'#12b76a', marginTop:1 }}>{anciennete().label} {anciennete().suffix}</div>
+                </div>
+              </div>
+
+              {stats && (
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {[
+                    { label:'✓ Payé',        value:`${(stats.totalPaye||0).toFixed(0)} TND`,  color:'#12b76a', bg:'rgba(18,183,106,0.06)',  border:'rgba(18,183,106,0.15)' },
+                    { label:'⏳ En attente', value:`${(stats.enAttente||0).toFixed(0)} TND`, color:'#f79009', bg:'rgba(247,144,9,0.06)',   border:'rgba(247,144,9,0.15)'  },
+                  ].map(s => (
+                    <div key={s.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:s.bg, border:`1px solid ${s.border}` }}>
+                      <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', fontWeight:600 }}>{s.label}</div>
+                      <div style={{ fontSize:14, fontWeight:800, color:s.color }}>{s.value}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Bouton déconnexion dans le panel mobile */}
+              <button onClick={handleLogout}
+                style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'10px', borderRadius:10, marginTop:2, border:'1px solid rgba(239,68,68,0.2)', background:'rgba(239,68,68,0.06)', color:'#ef4444', cursor:'pointer', fontSize:13, fontWeight:600, transition:'all 0.18s' }}
+                onTouchStart={e => { e.currentTarget.style.background='rgba(239,68,68,0.14)'; }}
+                onTouchEnd={e => { e.currentTarget.style.background='rgba(239,68,68,0.06)'; }}>
+                <LogOut size={15}/> Déconnexion
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Bottom nav ── */}
+        <nav style={{
+          position:'fixed', bottom:0, left:0, right:0, zIndex:200,
+          background:'rgba(2,8,16,0.97)',
+          borderTop:'1px solid rgba(59,130,246,0.12)',
+          backdropFilter:'blur(28px)',
+          display:'flex', alignItems:'center',
+          padding:'6px 2px 14px',
+          boxShadow:'0 -8px 40px rgba(0,0,0,0.45)'
+        }}>
+          {NAV.map(({ to, icon: Icon, label, color }) => (
+            <NavLink key={to} to={to} end={to === '/'} style={({ isActive }) => ({
+              flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
+              padding:'6px 2px', borderRadius:10,
+              color: isActive ? color : 'rgba(139,154,184,0.7)',
+              textDecoration:'none',
+              transition:'color 0.2s',
+              position:'relative'
+            })}>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div style={{
+                      position:'absolute', top:-6, left:'50%', transform:'translateX(-50%)',
+                      width:20, height:2.5, borderRadius:2,
+                      background:`linear-gradient(90deg,${color},${color}aa)`,
+                      boxShadow:`0 0 10px ${color}99`
+                    }}/>
+                  )}
+                  <div style={{
+                    width:34, height:34, borderRadius:9,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    background: isActive ? `${color}1a` : 'transparent',
+                    transition:'background 0.2s, transform 0.2s',
+                    transform: isActive ? 'scale(1.12)' : 'scale(1)'
+                  }}>
+                    <Icon size={18} style={{ filter: isActive ? `drop-shadow(0 0 5px ${color}99)` : 'none', transition:'filter 0.2s' }}/>
+                  </div>
+                  <span style={{ fontSize:9, fontWeight: isActive ? 700 : 500, letterSpacing:0.2, opacity: isActive ? 1 : 0.7, transition:'opacity 0.2s' }}>
+                    {label.split(' ')[0]}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* ── Modal anniversaire mobile ── */}
+        {showAnniv && (() => {
+          const years = new Date().getFullYear() - 2025;
+          return (
+            <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:20, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)' }}>
+              <div style={{ position:'relative', background:'rgba(3,8,26,0.98)', borderRadius:24, maxWidth:380, width:'100%', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(18,183,106,0.2)' }}>
+                <div style={{ background:'linear-gradient(135deg,rgba(18,183,106,0.18),rgba(247,144,9,0.1),transparent)', padding:'32px 24px 20px', textAlign:'center', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize:48, marginBottom:10 }}>🎉</div>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#f79009', textTransform:'uppercase', letterSpacing:2, marginBottom:8 }}>Félicitations</div>
+                  <h2 style={{ margin:'0 0 6px', fontSize:20, fontWeight:800, background:'linear-gradient(135deg,#e8fff5,#12b76a,#f79009)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>{user?.name} !</h2>
+                  <div style={{ fontSize:32, fontWeight:900, color:'#12b76a', margin:'10px 0 4px' }}>{years} ans</div>
+                  <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)' }}>dans le poste 🚀</div>
+                </div>
+                <div style={{ padding:'20px 24px 24px', textAlign:'center' }}>
+                  <div style={{ fontSize:13, color:'rgba(255,255,255,0.65)', lineHeight:1.7, marginBottom:20 }}>
+                    Continue comme ça, c'est du solide. <span style={{ color:'#12b76a', fontWeight:600 }}>💪</span>
+                  </div>
+                  <button onClick={() => setShowAnniv(false)}
+                    style={{ width:'100%', padding:'13px', borderRadius:14, border:'none', cursor:'pointer', fontSize:14, fontWeight:700, background:'linear-gradient(135deg,#12b76a,#0ea472)', color:'#fff', boxShadow:'0 4px 20px rgba(18,183,106,0.35)' }}>
+                    Merci 🙏
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        <style>{`
+          @keyframes profileSlideDown {
+            from { opacity:0; transform:translateY(-10px) scale(0.97); }
+            to   { opacity:1; transform:translateY(0)    scale(1);    }
+          }
+        `}</style>
+      </>
     );
   }
 
