@@ -7,12 +7,12 @@ import toast from 'react-hot-toast';
 
 const NAV = [
   { to:'/',                 icon:LayoutDashboard, label:'Dashboard',           color:'#38bdf8' },
+  { to:'/comparaison',      icon:BarChart2,       label:'Comparaison',         color:'#34d399' },
   { to:'/commissions',      icon:Wallet,          label:'Commissions',         color:'#10b981' },
   { to:'/solution-express', icon:Building2,       label:'Solution Express',    color:'#818cf8' },
   { to:'/pipeline',         icon:Kanban,          label:'Pipeline',            color:'#c084fc' },
   { to:'/essence',          icon:Fuel,            label:'Indemnité Carburant', color:'#fb923c' },
   { to:'/database',         icon:Database,        label:'Base de données',     color:'#f472b6' },
-  { to:'/comparaison',      icon:BarChart2,       label:'Comparaison',         color:'#34d399' },
   { to:'/parametres',       icon:Settings,        label:'Paramètres',          color:'#a78bfa' },
 ];
 
