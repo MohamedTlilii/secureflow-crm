@@ -30,14 +30,16 @@ function pct(curr, prev) {
 
 function calcMetrics(arr) {
   const actives  = arr.filter(f => f.status !== 'installation_annulee');
-  const withComm = actives.filter(f => (f.commissionTotale || 0) > 0);
+  const withComm = actives.filter(f => (f.commissionTotale || 0) > 0 || (f.commissionFixe || 0) > 0);
   const gained   = actives.reduce((s, f) => s + (f.commissionTotale || 0), 0);
   const paid     = actives.filter(f => f.commissionPayee).reduce((s, f) => s + (f.commissionTotale || 0), 0);
   const pending  = gained - paid;
   const installe = actives.filter(f => f.status === 'installe').length;
-  const avg      = withComm.length > 0 ? gained / withComm.length : 0;
+  const commVals = withComm.map(f => f.commissionTotale || 0).filter(v => v > 0);
+  const commMax  = commVals.length > 0 ? Math.max(...commVals) : 0;
+  const commMin  = commVals.length > 0 ? Math.min(...commVals) : 0;
   const payRate  = gained > 0 ? Math.round((paid / gained) * 100) : 0;
-  return { gained, paid, pending, installe, avg, payRate, total: arr.length };
+  return { gained, paid, pending, installe, commMax, commMin, payRate, total: arr.length };
 }
 
 function DeltaBadge({ curr, prev }) {
@@ -282,11 +284,13 @@ export default function Comparaison() {
             {hasData ? (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 {[
-                  { label:'Total fiches',        value: m.total },
-                  { label:'Installations',        value: m.installe },
-                  { label:'Commission moyenne',   value: `${m.avg.toFixed(0)} TND` },
-                  { label:'Taux de paiement',    value: `${m.payRate}%` },
-                  { label:'Meilleur mois',       value: bestMonth(year, []) },
+                  { label:'Total fiches',           value: m.total },
+                  { label:'Installations',           value: m.installe },
+                  { label:'Commission ↑ Max',       value: m.commMax > 0 ? `${m.commMax.toFixed(0)} TND` : '—' },
+                  { label:'Commission ↓ Min',       value: m.commMin > 0 ? `${m.commMin.toFixed(0)} TND` : '—' },
+                  { label:'Taux de paiement',       value: `${m.payRate}%` },
+                  { label:'Meilleur mois',          value: bestMonth(year, []) },
+                  { label:'Total de commission',    value: m.gained > 0 ? `${m.gained.toFixed(0)} TND` : '—' },
                 ].map((row, i) => (
                   <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:`${color}08`, border:`1px solid ${color}18` }}>
                     <span style={{ fontSize:12, color:'rgba(255,255,255,0.45)', fontWeight:500 }}>{row.label}</span>
