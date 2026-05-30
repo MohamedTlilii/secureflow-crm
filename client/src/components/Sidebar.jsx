@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Kanban, LogOut, Database, Building2, Wallet, Fuel, Settings, Calendar, TrendingUp, CheckCircle, X } from 'lucide-react';
+import { LayoutDashboard, Kanban, LogOut, Database, Building2, Wallet, Fuel, Settings, Calendar, TrendingUp, CheckCircle, X, BarChart2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import toast from 'react-hot-toast';
@@ -12,6 +12,7 @@ const NAV = [
   { to:'/pipeline',         icon:Kanban,          label:'Pipeline',            color:'#c084fc' },
   { to:'/essence',          icon:Fuel,            label:'Indemnité Carburant', color:'#fb923c' },
   { to:'/database',         icon:Database,        label:'Base de données',     color:'#f472b6' },
+  { to:'/comparaison',      icon:BarChart2,       label:'Comparaison',         color:'#34d399' },
   { to:'/parametres',       icon:Settings,        label:'Paramètres',          color:'#a78bfa' },
 ];
 

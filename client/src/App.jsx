@@ -10,6 +10,7 @@ import SolutionExpress from './pages/SolutionExpress';
 import Commissions from './pages/Commissions';
 import Essence from './pages/Essence';
 import Parametres from './pages/Parametres';
+import Comparaison from './pages/Comparaison';
 
 import './index.css';
 
@@ -110,6 +111,9 @@ const AppRoutes = () => {
 
       {/* /parametres → Settings page (protected) */}
       <Route path="/parametres" element={<ProtectedLayout><Parametres /></ProtectedLayout>} />
+
+      {/* /comparaison → Comparaison annuelle commissions (protected) */}
+      <Route path="/comparaison" element={<ProtectedLayout><Comparaison /></ProtectedLayout>} />
 
       {/* Any unknown route → redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
