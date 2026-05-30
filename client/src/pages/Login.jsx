@@ -67,7 +67,12 @@ export default function Login() {
   const onMouseLeave = () => setTilt({ x:0, y:0 });
 
   const handleSubmit = async e => {
-    e.preventDefault(); setLoading(true);
+    e.preventDefault();
+    if (!form.email.trim() || !form.password.trim()) {
+      toast.error('Email et mot de passe requis');
+      return;
+    }
+    setLoading(true);
     try {
       await login(form.email, form.password);
       toast.success('Bienvenue !'); navigate('/');

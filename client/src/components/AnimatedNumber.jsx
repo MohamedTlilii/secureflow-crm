@@ -5,7 +5,7 @@ export default function AnimatedNumber({ value, decimals = 0, suffix = '', color
   const prev = useRef(0);
   useEffect(() => {
     const start = prev.current;
-    const end   = value || 0;
+    const end   = (typeof value === 'number' && isFinite(value)) ? value : 0;
     prev.current = end;
     if (start === end) return;
     const duration  = 900;

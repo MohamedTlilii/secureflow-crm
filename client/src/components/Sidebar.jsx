@@ -19,9 +19,10 @@ const NAV = [
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth < 768);
+    let t;
+    const h = () => { clearTimeout(t); t = setTimeout(() => setIsMobile(window.innerWidth < 768), 80); };
     window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
+    return () => { window.removeEventListener('resize', h); clearTimeout(t); };
   }, []);
   return isMobile;
 }
@@ -74,11 +75,13 @@ export default function Sidebar() {
   useEffect(() => {
     if (!showProfile || stats) return;
     api.get('/api/solution-express').then(res => {
-      const fiches = res.data || [];
-      if (!fiches.length) { setStats({}); return; }
+      const all    = res.data || [];
+      if (!all.length) { setStats({}); return; }
+      const yr     = new Date().getFullYear();
+      const fiches = all.filter(f => new Date(f.dateVente || f.createdAt).getUTCFullYear() === yr);
       const totalPaye  = fiches.filter(f => f.commissionPayee).reduce((s, f) => s + (f.commissionTotale || 0), 0);
       const enAttente  = fiches.filter(f => !f.commissionPayee && (f.commissionTotale || 0) > 0).reduce((s, f) => s + (f.commissionTotale || 0), 0);
-      setStats({ total: fiches.length, totalPaye, enAttente });
+      setStats({ total: fiches.length, totalPaye, enAttente, annee: yr });
     }).catch(() => setStats({}));
   }, [showProfile]);
 
@@ -212,8 +215,8 @@ export default function Sidebar() {
               {stats && (
                 <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                   {[
-                    { label:'✓ Payé',        value:`${(stats.totalPaye||0).toFixed(0)} TND`,  color:'#12b76a', bg:'rgba(18,183,106,0.06)',  border:'rgba(18,183,106,0.15)' },
-                    { label:'⏳ En attente', value:`${(stats.enAttente||0).toFixed(0)} TND`, color:'#f79009', bg:'rgba(247,144,9,0.06)',   border:'rgba(247,144,9,0.15)'  },
+                    { label:`✓ Payé ${stats.annee||''}`,        value:`${(stats.totalPaye||0).toFixed(0)} TND`,  color:'#12b76a', bg:'rgba(18,183,106,0.06)',  border:'rgba(18,183,106,0.15)' },
+                    { label:`⏳ En attente ${stats.annee||''}`, value:`${(stats.enAttente||0).toFixed(0)} TND`, color:'#f79009', bg:'rgba(247,144,9,0.06)',   border:'rgba(247,144,9,0.15)'  },
                   ].map(s => (
                     <div key={s.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:s.bg, border:`1px solid ${s.border}` }}>
                       <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', fontWeight:600 }}>{s.label}</div>

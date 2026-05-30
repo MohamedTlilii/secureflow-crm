@@ -18,6 +18,7 @@ import {
   Target,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import toast from 'react-hot-toast';
 
 // ── Hook responsive — breakpoint 768px ───────────────────────────────────
 function useIsMobile() {
@@ -100,7 +101,7 @@ export default function Dashboard() {
   const fetchAll = useCallback(() => {
     api.get('/api/solution-express')
       .then(r => setSeFiches(Array.isArray(r.data) ? r.data : []))
-      .catch(err => console.error('SE fetch error:', err))
+      .catch(() => toast.error('Impossible de charger les données'))
       .finally(() => setLoading(false));
     api.get('/api/settings')
       .then(r => setSettings(r.data || { services: [] }))

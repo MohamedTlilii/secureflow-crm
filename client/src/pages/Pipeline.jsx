@@ -116,13 +116,7 @@ export default function Pipeline() {
       toast.success(`→ ${STAGES.find(s => s.key === targetStage)?.label}`);
       fetchAll();
     } catch (err) {
-      if (err.response?.status === 401) {
-        toast.error('Session expirée — reconnecte-toi');
-        localStorage.removeItem('sf_token');
-        window.location.href = '/login';
-      } else {
-        toast.error('Erreur mise à jour : ' + (err.response?.data?.message || err.message));
-      }
+      toast.error('Erreur mise à jour : ' + (err.response?.data?.message || err.message));
     }
   };
 

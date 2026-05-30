@@ -95,7 +95,7 @@ export default function Database() {
 
   // ── Supprimer une fiche — logique originale intacte ───────────────────
   const handleDelete = async (item) => {
-    if (!window.confirm("Supprimer ?")) return;
+    if (!window.confirm(`Supprimer "${item.entreprise || `${item.prenom||''} ${item.nom||''}`.trim() || 'cette fiche'}" ?`)) return;
     try {
       await api.delete(`/api/solution-express/${item._id}`);
       setLeads(prev => prev.filter(l => l._id !== item._id));
