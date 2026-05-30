@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import api from '../api';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, BarChart2, Calendar, Wallet, CheckCircle, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, BarChart2, Calendar, Wallet, CheckCircle, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ── Hook responsive ────────────────────────────────────────────────────────
 function useIsMobile() {
@@ -74,8 +74,9 @@ function ChartTooltip({ active, payload, label }) {
 // ════════════════════════════════════════════════════════════════════════════
 export default function Comparaison() {
   const isMobile              = useIsMobile();
-  const [fiches, setFiches]   = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [fiches, setFiches]     = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const fetchAll = useCallback(() => {
     api.get('/api/solution-express')
@@ -91,8 +92,12 @@ export default function Comparaison() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [fetchAll]);
 
-  const currYear = new Date().getFullYear();
-  const prevYear = currYear - 1;
+  const realYear = new Date().getFullYear();
+  const currYear = selectedYear;
+  const prevYear = selectedYear - 1;
+  const minYear  = fiches.length > 0
+    ? Math.min(...fiches.map(f => new Date(f.dateVente || f.createdAt).getUTCFullYear()))
+    : realYear;
 
   const fichesCurr = useMemo(() =>
     fiches.filter(f => new Date(f.dateVente || f.createdAt).getUTCFullYear() === currYear),
@@ -173,22 +178,53 @@ export default function Comparaison() {
                 Comparaison annuelle
               </h1>
             </div>
-            <div style={{ fontSize:13, color:'rgba(255,255,255,0.45)' }}>
+            <div style={{ fontSize:13, color:'rgba(255,255,255,0.45)', display:'flex', alignItems:'center', gap:8 }}>
               Évolution de vos commissions · {prevYear} → {currYear}
+              {selectedYear === realYear && <span style={{ fontSize:11, color:'#12b76a', fontWeight:700, padding:'2px 8px', borderRadius:6, background:'rgba(18,183,106,0.12)', border:'1px solid rgba(18,183,106,0.25)' }}>Année en cours</span>}
             </div>
           </div>
 
-          {/* Badges année */}
-          <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-            <div style={{ padding:'8px 18px', borderRadius:13, background:'rgba(59,108,248,0.12)', border:'1px solid rgba(59,108,248,0.3)', textAlign:'center' }}>
-              <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:3 }}>Précédent</div>
-              <div style={{ fontSize:22, fontWeight:900, color:'#3b6cf8', lineHeight:1 }}>{prevYear}</div>
+          {/* ── Navigateur d'années ── */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+
+            {/* Flèche gauche */}
+            <button onClick={() => setSelectedYear(y => y - 1)} disabled={selectedYear <= minYear}
+              style={{ width:36, height:36, borderRadius:10, border:`1px solid ${selectedYear <= minYear ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.14)'}`, background:'transparent', color:selectedYear <= minYear ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.55)', cursor:selectedYear <= minYear ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.18s' }}
+              onMouseEnter={e => { if (selectedYear > minYear) { e.currentTarget.style.background='rgba(255,255,255,0.07)'; e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor='rgba(255,255,255,0.25)'; } }}
+              onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color=selectedYear<=minYear?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor=selectedYear<=minYear?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.14)'; }}>
+              <ChevronLeft size={16}/>
+            </button>
+
+            {/* Badges années */}
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <div style={{ padding:'7px 15px', borderRadius:12, background:'rgba(59,108,248,0.12)', border:'1px solid rgba(59,108,248,0.3)', textAlign:'center', minWidth:72 }}>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:2 }}>Précédent</div>
+                <div style={{ fontSize:20, fontWeight:900, color:'#3b6cf8', lineHeight:1 }}>{prevYear}</div>
+              </div>
+              <div style={{ fontSize:14, color:'rgba(255,255,255,0.2)', fontWeight:300 }}>vs</div>
+              <div style={{ padding:'7px 15px', borderRadius:12, background:'rgba(18,183,106,0.12)', border:'1px solid rgba(18,183,106,0.3)', textAlign:'center', minWidth:72 }}>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:2 }}>Actuel</div>
+                <div style={{ fontSize:20, fontWeight:900, color:'#12b76a', lineHeight:1 }}>{currYear}</div>
+              </div>
             </div>
-            <div style={{ fontSize:16, color:'rgba(255,255,255,0.2)', fontWeight:300, padding:'0 2px' }}>vs</div>
-            <div style={{ padding:'8px 18px', borderRadius:13, background:'rgba(18,183,106,0.12)', border:'1px solid rgba(18,183,106,0.3)', textAlign:'center' }}>
-              <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:3 }}>Actuel</div>
-              <div style={{ fontSize:22, fontWeight:900, color:'#12b76a', lineHeight:1 }}>{currYear}</div>
-            </div>
+
+            {/* Flèche droite */}
+            <button onClick={() => setSelectedYear(y => y + 1)} disabled={selectedYear >= realYear}
+              style={{ width:36, height:36, borderRadius:10, border:`1px solid ${selectedYear >= realYear ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.14)'}`, background:'transparent', color:selectedYear >= realYear ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.55)', cursor:selectedYear >= realYear ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.18s' }}
+              onMouseEnter={e => { if (selectedYear < realYear) { e.currentTarget.style.background='rgba(255,255,255,0.07)'; e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor='rgba(255,255,255,0.25)'; } }}
+              onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color=selectedYear>=realYear?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor=selectedYear>=realYear?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.14)'; }}>
+              <ChevronRight size={16}/>
+            </button>
+
+            {/* Bouton reset si pas sur l'année courante */}
+            {selectedYear !== realYear && (
+              <button onClick={() => setSelectedYear(realYear)}
+                style={{ padding:'5px 11px', borderRadius:8, border:'1px solid rgba(247,144,9,0.35)', background:'rgba(247,144,9,0.1)', color:'#f79009', cursor:'pointer', fontSize:11, fontWeight:700, transition:'all 0.18s', whiteSpace:'nowrap' }}
+                onMouseEnter={e => { e.currentTarget.style.background='rgba(247,144,9,0.2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background='rgba(247,144,9,0.1)'; }}>
+                Aujourd'hui
+              </button>
+            )}
           </div>
         </div>
       </div>
