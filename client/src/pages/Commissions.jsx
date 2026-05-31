@@ -228,11 +228,12 @@ export default function Commissions() {
     return anneeOk && statOk;
   });
 
-  // Stats
-  const totalGagne = filtered.reduce((s,c) => s + (c.commissionTotale||0), 0);
-  const totalPaye  = filtered.filter(c => c.commissionPayee).reduce((s,c) => s + (c.commissionTotale||0), 0);
+  // Stats — annulées exclues (cohérent avec la barre objectif)
+  const filteredActives = filtered.filter(c => c.status !== 'installation_annulee');
+  const totalGagne = filteredActives.reduce((s,c) => s + (c.commissionTotale||0), 0);
+  const totalPaye  = filteredActives.filter(c => c.commissionPayee).reduce((s,c) => s + (c.commissionTotale||0), 0);
   const enAttente  = Math.max(0, totalGagne - totalPaye);
-  const vals       = filtered.map(c => c.commissionTotale||0).filter(v => v > 0);
+  const vals       = filteredActives.map(c => c.commissionTotale||0).filter(v => v > 0);
   const maximum    = vals.length > 0 ? Math.max(...vals) : 0;
   const minimum    = vals.length > 0 ? Math.min(...vals) : 0;
 
@@ -336,7 +337,7 @@ export default function Commissions() {
         <div style={{ marginTop:20 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
             <span style={{ fontSize:12, color:'#ffffff', fontWeight:600 }}>
-              {filtered.filter(c=>c.commissionPayee).length} / {filtered.length} ventes payées
+              {filteredActives.filter(c=>c.commissionPayee).length} / {filteredActives.length} ventes payées
             </span>
             <span style={{ fontSize:14, fontWeight:800, color: pctPaye >= 70 ? '#12b76a' : pctPaye >= 40 ? '#f79009' : '#f04438' }}>
               {pctPaye}% payé
