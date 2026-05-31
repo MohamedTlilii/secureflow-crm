@@ -187,8 +187,9 @@ const toggleRecu = async (doc) => {
 
   // ── Alerte : dernier mois non reçu ───────────────────────────────────────
   const now         = new Date();
-  const prevMoisIdx = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-  const prevMoisDoc = data.find(d => d.mois === prevMoisIdx && d.annee === now.getFullYear());
+  const prevMoisIdx   = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevMoisAnnee = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const prevMoisDoc   = data.find(d => d.mois === prevMoisIdx && d.annee === prevMoisAnnee);
   const showAlerte  = prevMoisDoc && !prevMoisDoc.recu;
 
   // ── Données graphique (toujours croissant pour les axes temporels) ────────
