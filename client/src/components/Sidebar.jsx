@@ -69,7 +69,7 @@ export default function Sidebar() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showProfile]);
 
-  const DEBUT = new Date('2025-06-15');
+  const DEBUT = new Date('2025-06-15T12:00:00');
 
   // Charger les stats SE quand on ouvre le panel
   useEffect(() => {
