@@ -168,6 +168,7 @@ export default function Pipeline() {
   const proposals    = filteredItems.filter(i => i.stage === 'proposal').length;
   const b2b          = filteredItems.filter(i => i.typeClient === 'b2b').length;
   const b2c          = filteredItems.filter(i => i.typeClient === 'b2c').length;
+  const annulees     = filteredItems.filter(i => i.stage === 'installation_annulee').length;
   const convRate     = totalItems > 0 ? Math.round((totalGagnes / totalItems) * 100) : 0;
 
   // ════════════════════════════════════════════════════════════════════════
@@ -213,12 +214,13 @@ export default function Pipeline() {
         </div>
 
         {/* Ligne 2 : Stats rapides */}
-        <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(4,1fr)', gap:10, marginBottom:16 }}>
+        <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(5,1fr)', gap:10, marginBottom:16 }}>
           {[
-            { label:'Total fiches',          value:totalItems,   sub:`${b2b} B2B · ${b2c} B2C`,                   color:'#3b6cf8' },
-            { label:'Installés',             value:totalGagnes,  sub:`Taux d'installation ${convRate}%`,           color:'#22c55e' },
-            { label:'Installation en cours', value:inCours,      sub:`${inCours} en cours`,                        color:'#f97316' },
-            { label:'Soumissions',           value:proposals,    sub:`${proposals} fiche${proposals!==1?'s':''}`,  color:'#a764f8' },
+            { label:'Total fiches',          value:totalItems,   sub:`${b2b} B2B · ${b2c} B2C`,                    color:'#3b6cf8' },
+            { label:'Installés',             value:totalGagnes,  sub:`Taux d'installation ${convRate}%`,            color:'#22c55e' },
+            { label:'Installation en cours', value:inCours,      sub:`${inCours} en cours`,                         color:'#f97316' },
+            { label:'Soumissions',           value:proposals,    sub:`${proposals} fiche${proposals!==1?'s':''}`,   color:'#a764f8' },
+            { label:'Annulées',              value:annulees,     sub:`${annulees} fiche${annulees!==1?'s':''}`,     color:'#be123c' },
           ].map((s,i) => (
             <div key={i} style={{ background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'10px 14px', border:'1px solid rgba(255,255,255,0.08)', animation:`fadeSlideUp 0.4s ${i*0.05}s ease both` }}>
               <div style={{ fontSize:10, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
