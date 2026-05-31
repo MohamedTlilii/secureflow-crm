@@ -20,7 +20,13 @@ export function AuthProvider({ children }) {
   // This keeps the user logged in across page refreshes.
   useEffect(() => {
     const token = localStorage.getItem('sf_token'); // Token key — must match login + api.js
-    if (!token) { setLoading(false); return; }       // No token → skip validation, not logged in
+    if (!token || token === 'null' || token === 'undefined') { setLoading(false); return; }
+
+    // Timeout de sécurité — si le serveur ne répond pas en 8s, on arrête le spinner
+    const timeout = setTimeout(() => {
+      localStorage.removeItem('sf_token');
+      setLoading(false);
+    }, 8000);
 
     // Hit /api/auth/me to verify the token is still valid and get fresh user data
     api.get('/api/auth/me')
@@ -30,7 +36,9 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('sf_token');
         setUser(null);
       })
-      .finally(() => setLoading(false)); // Always stop the loading spinner when done
+      .finally(() => { clearTimeout(timeout); setLoading(false); });
+
+    return () => clearTimeout(timeout);
   }, []); // ← Empty array = run once on mount only
 
   // ── Login ─────────────────────────────────────────────────────────────────

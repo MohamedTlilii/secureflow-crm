@@ -43,6 +43,8 @@ async function ensureYear(annee, tauxJour = 5) {
 router.get('/', auth, async (req, res) => {
   try {
     const annee = parseInt(req.query.annee) || new Date().getFullYear();
+    const realYear = new Date().getFullYear();
+    if (annee < 2020 || annee > realYear + 1) return res.status(400).json({ error: 'Année invalide' });
     await ensureYear(annee);
     const data = await Essence.find({ annee }).sort({ mois: 1 });
     res.json(data);
