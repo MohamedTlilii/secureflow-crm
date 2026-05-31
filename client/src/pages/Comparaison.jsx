@@ -122,7 +122,7 @@ export default function Comparaison() {
     [fichesCurr, fichesPrev, currYear, prevYear]
   );
 
-  const bestMonth = (year, arr) => {
+  const bestMonth = (year) => {
     let best = { idx: -1, val: 0 };
     monthlyData.forEach((m, i) => { if ((m[year] || 0) > best.val) best = { idx: i, val: m[year] }; });
     return best.idx >= 0 ? `${MONTHS_FR[best.idx]} · ${best.val.toFixed(0)} TND` : '—';
@@ -325,7 +325,7 @@ export default function Comparaison() {
                   { label:'Commission ↑ Max',       value: m.commMax > 0 ? `${m.commMax.toFixed(0)} TND` : '—' },
                   { label:'Commission ↓ Min',       value: m.commMin > 0 ? `${m.commMin.toFixed(0)} TND` : '—' },
                   { label:'Taux de paiement',       value: `${m.payRate}%` },
-                  { label:'Meilleur mois',          value: bestMonth(year, []) },
+                  { label:'Meilleur mois',          value: bestMonth(year) },
                   { label:'Total de commission',    value: m.gained > 0 ? `${m.gained.toFixed(0)} TND` : '—' },
                 ].map((row, i) => (
                   <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:`${color}08`, border:`1px solid ${color}18` }}>

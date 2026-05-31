@@ -80,7 +80,7 @@ export default function Sidebar() {
       const yr     = new Date().getFullYear();
       const fiches = all.filter(f => new Date(f.dateVente || f.createdAt).getUTCFullYear() === yr);
       const totalPaye  = fiches.filter(f => f.commissionPayee).reduce((s, f) => s + (f.commissionTotale || 0), 0);
-      const enAttente  = fiches.filter(f => !f.commissionPayee && (f.commissionTotale || 0) > 0).reduce((s, f) => s + (f.commissionTotale || 0), 0);
+      const enAttente  = fiches.filter(f => f.status !== 'installation_annulee' && !f.commissionPayee && (f.commissionTotale || 0) > 0).reduce((s, f) => s + (f.commissionTotale || 0), 0);
       setStats({ total: fiches.length, totalPaye, enAttente, annee: yr });
     }).catch(() => setStats({}));
   }, [showProfile]);
@@ -97,7 +97,9 @@ export default function Sidebar() {
   };
 
   const w = (expanded && !showAnniv) ? '240px' : '70px';
-  document.documentElement.style.setProperty('--sidebar-w', isMobile ? '0px' : w);
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-w', isMobile ? '0px' : w);
+  }, [isMobile, w]);
 
   // ── MOBILE — top header + bottom nav + profile panel ────────────────────
   if (isMobile) {

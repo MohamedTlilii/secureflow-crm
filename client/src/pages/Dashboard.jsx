@@ -379,7 +379,7 @@ export default function Dashboard() {
           </div>
           <div style={{ marginLeft:'auto', fontSize:28, fontWeight:800, color:'#12b76a', textShadow:'0 0 20px rgba(18,183,106,0.5)' }}>{totalSE}</div>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(3,1fr)':'repeat(5,1fr)', gap: isMobile?8:10 }}>
+        <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(3,1fr)':'repeat(6,1fr)', gap: isMobile?8:10 }}>
           {[
             { label:'Nouveau',          value:seStatuts.new,                   color:'#3b6cf8' },
             { label:'Contacté',         value:seStatuts.contacted,             color:'#f79009' },
