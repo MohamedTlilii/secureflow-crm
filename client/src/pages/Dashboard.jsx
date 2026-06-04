@@ -238,15 +238,11 @@ export default function Dashboard() {
     { name:'Install. annulée', value:seStatuts.installation_annulee,  color:'#be123c' },
   ].filter(x => x.value > 0);
 
-  // Commissions : calculées directement depuis seFiches (cohérent avec le filtre année)
-  const commHistorique = seFiches.filter(f => (f.commissionTotale||0) > 0 || (f.commissionFixe||0) > 0);
-  const commFiches = commHistorique.filter(c => {
-    const d = new Date(c.dateVente||c.createdAt);
-    const yearOk  = anneeGlobal === 'tout' || String(d.getUTCFullYear()) === anneeGlobal;
-    const moisOk  = anneeGlobal === 'tout' || dashMois === 'tout' || d.getUTCMonth() === Number(dashMois);
-    const statutOk = commFiltre === 'tout' ? true : commFiltre === 'payee' ? c.commissionPayee : !c.commissionPayee;
-    return yearOk && moisOk && statutOk;
-  });
+  // Commissions — fiches déjà filtrées par année + mois via `fiches`
+  const commHistorique = fiches.filter(f => (f.commissionTotale||0) > 0 || (f.commissionFixe||0) > 0);
+  const commFiches = commHistorique.filter(c =>
+    commFiltre === 'tout' ? true : commFiltre === 'payee' ? c.commissionPayee : !c.commissionPayee
+  );
   const commActives    = commFiches.filter(c => c.status !== 'installation_annulee');
   const commAnnulees   = commFiches.filter(c => c.status === 'installation_annulee').length;
   const commTotalGagne = commActives.reduce((s,c) => s+(c.commissionTotale||0), 0);
@@ -298,7 +294,7 @@ export default function Dashboard() {
   {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
 </div>
             )}
-            <select value={anneeGlobal} onChange={e => { setAnneeGlobal(e.target.value); setDashMois('tout'); setCommMoisDash('tout'); }}
+            <select value={anneeGlobal} onChange={e => { setAnneeGlobal(e.target.value); setDashMois('tout'); }}
               style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
               <option value="tout">Toutes les années</option>
               {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}

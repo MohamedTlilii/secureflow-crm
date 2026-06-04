@@ -45,9 +45,11 @@ router.get('/', auth, async (req, res) => {
 // Crée une nouvelle fiche manuellement (saisie depuis l'interface)
 router.post('/', auth, async (req, res) => {
   try {
+    const body = { ...req.body };
+    body.commissionTotale = (parseFloat(body.commissionFixe)||0) + (parseFloat(body.commissionExtra)||0);
     const fiche = await SolutionExpress.create({
-      ...req.body,
-      createdBy: req.user._id  // utilisateur connecté via JWT
+      ...body,
+      createdBy: req.user._id
     });
     res.status(201).json(fiche);
   } catch (err) {
@@ -65,6 +67,12 @@ router.put('/:id', auth, async (req, res) => {
     const { createdBy, ...updateFields } = req.body; // createdBy immuable
     if (updateFields.status && !VALID_STATUTS.includes(updateFields.status)) {
       return res.status(400).json({ message: 'Statut invalide' });
+    }
+    if (updateFields.commissionFixe !== undefined || updateFields.commissionExtra !== undefined) {
+      const existing = await SolutionExpress.findById(req.params.id).lean();
+      const fixe  = parseFloat(updateFields.commissionFixe  ?? existing?.commissionFixe)  || 0;
+      const extra = parseFloat(updateFields.commissionExtra ?? existing?.commissionExtra) || 0;
+      updateFields.commissionTotale = fixe + extra;
     }
     const fiche = await SolutionExpress.findByIdAndUpdate(
       req.params.id,

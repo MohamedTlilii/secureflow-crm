@@ -520,7 +520,8 @@ export default function Parametres() {
   const [saving, setSaving]         = useState(false);
   const [loading, setLoading]       = useState(true);
 
-  const dirty = JSON.stringify(settings) !== JSON.stringify(original);
+  const sortedJSON = v => { if (!v || typeof v !== 'object' || Array.isArray(v)) return JSON.stringify(v); return '{' + Object.keys(v).sort().map(k => JSON.stringify(k)+':'+sortedJSON(v[k])).join(',') + '}'; };
+  const dirty = sortedJSON(settings) !== sortedJSON(original);
   const dirtyRef = useRef(false);
 
   // ── Sync dirtyRef so visibilitychange handler always sees current value ─
