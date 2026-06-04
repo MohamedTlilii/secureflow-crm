@@ -95,6 +95,7 @@ export default function Dashboard() {
   const [seFiches, setSeFiches]       = useState([]);
   const [settings, setSettings]       = useState({ services: [] });
   const [anneeGlobal, setAnneeGlobal] = useState(String(new Date().getFullYear()));
+  const [dashMois, setDashMois]       = useState('tout');
   const [commFiltre, setCommFiltre]   = useState('tout');
 
   // ── Fetch données ─────────────────────────────────────────────────────
@@ -158,10 +159,12 @@ export default function Dashboard() {
   const currentYear = new Date().getFullYear();
   const annees = [...new Set([currentYear, ...seFiches.map(f => new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear())])].sort((a,b) => b-a);
 
-  // ── Fiches filtrées par année globale ─────────────────────────────────
-  const fiches = anneeGlobal === 'tout'
-    ? seFiches
-    : seFiches.filter(f => String(new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()) === anneeGlobal);
+  // ── Fiches filtrées par année + mois global ──────────────────────────
+  const fiches = (() => {
+    let r = anneeGlobal === 'tout' ? seFiches : seFiches.filter(f => String(new Date(f.dateVente||f.createdAt||Date.now()).getUTCFullYear()) === anneeGlobal);
+    if (anneeGlobal !== 'tout' && dashMois !== 'tout') r = r.filter(f => new Date(f.dateVente||f.createdAt||Date.now()).getUTCMonth() === Number(dashMois));
+    return r;
+  })();
 
   // ── Stats calculées depuis fiches filtrées ────────────────────────────
 
@@ -238,10 +241,11 @@ export default function Dashboard() {
   // Commissions : calculées directement depuis seFiches (cohérent avec le filtre année)
   const commHistorique = seFiches.filter(f => (f.commissionTotale||0) > 0 || (f.commissionFixe||0) > 0);
   const commFiches = commHistorique.filter(c => {
-    const yr = new Date(c.dateVente||c.createdAt).getUTCFullYear();
-    const yearOk   = anneeGlobal === 'tout' || String(yr) === anneeGlobal;
+    const d = new Date(c.dateVente||c.createdAt);
+    const yearOk  = anneeGlobal === 'tout' || String(d.getUTCFullYear()) === anneeGlobal;
+    const moisOk  = anneeGlobal === 'tout' || dashMois === 'tout' || d.getUTCMonth() === Number(dashMois);
     const statutOk = commFiltre === 'tout' ? true : commFiltre === 'payee' ? c.commissionPayee : !c.commissionPayee;
-    return yearOk && statutOk;
+    return yearOk && moisOk && statutOk;
   });
   const commActives    = commFiches.filter(c => c.status !== 'installation_annulee');
   const commAnnulees   = commFiches.filter(c => c.status === 'installation_annulee').length;
@@ -294,11 +298,20 @@ export default function Dashboard() {
   {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
 </div>
             )}
-            <select value={anneeGlobal} onChange={e => setAnneeGlobal(e.target.value)}
+            <select value={anneeGlobal} onChange={e => { setAnneeGlobal(e.target.value); setDashMois('tout'); setCommMoisDash('tout'); }}
               style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
               <option value="tout">Toutes les années</option>
               {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}
             </select>
+            {anneeGlobal !== 'tout' && (
+              <select value={dashMois} onChange={e => setDashMois(e.target.value)}
+                style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
+                <option value="tout">Tous les mois</option>
+                {['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'].map((m,i) => (
+                  <option key={i} value={String(i)}>{m}</option>
+                ))}
+              </select>
+            )}
                         
 
            
@@ -368,46 +381,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ════════════════════════════════════════════════════════════════
-          SOLUTION EXPRESS STATUTS
-          6 statuts filtrés par année globale
-          Mobile : 3 colonnes / Desktop : 6 colonnes
-          ════════════════════════════════════════════════════════════════ */}
-      <div style={{ padding:'1.5px', borderRadius:18, background:'linear-gradient(135deg,#12b76a50,#61DAFB25,#a78bfa15)', marginBottom:24, animation:'fadeSlideUp 0.4s 0.1s ease both' }}>
-      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-          <div style={{ width:38, height:38, borderRadius:9, background:'rgba(18,183,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Building2 size={19} color="#12b76a"/>
-          </div>
-          <div>
-            <div style={{ fontSize:15, fontWeight:700 }}>Solution Express</div>
-            <div style={{ fontSize:12, color:'#ffffff' }}>{totalSE} fiches · {b2b} B2B · {b2c} B2C</div>
-          </div>
-          <div style={{ marginLeft:'auto', fontSize:28, fontWeight:800, color:'#12b76a', textShadow:'0 0 20px rgba(18,183,106,0.5)' }}>{totalSE}</div>
-        </div>
-        <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(3,1fr)':'repeat(6,1fr)', gap: isMobile?8:10 }}>
-          {[
-            { label:'Nouveau',          value:seStatuts.new,                   color:'#3b6cf8' },
-            { label:'Contacté',         value:seStatuts.contacted,             color:'#f79009' },
-            { label:'Soumission',       value:seStatuts.proposal,              color:'#a764f8' },
-            { label:'Installation…',    value:seStatuts.installation_en_cours, color:'#f97316' },
-            { label:'Installé',         value:seStatuts.installe,              color:'#22c55e' },
-            { label:'Install. annulée', value:seStatuts.installation_annulee,  color:'#be123c' },
-          ].map((s,i) => (
-            <div key={s.label} style={{ background:'var(--bg-secondary)', borderRadius:10, padding: isMobile?'10px 8px':'12px 10px', borderLeft:`3px solid ${s.color}`, textAlign:'center', position:'relative', overflow:'hidden', transition:'transform 0.15s', cursor:'default' }}
-              onMouseEnter={e => e.currentTarget.style.transform='scale(1.03)'}
-              onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}>
-              <div style={{ position:'absolute', bottom:-8, right:-4, fontSize:36, fontWeight:900, color:s.color, opacity:0.05, lineHeight:1 }}>{s.value}</div>
-              <div style={{ fontSize: isMobile?20:24, fontWeight:800, color:s.color }}>{s.value}</div>
-              <div style={{ fontSize: isMobile?9:10, color:'#ffffff', fontWeight:600, textTransform:'uppercase', marginTop:2 }}>{s.label}</div>
-              <div style={{ marginTop:6, height:3, borderRadius:2, background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
-                <div style={{ height:'100%', borderRadius:2, background:s.color, width:`${totalSE>0?Math.round((s.value/totalSE)*100):0}%`, transition:'width 1s ease', boxShadow:`0 0 8px ${s.color}80` }}/>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      </div>{/* /gradient border */}
 
       {/* ════════════════════════════════════════════════════════════════
           COMMISSIONS — filtrées par année globale

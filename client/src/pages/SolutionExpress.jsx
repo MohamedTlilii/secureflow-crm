@@ -517,6 +517,20 @@ export default function SolutionExpress() {
     }
   });
 
+  const MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const SEC_COLORS = ['#3b6cf8','#12b76a','#f79009','#a764f8','#61DAFB','#f04438','#f97316','#e2287f','#06b6d4','#84cc16'];
+  const groups = useMemo(() => {
+    if (anneeFiltre === 'tout') {
+      const map = {};
+      sorted.forEach(p => { const yr = String(new Date(p.dateVente||p.createdAt||Date.now()).getUTCFullYear()); if(!map[yr]) map[yr]=[]; map[yr].push(p); });
+      return Object.keys(map).sort((a,b)=>b-a).map((yr,i) => ({ label:yr, color:SEC_COLORS[i%SEC_COLORS.length], items:map[yr] }));
+    } else {
+      const map = {};
+      sorted.forEach(p => { const m = new Date(p.dateVente||p.createdAt||Date.now()).getUTCMonth(); if(!map[m]) map[m]=[]; map[m].push(p); });
+      return Object.keys(map).map(Number).sort((a,b)=>b-a).map((m,i) => ({ label:MOIS_LONG[m], color:SEC_COLORS[i%SEC_COLORS.length], items:map[m] }));
+    }
+  }, [sorted, anneeFiltre]);
+
   // ── Stats pour le header glassmorphism ────────────────────────────────
   const totalFiches    = fichesByAnnee.length;
   const totalInstalle  = fichesByAnnee.filter(f => f.status === 'installe').length;
@@ -867,8 +881,16 @@ export default function SolutionExpress() {
           <button className="btn btn-primary" onClick={openAdd} style={{ marginTop:16 }}><Plus size={14}/> Ajouter</button>
         </div>
       ) : (
-        <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(300px,1fr))', gap: isMobile?12:16 }}>
-          {sorted.map((p, i) => {
+        <>{groups.map(({ label, color, items }) => (
+          <div key={label} style={{ marginBottom:28 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+              <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.08)' }}/>
+              <span style={{ fontSize:12, fontWeight:700, color, textTransform:'uppercase', letterSpacing:1, padding:'4px 14px', borderRadius:20, background:`${color}15`, border:`1px solid ${color}30` }}>{label}</span>
+              <span style={{ fontSize:11, color:'#ffffff', background:'var(--bg-secondary)', padding:'2px 10px', borderRadius:20, border:'1px solid var(--border)', fontWeight:600 }}>{items.length} fiche{items.length!==1?'s':''}</span>
+              <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.08)' }}/>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(300px,1fr))', gap: isMobile?12:16 }}>
+          {items.map((p, i) => {
             const statusColor = STATUS_COLORS[p.status] || '#8b8b9e';
             const leadColor   = dLeadColors[p.leadType] || '#8b8b9e';
             const lastNote    = dernNote(p);
@@ -1037,7 +1059,9 @@ export default function SolutionExpress() {
               </div>
             );
           })}
-        </div>
+            </div>
+          </div>
+        ))}</>
       )}
 
       {/* ════════════════════════════════════════════════════════════════

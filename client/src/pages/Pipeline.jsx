@@ -8,7 +8,7 @@
 // SOURCES     : Solution Express uniquement
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import api from '../api';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { ArrowRight, MapPin, Target } from 'lucide-react';
@@ -308,12 +308,25 @@ export default function Pipeline() {
                 </div>
 
                 {/* ── Cards de la colonne ── */}
-                <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1 }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1, maxHeight:600, overflowY:'auto' }}>
                   {stageItems.map((p, i) => {
                     const isDragging = dragging === p._id;
+                    const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+                    const dCurr  = new Date(p.dateVente||p.createdAt);
+                    const dPrev  = i > 0 ? new Date(stageItems[i-1].dateVente||stageItems[i-1].createdAt) : null;
+                    const showSep = !dPrev || dCurr.getUTCMonth() !== dPrev.getUTCMonth() || dCurr.getUTCFullYear() !== dPrev.getUTCFullYear();
+                    const sepLabel = `${MOIS[dCurr.getUTCMonth()]} ${dCurr.getUTCFullYear()}`;
 
                     return (
-                      <div key={p._id}
+                      <React.Fragment key={p._id}>
+                      {showSep && (
+                        <div style={{ display:'flex', alignItems:'center', gap:6, margin:'4px 0 2px' }}>
+                          <div style={{ flex:1, height:1, background:`${stage.color}25` }}/>
+                          <span style={{ fontSize:10, fontWeight:700, color:stage.color, letterSpacing:0.8, textTransform:'uppercase' }}>{sepLabel}</span>
+                          <div style={{ flex:1, height:1, background:`${stage.color}25` }}/>
+                        </div>
+                      )}
+                      <div
                         draggable
                         onDragStart={e => onDragStart(e, p._id, p.source)}
                         onDragEnd={onDragEnd}
@@ -411,6 +424,7 @@ export default function Pipeline() {
                           </button>
                         )}
                       </div>
+                      </React.Fragment>
                     );
                   })}
 

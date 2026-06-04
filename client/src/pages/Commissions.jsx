@@ -37,9 +37,10 @@ function useIsMobile() {
 // COMPOSANT : CalendrierModerne
 // Calendrier interactif — points verts/orange par jour avec commission
 // ════════════════════════════════════════════════════════════════════════════
-function CalendrierModerne({ commissions, onSelectDate, selectedDate }) {
+function CalendrierModerne({ commissions, onSelectDate, selectedDate, onMonthChange }) {
   const today = new Date();
   const [current, setCurrent] = useState({ year: today.getFullYear(), month: today.getMonth() });
+  useEffect(() => { onMonthChange?.(current); }, [current]);
 
   const daysInMonth = new Date(current.year, current.month + 1, 0).getDate();
   const firstDay    = new Date(current.year, current.month, 1).getDay();
@@ -166,6 +167,7 @@ export default function Commissions() {
   const [selectedDate, setSelectedDate]     = useState(null);
   const [selectedVentes, setSelectedVentes] = useState([]);
   const [resumeFiche, setResumeFiche]       = useState(null);
+  const [calMois, setCalMois]               = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
   const [settings, setSettings]             = useState({});
 
   // Fetch commissions
@@ -237,6 +239,11 @@ export default function Commissions() {
   const maximum    = vals.length > 0 ? Math.max(...vals) : 0;
   const minimum    = vals.length > 0 ? Math.min(...vals) : 0;
 
+  const filteredHistorique = filtered.filter(c => {
+    const d = new Date(c.dateVente || c.createdAt);
+    return d.getUTCFullYear() === calMois.year && d.getUTCMonth() === calMois.month;
+  });
+
   // % payé pour la barre de progression dans le header
   const pctPaye = totalGagne > 0 ? Math.round((totalPaye / totalGagne) * 100) : 0;
 
@@ -248,7 +255,7 @@ export default function Commissions() {
         const yrFiches = filtered.filter(c => new Date(c.dateVente || c.createdAt).getUTCFullYear() === yr);
         return { name: String(yr), total: yrFiches.reduce((s,c) => s + (c.commissionTotale||0), 0), count: yrFiches.length, color: YEAR_COLORS[i % YEAR_COLORS.length] };
       })
-    : [...filtered]
+    : [...filteredHistorique]
         .sort((a,b) => new Date(a.dateVente||a.createdAt) - new Date(b.dateVente||b.createdAt))
         .map(c => {
           const d       = new Date(c.dateVente || c.createdAt);
@@ -486,7 +493,7 @@ export default function Commissions() {
 
         {/* Colonne gauche : Calendrier + détail jour */}
         <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-          <CalendrierModerne commissions={filtered} selectedDate={selectedDate} onSelectDate={(date, ventes) => { setSelectedDate(date); setSelectedVentes(ventes); }}/>
+          <CalendrierModerne commissions={filtered} selectedDate={selectedDate} onSelectDate={(date, ventes) => { setSelectedDate(date); setSelectedVentes(ventes); }} onMonthChange={setCalMois}/>
 
           {/* Détail du jour sélectionné */}
           {selectedDate && selectedVentes.length > 0 && (
@@ -529,16 +536,16 @@ export default function Commissions() {
         <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:'16.5px', overflow:'hidden', backdropFilter:'blur(20px)' }}>
           <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.08)', background:'linear-gradient(135deg,rgba(18,183,106,0.08),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Historique des commissions</div>
-            {filtered.length > 0 && (
+            {filteredHistorique.length > 0 && (
               <div style={{ fontSize:11, color:'#ffffff', background:'var(--bg-secondary)', padding:'3px 12px', borderRadius:20, border:'1px solid var(--border)', fontWeight:600 }}>
-                <span style={{ color:'var(--text-primary)', fontWeight:800 }}>{filtered.length}</span> vente{filtered.length!==1?'s':''}
+                <span style={{ color:'var(--text-primary)', fontWeight:800 }}>{filteredHistorique.length}</span> vente{filteredHistorique.length!==1?'s':''}
               </div>
             )}
           </div>
 
-          {filtered.length > 0 ? (
+          {filteredHistorique.length > 0 ? (
             <div>
-              {[...filtered]
+              {[...filteredHistorique]
                 .sort((a,b) => new Date(b.dateVente||b.createdAt) - new Date(a.dateVente||a.createdAt))
                 .map((c, i, arr) => {
                   const annulee = c.status === 'installation_annulee';
