@@ -212,9 +212,15 @@ export default function Dashboard() {
   const byLeadType = Object.entries(leadMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
 
   // Types de commerce
-  const commerceMap = {};
-  fiches.forEach(f => { if(f.typeCommerce && f.typeCommerce !== 'autre') commerceMap[f.typeCommerce] = (commerceMap[f.typeCommerce]||0) + 1; });
-  const byCommerce = Object.entries(commerceMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
+  const commerceMapB2B = {};
+  const commerceMapB2C = {};
+  fiches.forEach(f => {
+    if (!f.typeCommerce || f.typeCommerce === 'autre') return;
+    if (f.typeClient === 'b2c') commerceMapB2C[f.typeCommerce] = (commerceMapB2C[f.typeCommerce]||0) + 1;
+    else commerceMapB2B[f.typeCommerce] = (commerceMapB2B[f.typeCommerce]||0) + 1;
+  });
+  const byCommerce    = Object.entries(commerceMapB2B).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
+  const byCommerceB2C = Object.entries(commerceMapB2C).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
 
   // Leads récents (triés par date)
   const recentProspects = [...fiches].sort((a,b) => new Date(b.dateVente||b.createdAt) - new Date(a.dateVente||a.createdAt)).slice(0,6);
@@ -744,6 +750,28 @@ export default function Dashboard() {
               <div style={{ width:28, height:28, borderRadius:8, background:'rgba(247,144,9,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#f79009', flexShrink:0 }}>{i+1}</div>
               <span style={{ flex:1, fontSize:13, color:'#ffffff', lineHeight:1.3 }}>{commerceLbl[c._id]||c._id}</span>
               <span style={{ fontSize:16, fontWeight:700, color:'#f79009', flexShrink:0 }}>{c.count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      </div>
+      )}
+
+      {byCommerceB2C.length > 0 && (
+      <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#12b76a40,#61DAFB20)', marginBottom:24 }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding: isMobile?'16px':'20px', backdropFilter:'blur(20px)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <h3 style={{ fontSize:15, margin:0 }}>B2C</h3>
+          <Target size={14} color="#12b76a"/>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr':'repeat(auto-fill,minmax(200px,1fr))', gap:10 }}>
+          {byCommerceB2C.map((c,i) => (
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, background:'rgba(18,183,106,0.06)', border:'1px solid rgba(18,183,106,0.12)', transition:'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background='rgba(18,183,106,0.12)'; e.currentTarget.style.transform='translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background='rgba(18,183,106,0.06)'; e.currentTarget.style.transform='translateY(0)'; }}>
+              <div style={{ width:28, height:28, borderRadius:8, background:'rgba(18,183,106,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#12b76a', flexShrink:0 }}>{i+1}</div>
+              <span style={{ flex:1, fontSize:13, color:'#ffffff', lineHeight:1.3 }}>{commerceLbl[c._id]||c._id}</span>
+              <span style={{ fontSize:16, fontWeight:700, color:'#12b76a', flexShrink:0 }}>{c.count}</span>
             </div>
           ))}
         </div>
