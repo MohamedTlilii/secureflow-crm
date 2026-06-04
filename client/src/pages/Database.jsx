@@ -51,7 +51,7 @@ export default function Database() {
   const [dbStats, setDbStats]     = useState(null);
   const [anneeFiltre, setAnneeFiltre] = useState(String(new Date().getFullYear()));
   const [filters, setFilters] = useState({
-    prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:''
+    prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:''
   });
 
   // ── Fetch fiches Solution Express ─────────────────────────────────────
@@ -111,7 +111,8 @@ export default function Database() {
     (item.email     ||'').toLowerCase().startsWith(filters.email.toLowerCase()) &&
     (item.telephone ||'').toLowerCase().startsWith(filters.telephone.toLowerCase()) &&
     (item.entreprise||'').toLowerCase().startsWith(filters.entreprise.toLowerCase()) &&
-    (!filters.ville || item.ville === filters.ville)
+    (!filters.ville || item.ville === filters.ville) &&
+    (!filters.typeClient || item.typeClient === filters.typeClient)
   );
 
   const displayData = applyFilters(fichesByAnnee).sort((a,b) => new Date(b.dateVente||b.createdAt) - new Date(a.dateVente||a.createdAt));
@@ -271,7 +272,7 @@ export default function Database() {
           <div style={{ display:'flex', gap:8 }}>
             {hasFilters && (
               <button
-                onClick={() => setFilters({ prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'' })}
+                onClick={() => setFilters({ prenom:'', nom:'', email:'', telephone:'', entreprise:'', ville:'', typeClient:'' })}
                 style={{ fontSize:11, color:'var(--danger)', background:'rgba(240,68,56,0.08)', border:'1px solid rgba(240,68,56,0.2)', borderRadius:20, padding:'4px 12px', cursor:'pointer', fontWeight:600, transition:'all 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.background='rgba(240,68,56,0.15)'}
                 onMouseLeave={e => e.currentTarget.style.background='rgba(240,68,56,0.08)'}>
@@ -327,6 +328,15 @@ export default function Database() {
                   <select style={inputSt} value={filters.ville} onChange={e => setF('ville', e.target.value)}>
                     <option value="">Toutes</option>
                     {dFiltrVilles.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </th>
+                {/* Filtre Type client */}
+                <th style={thStyle}>
+                  <div style={{ fontSize:10, marginBottom:5, letterSpacing:0.8 }}>TYPE</div>
+                  <select style={inputSt} value={filters.typeClient} onChange={e => setF('typeClient', e.target.value)}>
+                    <option value="">Tous</option>
+                    <option value="b2b">B2B</option>
+                    <option value="b2c">B2C</option>
                   </select>
                 </th>
                 {/* Actions */}
