@@ -277,13 +277,13 @@ router.put('/', auth, async (req, res) => {
   try {
     const { villes, typeCommerce, typeLead, qualificationSysteme, services, motifsAnnulation, objectifAnnuel } = req.body;
     const update = {};
-    if (villes               !== undefined) update.villes               = villes;
-    if (typeCommerce         !== undefined) update.typeCommerce         = typeCommerce;
-    if (typeLead             !== undefined) update.typeLead             = typeLead;
-    if (qualificationSysteme !== undefined) update.qualificationSysteme = qualificationSysteme;
-    if (services             !== undefined) update.services             = services;
-    if (motifsAnnulation     !== undefined) update.motifsAnnulation     = motifsAnnulation;
-    if (objectifAnnuel       !== undefined) update.objectifAnnuel       = objectifAnnuel;
+    if (villes               !== undefined) { if (!Array.isArray(villes))               return res.status(400).json({ message: 'villes doit être un tableau' });               update.villes               = villes; }
+    if (typeCommerce         !== undefined) { if (!Array.isArray(typeCommerce))         return res.status(400).json({ message: 'typeCommerce doit être un tableau' });         update.typeCommerce         = typeCommerce; }
+    if (typeLead             !== undefined) { if (!Array.isArray(typeLead))             return res.status(400).json({ message: 'typeLead doit être un tableau' });             update.typeLead             = typeLead; }
+    if (qualificationSysteme !== undefined) { if (!Array.isArray(qualificationSysteme)) return res.status(400).json({ message: 'qualificationSysteme doit être un tableau' }); update.qualificationSysteme = qualificationSysteme; }
+    if (services             !== undefined) { if (!Array.isArray(services))             return res.status(400).json({ message: 'services doit être un tableau' });             update.services             = services; }
+    if (motifsAnnulation     !== undefined) { if (!Array.isArray(motifsAnnulation))     return res.status(400).json({ message: 'motifsAnnulation doit être un tableau' });     update.motifsAnnulation     = motifsAnnulation; }
+    if (objectifAnnuel       !== undefined) { if (typeof objectifAnnuel !== 'object' || Array.isArray(objectifAnnuel)) return res.status(400).json({ message: 'objectifAnnuel doit être un objet' }); update.objectifAnnuel = objectifAnnuel; }
     await col().updateOne({ _id: 'global' }, { $set: update }, { upsert: true });
     res.json({ ok: true });
   } catch (e) {

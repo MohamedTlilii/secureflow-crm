@@ -357,7 +357,7 @@ export default function SolutionExpress() {
 
   // ── Chargement settings dynamiques — rechargé au retour sur l'onglet ──
   useEffect(() => {
-    const loadSettings = () => api.get('/api/settings').then(r => setSettings(r.data)).catch(() => {});
+    const loadSettings = () => api.get('/api/settings').then(r => { if (r.data) setSettings(r.data); }).catch(() => {});
     loadSettings();
     const onVisible = () => { if (document.visibilityState === 'visible') { loadSettings(); fetchFiches(); } };
     document.addEventListener('visibilitychange', onVisible);

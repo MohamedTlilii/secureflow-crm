@@ -8,7 +8,7 @@
 // API         : GET /api/solution-express + GET /api/database/stats
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import AnimatedNumber from '../components/AnimatedNumber';
 import {
   Trash2, Database as DbIcon, MapPin, HardDrive,
@@ -55,14 +55,14 @@ export default function Database() {
   });
 
   // ── Fetch fiches Solution Express ─────────────────────────────────────
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       setLoading(true);
       const r = await api.get('/api/solution-express');
       setLeads(Array.isArray(r.data) ? r.data : []);
     } catch { setLeads([]); }
     finally { setLoading(false); }
-  };
+  }, []);
 
   // ── Fetch stats MongoDB ───────────────────────────────────────────────
   const fetchDbStats = async () => {
@@ -75,7 +75,10 @@ export default function Database() {
   useEffect(() => {
     fetchLeads();
     fetchDbStats();
-  }, []);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchLeads(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [fetchLeads]);
 
   // Villes pour le filtre : issues des fiches réelles, pas des settings
   const dFiltrVilles = useMemo(() =>
@@ -106,11 +109,11 @@ export default function Database() {
 
   // ── Filtrage — logique originale intacte ──────────────────────────────
   const applyFilters = (list) => list.filter(item =>
-    (item.prenom    ||'').toLowerCase().startsWith(filters.prenom.toLowerCase()) &&
-    (item.nom       ||'').toLowerCase().startsWith(filters.nom.toLowerCase()) &&
-    (item.email     ||'').toLowerCase().startsWith(filters.email.toLowerCase()) &&
-    (item.telephone ||'').toLowerCase().startsWith(filters.telephone.toLowerCase()) &&
-    (item.entreprise||'').toLowerCase().startsWith(filters.entreprise.toLowerCase()) &&
+    (item.prenom    ||'').toLowerCase().startsWith(String(filters.prenom).toLowerCase()) &&
+    (item.nom       ||'').toLowerCase().startsWith(String(filters.nom).toLowerCase()) &&
+    (item.email     ||'').toLowerCase().startsWith(String(filters.email).toLowerCase()) &&
+    (item.telephone ||'').toLowerCase().startsWith(String(filters.telephone).toLowerCase()) &&
+    (item.entreprise||'').toLowerCase().startsWith(String(filters.entreprise).toLowerCase()) &&
     (!filters.ville || item.ville === filters.ville) &&
     (!filters.typeClient || item.typeClient === filters.typeClient)
   );

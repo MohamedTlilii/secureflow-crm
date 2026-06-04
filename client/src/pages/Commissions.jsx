@@ -225,7 +225,7 @@ export default function Commissions() {
   // Filtrage
   const filtered = fiches.filter(c => {
     const yr      = new Date(c.dateVente || c.createdAt).getUTCFullYear();
-    const anneeOk = annee === 'tout' || String(yr) === annee;
+    const anneeOk = annee === 'tout' || String(yr) === String(annee);
     const statOk  = filtre === 'tout' ? true : filtre === 'payee' ? c.commissionPayee : !c.commissionPayee;
     return anneeOk && statOk;
   });
