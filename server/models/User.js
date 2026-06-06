@@ -30,7 +30,7 @@ const UserSchema = new mongoose.Schema({
       // 2. Just the bare domain "https://freepik.com" (no actual image path)
       // 3. Has no dot — meaning it's not a valid file URL (no extension like .jpg/.png)
       // Add more invalid patterns here if needed
-      if (!v || v.trim() === "" || v === "https://freepik.com" || !v.includes('.')) {
+      if (!v || v.trim() === "" || v === "https://freepik.com" || !v.includes('.') || v.startsWith('http://')) {
         return DEFAULT_AVATAR;
       }
       return v; // Valid URL → keep as-is

@@ -34,7 +34,7 @@ router.get('/', auth, async (req, res) => {
     if (ville)    query.ville    = ville;
     if (region)   query.region   = region;
 
-    const fiches = await SolutionExpress.find(query).sort({ createdAt: -1 });
+    const fiches = await SolutionExpress.find(query).sort({ createdAt: -1 }).limit(10000);
     res.json(fiches);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -46,7 +46,11 @@ router.get('/', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const body = { ...req.body };
-    body.commissionTotale = (parseFloat(body.commissionFixe)||0) + (parseFloat(body.commissionExtra)||0);
+    const fixe  = Number.isFinite(parseFloat(body.commissionFixe))  ? parseFloat(body.commissionFixe)  : 0;
+    const extra = Number.isFinite(parseFloat(body.commissionExtra)) ? parseFloat(body.commissionExtra) : 0;
+    body.commissionFixe   = fixe;
+    body.commissionExtra  = extra;
+    body.commissionTotale = fixe + extra;
     const fiche = await SolutionExpress.create({
       ...body,
       createdBy: req.user._id
@@ -70,8 +74,12 @@ router.put('/:id', auth, async (req, res) => {
     }
     if (updateFields.commissionFixe !== undefined || updateFields.commissionExtra !== undefined) {
       const existing = await SolutionExpress.findById(req.params.id).lean();
-      const fixe  = parseFloat(updateFields.commissionFixe  ?? existing?.commissionFixe)  || 0;
-      const extra = parseFloat(updateFields.commissionExtra ?? existing?.commissionExtra) || 0;
+      const rawFixe  = updateFields.commissionFixe  ?? existing?.commissionFixe;
+      const rawExtra = updateFields.commissionExtra ?? existing?.commissionExtra;
+      const fixe  = Number.isFinite(parseFloat(rawFixe))  ? parseFloat(rawFixe)  : 0;
+      const extra = Number.isFinite(parseFloat(rawExtra)) ? parseFloat(rawExtra) : 0;
+      updateFields.commissionFixe   = fixe;
+      updateFields.commissionExtra  = extra;
       updateFields.commissionTotale = fixe + extra;
     }
     const fiche = await SolutionExpress.findByIdAndUpdate(

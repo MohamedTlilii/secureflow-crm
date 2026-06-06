@@ -48,6 +48,10 @@ const SolutionExpressSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+SolutionExpressSchema.index({ status: 1 });
+SolutionExpressSchema.index({ ville: 1 });
+SolutionExpressSchema.index({ createdAt: -1 });
+
 SolutionExpressSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();

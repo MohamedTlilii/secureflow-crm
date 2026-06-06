@@ -212,7 +212,10 @@ export default function Commissions() {
       });
       toast.success(!fiche.commissionPayee ? '✓ Commission payée !' : 'Marquée non payée');
       const fresh = await fetchFiches();
-      if (fresh) setSelectedVentes(prev => prev.map(v => fresh.find(f => f._id === v._id) || v));
+      if (fresh) {
+        const ids = new Set(selectedVentes.map(v => v._id));
+        setSelectedVentes(fresh.filter(f => ids.has(f._id)));
+      }
     } catch { toast.error('Erreur'); }
   };
 

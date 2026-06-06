@@ -15,6 +15,35 @@ import { ArrowRight, MapPin, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 
+// ── ScoreRing — anneau SVG animé ─────────────────────────────────────────
+function ScoreRing({ value, max, color, label, sublabel }) {
+  const [animated, setAnimated] = useState(0);
+  const pct  = max > 0 ? (value / max) : 0;
+  const r    = 36;
+  const circ = 2 * Math.PI * r;
+  useEffect(() => {
+    const t = setTimeout(() => setAnimated(pct), 200);
+    return () => clearTimeout(t);
+  }, [pct]);
+  const dash = circ * animated;
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+      <div style={{ position:'relative', width:90, height:90 }}>
+        <svg width={90} height={90} style={{ transform:'rotate(-90deg)' }}>
+          <circle cx={45} cy={45} r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={7}/>
+          <circle cx={45} cy={45} r={r} fill="none" stroke={color} strokeWidth={7}
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+            style={{ transition:'stroke-dasharray 1s ease' }}/>
+        </svg>
+        <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', textAlign:'center' }}>
+          <div style={{ fontSize:18, fontWeight:800, color, lineHeight:1 }}>{value}</div>
+          <div style={{ fontSize:8, color:'#ffffff', fontWeight:600, textTransform:'uppercase', lineHeight:1.2 }}>{label}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Hook responsive — breakpoint 768px ───────────────────────────────────
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -56,6 +85,7 @@ export default function Pipeline() {
   // ── États ─────────────────────────────────────────────────────────────
   const [items, setItems]         = useState([]);
   const [anneeFiltre, setAnneeFiltre] = useState(String(new Date().getFullYear()));
+  const [moisFiltre, setMoisFiltre]   = useState('tout');
   const [loading, setLoading]     = useState(true);
   const [dragOver, setDragOver]   = useState(null);
   const [dragging, setDragging]   = useState(null);
@@ -154,12 +184,11 @@ export default function Pipeline() {
     [items]
   );
 
-  const filteredItems = useMemo(() =>
-    anneeFiltre === 'tout'
-      ? items
-      : items.filter(f => String(new Date(f.dateVente || f.createdAt || Date.now()).getUTCFullYear()) === anneeFiltre),
-    [items, anneeFiltre]
-  );
+  const filteredItems = useMemo(() => {
+    let r = anneeFiltre === 'tout' ? items : items.filter(f => String(new Date(f.dateVente || f.createdAt || Date.now()).getUTCFullYear()) === anneeFiltre);
+    if (anneeFiltre !== 'tout' && moisFiltre !== 'tout') r = r.filter(f => new Date(f.dateVente || f.createdAt || Date.now()).getUTCMonth() === Number(moisFiltre));
+    return r;
+  }, [items, anneeFiltre, moisFiltre]);
 
   // ── Stats pour le header ──────────────────────────────────────────────
   const totalItems   = filteredItems.length;
@@ -169,6 +198,8 @@ export default function Pipeline() {
   const b2b          = filteredItems.filter(i => i.typeClient === 'b2b').length;
   const b2c          = filteredItems.filter(i => i.typeClient === 'b2c').length;
   const annulees     = filteredItems.filter(i => i.stage === 'installation_annulee').length;
+  const nouveaux     = filteredItems.filter(i => i.stage === 'new').length;
+  const contactes    = filteredItems.filter(i => i.stage === 'contacted').length;
   const convRate     = totalItems > 0 ? Math.round((totalGagnes / totalItems) * 100) : 0;
 
   // ════════════════════════════════════════════════════════════════════════
@@ -205,40 +236,99 @@ export default function Pipeline() {
                 {new Date().toLocaleDateString('fr-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
               </div>
             )}
-            <select value={anneeFiltre} onChange={e => setAnneeFiltre(e.target.value)}
+            <select value={anneeFiltre} onChange={e => { setAnneeFiltre(e.target.value); setMoisFiltre('tout'); }}
               style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
               <option value="tout">Toutes les années</option>
               {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}
             </select>
+            {anneeFiltre !== 'tout' && (
+              <select value={moisFiltre} onChange={e => setMoisFiltre(e.target.value)}
+                style={{ fontSize:12, padding:'7px 14px', borderRadius:9, border:'1px solid var(--bg-card)', background:'var(--bg-card)', color:'#ffffff', cursor:'pointer', outline:'none', fontWeight:700 }}>
+                <option value="tout">Tous les mois</option>
+                {['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'].map((m,i) => (
+                  <option key={i} value={String(i)}>{m}</option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
 
-        {/* Ligne 2 : Stats rapides */}
-        <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(5,1fr)', gap:10, marginBottom:16 }}>
+        {/* Total fiches — grand, pleine largeur */}
+        <div style={{ padding:'1px', borderRadius:14, background:'linear-gradient(135deg,#3b6cf860,#3b6cf820)', marginBottom:10, animation:'fadeSlideUp 0.4s ease both' }}>
+          <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:13, padding:'14px 18px', transition:'transform 0.2s,box-shadow 0.2s' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+                <div style={{ width:46, height:46, borderRadius:13, background:'#3b6cf820', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 0 22px #3b6cf830' }}>
+                  <span style={{ fontSize:20 }}>📁</span>
+                </div>
+                <div>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:2 }}>Total fiches</div>
+                  <div style={{ fontSize:32, fontWeight:900, color:'#3b6cf8', lineHeight:1 }}>{totalItems}</div>
+                </div>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                  <div style={{ width:24, height:24, borderRadius:7, background:'rgba(59,108,248,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <span style={{ fontSize:12 }}>🏢</span>
+                  </div>
+                  <span style={{ fontSize:13, fontWeight:700, color:'#3b6cf8' }}>{b2b}</span>
+                  <span style={{ fontSize:11, color:'rgba(255,255,255,0.35)', fontWeight:600 }}>B2B</span>
+                </div>
+                <span style={{ color:'rgba(255,255,255,0.15)' }}>·</span>
+                <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                  <div style={{ width:24, height:24, borderRadius:7, background:'rgba(18,183,106,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <span style={{ fontSize:12 }}>🏠</span>
+                  </div>
+                  <span style={{ fontSize:13, fontWeight:700, color:'#12b76a' }}>{b2c}</span>
+                  <span style={{ fontSize:11, color:'rgba(255,255,255,0.35)', fontWeight:600 }}>B2C</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 6 cartes statuts — 2 rangées de 3 */}
+        <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(3,1fr)', gap:10, marginBottom:16 }}>
           {[
-            { label:'Total fiches',          value:totalItems,   sub:`${b2b} B2B · ${b2c} B2C`,                    color:'#3b6cf8' },
-            { label:'Installés',             value:totalGagnes,  sub:`Taux d'installation ${convRate}%`,            color:'#22c55e' },
-            { label:'Installation en cours', value:inCours,      sub:`${inCours} en cours`,                         color:'#f97316' },
-            { label:'Soumissions',           value:proposals,    sub:`${proposals} fiche${proposals!==1?'s':''}`,   color:'#a764f8' },
-            { label:'Annulées',              value:annulees,     sub:`${annulees} fiche${annulees!==1?'s':''}`,     color:'#be123c' },
+            { label:'Nouveau',               value:nouveaux,    sub:'nouvelles clients',      color:'#3b6cf8' },
+            { label:'Contacté',              value:contactes,   sub:'clients contactés',      color:'#f79009' },
+            { label:'Soumissions',           value:proposals,   sub:'clients Soumissions',    color:'#a764f8' },
+            { label:'Installation en cours', value:inCours,     sub:'installation en cours',  color:'#f97316' },
+            { label:'Installés',             value:totalGagnes, sub:'client installé',        color:'#22c55e' },
+            { label:'Annulées',              value:annulees,    sub:'installations annulées', color:'#be123c' },
           ].map((s,i) => (
-            <div key={i} style={{ background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'10px 14px', border:'1px solid rgba(255,255,255,0.08)', animation:`fadeSlideUp 0.4s ${i*0.05}s ease both` }}>
-              <div style={{ fontSize:10, color:'#ffffff', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
+            <div key={i} style={{ background:`${s.color}08`, borderRadius:10, padding:'10px 14px', border:`1px solid ${s.color}25`, animation:`fadeSlideUp 0.4s ${(i+1)*0.05}s ease both` }}>
+              <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:3 }}>{s.label}</div>
               <div style={{ fontSize: isMobile?18:22, fontWeight:800, color:s.color }}>{s.value}</div>
-              <div style={{ fontSize:11, color:'#ffffff', marginTop:3 }}>{s.sub}</div>
+              <div style={{ fontSize:11, color:'rgba(255,255,255,0.35)', marginTop:3 }}>{s.sub}</div>
             </div>
           ))}
         </div>
 
-        {/* Barre conversion */}
-        <div>
-          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:11, color:'#ffffff' }}>
-            <span>Taux de conversion</span>
-            <span style={{ fontWeight:700, color:'#12b76a' }}>{convRate}%</span>
+        {/* Score conversion + Rings */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexDirection: isMobile?'column':'row', gap:20, marginTop:16 }}>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize: isMobile?22:28, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}>
+              Taux d'installation <AnimatedNumber value={convRate} decimals={0} suffix="%" color="var(--text-primary)"/>
+            </div>
+            <div style={{ fontSize:12, color:'white', marginBottom:12 }}>
+              {totalGagnes} installé{totalGagnes!==1?'s':''} sur {totalItems} fiche{totalItems!==1?'s':''}
+            </div>
+            <div style={{ height:8, borderRadius:4, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
+              <div style={{ height:'100%', borderRadius:4, background:'linear-gradient(90deg,#3b6cf8,#12b76a)', width:`${convRate}%`, transition:'width 1.2s ease' }}/>
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between', marginTop:6, fontSize:10, color:'white' }}>
+              <span>0%</span><span>100%</span>
+            </div>
           </div>
-          <div style={{ height:6, borderRadius:3, background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
-            <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#a78bfa,#12b76a)', width:`${convRate}%`, transition:'width 1.2s ease', boxShadow:'0 0 12px rgba(167,139,250,0.6)' }}/>
-          </div>
+          {!isMobile && (
+            <div style={{ display:'flex', gap:28, flexShrink:0 }}>
+              <ScoreRing value={proposals}   max={totalItems||1} color="#a764f8" label="Soumission"  sublabel="Soumission"/>
+              <ScoreRing value={inCours}     max={totalItems||1} color="#f97316" label="En cours"    sublabel="En cours"/>
+              <ScoreRing value={totalGagnes} max={totalItems||1} color="#22c55e" label="Installé"    sublabel={`sur ${totalItems}`}/>
+              <ScoreRing value={annulees}    max={totalItems||1} color="#be123c" label="Annulée"     sublabel="Annulée"/>
+            </div>
+          )}
         </div>
         </div>{/* /zIndex:1 */}
       </div>{/* /glassmorphism */}
@@ -407,6 +497,15 @@ export default function Pipeline() {
                             <span style={{ fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'rgba(18,183,106,0.12)', color:'#12b76a', border:'1px solid rgba(18,183,106,0.25)' }}>
                               💰 {p.commissionTotale} TND
                             </span>
+                          </div>
+                        )}
+
+                        {/* Motif annulation */}
+                        {stage.key === 'installation_annulee' && p.motifAnnulation && (
+                          <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 9px', borderRadius:8, background:'rgba(190,18,60,0.08)', border:'1px solid rgba(190,18,60,0.2)' }}>
+                            <span style={{ fontSize:11, color:'#be123c' }}>✕</span>
+                            <span style={{ fontSize:11, color:'rgba(255,255,255,0.5)', fontWeight:500 }}>Motif :</span>
+                            <span style={{ fontSize:11, color:'#be123c', fontWeight:600 }}>{p.motifAnnulation}</span>
                           </div>
                         )}
 

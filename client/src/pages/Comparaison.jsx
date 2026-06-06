@@ -39,7 +39,8 @@ function calcMetrics(arr) {
   const commMax  = commVals.length > 0 ? Math.max(...commVals) : 0;
   const commMin  = commVals.length > 0 ? Math.min(...commVals) : 0;
   const payRate  = gained > 0 ? Math.round((paid / gained) * 100) : 0;
-  return { gained, paid, pending, installe, commMax, commMin, payRate, total: arr.length };
+  const annulee  = arr.filter(f => f.status === 'installation_annulee').length;
+  return { gained, paid, pending, installe, annulee, commMax, commMin, payRate, total: arr.length };
 }
 
 function DeltaBadge({ curr, prev }) {
@@ -77,6 +78,7 @@ export default function Comparaison() {
   const [fiches, setFiches]     = useState([]);
   const [loading, setLoading]   = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [hoveredAnnulee, setHoveredAnnulee] = useState(null);
 
   const fetchAll = useCallback(() => {
     api.get('/api/solution-express')
@@ -120,6 +122,15 @@ export default function Comparaison() {
       return { name, [prevYear]: Math.round(sum(fichesPrev)), [currYear]: Math.round(sum(fichesCurr)) };
     }),
     [fichesCurr, fichesPrev, currYear, prevYear]
+  );
+
+  const monthlyAnnulee = useMemo(() =>
+    MONTHS_FR.map((name, idx) => ({
+      name,
+      prev: fichesPrev.filter(f => f.status === 'installation_annulee' && new Date(f.dateVente || f.createdAt).getUTCMonth() === idx).length,
+      curr: fichesCurr.filter(f => f.status === 'installation_annulee' && new Date(f.dateVente || f.createdAt).getUTCMonth() === idx).length,
+    })),
+    [fichesCurr, fichesPrev]
   );
 
   const bestMonth = (year) => {
@@ -305,6 +316,61 @@ export default function Comparaison() {
       </div>
       </div>
 
+      {/* ══════════ INSTALLATIONS ANNULÉES PAR MOIS ═════════════════════════ */}
+      <div style={{ padding:'1px', borderRadius:18, background:'linear-gradient(135deg,#ef444440,#ef444410)', marginBottom:24 }}>
+      <div style={{ background:'rgba(2,8,16,0.97)', borderRadius:17, padding:isMobile?'16px':'24px' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+          <div style={{ width:9, height:9, borderRadius:'50%', background:'#ef4444', boxShadow:'0 0 10px #ef444499', animation:'glowPulse 2s ease infinite' }}/>
+          <h3 style={{ margin:0, fontSize:15, fontWeight:700, color:'#ef4444' }}>Installations annulées par mois</h3>
+          <div style={{ marginLeft:'auto', display:'flex', gap:12 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <div style={{ width:8, height:8, borderRadius:2, background:'#3b6cf8' }}/>
+              <span style={{ fontSize:11, color:'rgba(255,255,255,0.4)', fontWeight:600 }}>{prevYear}</span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <div style={{ width:8, height:8, borderRadius:2, background:'#ef4444' }}/>
+              <span style={{ fontSize:11, color:'rgba(255,255,255,0.4)', fontWeight:600 }}>{currYear}</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(12,1fr)', gap:isMobile?4:8 }}>
+          {monthlyAnnulee.map((m, i) => {
+            const maxVal = Math.max(...monthlyAnnulee.map(x => Math.max(x.prev, x.curr)), 1);
+            const isHov  = hoveredAnnulee === i;
+            return (
+              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, position:'relative', cursor:'default' }}
+                onMouseEnter={() => setHoveredAnnulee(i)}
+                onMouseLeave={() => setHoveredAnnulee(null)}>
+                {/* Tooltip */}
+                {isHov && (
+                  <div style={{ position:'absolute', bottom:'100%', left:'50%', transform:'translateX(-50%)', marginBottom:8, background:'rgba(3,8,26,0.97)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'10px 14px', whiteSpace:'nowrap', zIndex:10, pointerEvents:'none', backdropFilter:'blur(20px)' }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:'#fff', marginBottom:6 }}>{m.name} — Annulées</div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                      <div style={{ fontSize:12, color:'#3b6cf8', fontWeight:600 }}>{prevYear} : {m.prev} annulée{m.prev !== 1 ? 's' : ''}</div>
+                      <div style={{ fontSize:12, color:'#ef4444', fontWeight:600 }}>{currYear} : {m.curr} annulée{m.curr !== 1 ? 's' : ''}</div>
+                    </div>
+                  </div>
+                )}
+                <div style={{ display:'flex', alignItems:'flex-end', gap:2, height:60 }}>
+                  <div style={{ width:isMobile?6:10, background:'#3b6cf8', borderRadius:'3px 3px 0 0', height:`${Math.max((m.prev/maxVal)*56,m.prev>0?4:0)}px`, transition:'height 0.4s ease', opacity: m.prev > 0 ? 1 : 0.15 }}/>
+                  <div style={{ width:isMobile?6:10, background:'#ef4444', borderRadius:'3px 3px 0 0', height:`${Math.max((m.curr/maxVal)*56,m.curr>0?4:0)}px`, transition:'height 0.4s ease', opacity: m.curr > 0 ? 1 : 0.15 }}/>
+                </div>
+                <span style={{ fontSize:isMobile?8:10, color: isHov ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)', fontWeight:600, transition:'color 0.15s' }}>{m.name}</span>
+                {(m.prev > 0 || m.curr > 0) && (
+                  <span style={{ fontSize:9, color:'rgba(255,255,255,0.2)' }}>{m.prev}/{m.curr}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {monthlyAnnulee.every(m => m.prev === 0 && m.curr === 0) && (
+          <div style={{ textAlign:'center', padding:'16px 0', color:'rgba(255,255,255,0.2)', fontSize:13 }}>
+            Aucune installation annulée sur cette période
+          </div>
+        )}
+      </div>
+      </div>
+
       {/* ══════════ INSIGHTS CÔTE À CÔTE ════════════════════════════════════ */}
       <div style={{ display:'grid', gridTemplateColumns:isMobile?'1fr':'1fr 1fr', gap:14, marginBottom:24 }}>
         {[
@@ -320,17 +386,18 @@ export default function Comparaison() {
             {hasData ? (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 {[
-                  { label:'Total fiches',           value: m.total },
-                  { label:'Installations',           value: m.installe },
-                  { label:'Commission ↑ Max',       value: m.commMax > 0 ? `${m.commMax.toFixed(0)} TND` : '—' },
-                  { label:'Commission ↓ Min',       value: m.commMin > 0 ? `${m.commMin.toFixed(0)} TND` : '—' },
-                  { label:'Taux de paiement',       value: `${m.payRate}%` },
-                  { label:'Meilleur mois',          value: bestMonth(year) },
-                  { label:'Total de commission',    value: m.gained > 0 ? `${m.gained.toFixed(0)} TND` : '—' },
+                  { label:'Total fiches',           value: m.total,                                             c:'#a78bfa' },
+                  { label:'Installations',           value: m.installe,                                         c:'#12b76a' },
+                  { label:'Installations annulées',  value: m.annulee,                                          c:'#ef4444' },
+                  { label:'Commission ↑ Max',        value: m.commMax > 0 ? `${m.commMax.toFixed(0)} TND` : '—', c:'#f79009' },
+                  { label:'Commission ↓ Min',        value: m.commMin > 0 ? `${m.commMin.toFixed(0)} TND` : '—', c:'#fb7185' },
+                  { label:'Taux de paiement',        value: `${m.payRate}%`,                                    c:'#38bdf8' },
+                  { label:'Meilleur mois',           value: bestMonth(year),                                    c:'#facc15' },
+                  { label:'Total de commission',     value: m.gained > 0 ? `${m.gained.toFixed(0)} TND` : '—', c:'#12b76a' },
                 ].map((row, i) => (
-                  <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:`${color}08`, border:`1px solid ${color}18` }}>
+                  <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:9, background:`${row.c}08`, border:`1px solid ${row.c}25` }}>
                     <span style={{ fontSize:12, color:'rgba(255,255,255,0.45)', fontWeight:500 }}>{row.label}</span>
-                    <span style={{ fontSize:13, fontWeight:700, color }}>{row.value}</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:row.c }}>{row.value}</span>
                   </div>
                 ))}
               </div>

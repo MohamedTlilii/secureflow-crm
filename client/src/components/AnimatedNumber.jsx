@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 export default function AnimatedNumber({ value, decimals = 0, suffix = '', color }) {
-  const [display, setDisplay] = useState(0);
+  const [display, setDisplay] = useState(value);
   const prev = useRef(0);
   useEffect(() => {
     const start = prev.current;

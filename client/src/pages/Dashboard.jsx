@@ -15,7 +15,7 @@ import AnimatedNumber from '../components/AnimatedNumber';
 import {
   Users, TrendingUp, CheckCircle, AlertCircle, Clock, XCircle,
   MapPin, Zap, Building2, Shield, Wallet,
-  Target,
+  Target, Star, Phone, Home,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import toast from 'react-hot-toast';
@@ -79,7 +79,6 @@ function ScoreRing({ value, max, color, label, sublabel }) {
           <div style={{ fontSize:8, color:'#ffffff', fontWeight:600, textTransform:'uppercase', lineHeight:1.2 }}>{label}</div>
         </div>
       </div>
-      <div style={{ fontSize:11, color:'#ffffff', textAlign:'center' }}>{sublabel}</div>
     </div>
   );
 }
@@ -318,7 +317,7 @@ export default function Dashboard() {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexDirection: isMobile?'column':'row', gap:20 }}>
           <div style={{ flex:1 }}>
             <div style={{ fontSize: isMobile?22:28, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}>
-              <AnimatedNumber value={convRate} decimals={0} suffix="% de conversion" color="var(--text-primary)"/>
+              Taux d'installation <AnimatedNumber value={convRate} decimals={0} suffix="%" color="var(--text-primary)"/>
             </div>
             <div style={{ fontSize:12, color:'white', marginBottom:12 }}>
               {won} installé{won!==1?'s':''} sur {totalSE} fiche{totalSE!==1?'s':''}
@@ -335,9 +334,10 @@ export default function Dashboard() {
           {/* ScoreRings — cachés sur mobile */}
           {!isMobile && (
             <div style={{ display:'flex', gap:28, flexShrink:0 }}>
-              <ScoreRing value={won}                             max={totalSE||1} color="#22c55e" label="Installés"    sublabel={`sur ${totalSE}`}/>
-              <ScoreRing value={seStatuts.installation_en_cours} max={totalSE||1} color="#f97316" label="En cours"     sublabel="installation"/>
-              <ScoreRing value={seStatuts.proposal}              max={totalSE||1} color="#a764f8" label="Soumissions"  sublabel={`${seStatuts.proposal} fiches`}/>
+              <ScoreRing value={seStatuts.proposal}                max={totalSE||1} color="#a764f8" label="Soumission"  sublabel="Soumission"/>
+              <ScoreRing value={seStatuts.installation_en_cours} max={totalSE||1} color="#f97316" label="En cours"    sublabel="En cours"/>
+              <ScoreRing value={won}                             max={totalSE||1} color="#22c55e" label="Installé"    sublabel={`sur ${totalSE}`}/>
+              <ScoreRing value={seStatuts.installation_annulee||0} max={totalSE||1} color="#be123c" label="Annulée"  sublabel="Annulée"/>
             </div>
           )}
         </div>
@@ -350,15 +350,53 @@ export default function Dashboard() {
           Mobile : 2 colonnes / Desktop : 4 colonnes
           Toutes calculées depuis fiches filtrées
           ════════════════════════════════════════════════════════════════ */}
-      <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(5,1fr)', gap: isMobile?10:14, marginBottom:24 }}>
+      {/* Total fiches — grand, pleine largeur, en haut */}
+      <div style={{ padding:'1px', borderRadius:14, background:'linear-gradient(135deg,#3b6cf860,#3b6cf820)', marginBottom:14, animation:'fadeSlideUp 0.4s ease both' }}>
+        <div className="stat-card" style={{ background:'rgba(2,8,16,0.97)', borderRadius:13, transition:'transform 0.2s,box-shadow 0.2s' }}
+          onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 12px 32px #3b6cf825'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:20 }}>
+              <div style={{ width:52, height:52, borderRadius:14, background:'#3b6cf820', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 0 22px #3b6cf830' }}>
+                <Users size={24} color="#3b6cf8"/>
+              </div>
+              <div>
+                <div className="stat-label">Total fiches</div>
+                <div style={{ fontSize:36, fontWeight:900, color:'#3b6cf8', lineHeight:1 }}>{totalSE}</div>
+              </div>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <div style={{ width:28, height:28, borderRadius:8, background:'rgba(59,108,248,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Building2 size={14} color="#3b6cf8"/>
+                </div>
+                <span style={{ fontSize:14, fontWeight:700, color:'#3b6cf8' }}>{b2b}</span>
+                <span style={{ fontSize:12, color:'rgba(255,255,255,0.35)', fontWeight:600 }}>B2B</span>
+              </div>
+              <span style={{ color:'rgba(255,255,255,0.15)', fontSize:16 }}>·</span>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <div style={{ width:28, height:28, borderRadius:8, background:'rgba(18,183,106,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Home size={14} color="#12b76a"/>
+                </div>
+                <span style={{ fontSize:14, fontWeight:700, color:'#12b76a' }}>{b2c}</span>
+                <span style={{ fontSize:12, color:'rgba(255,255,255,0.35)', fontWeight:600 }}>B2C</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 6 cartes statuts — 2 rangées de 3 */}
+      <div style={{ display:'grid', gridTemplateColumns: isMobile?'1fr 1fr':'repeat(3,1fr)', gap: isMobile?10:14, marginBottom:24 }}>
         {[
-          { label:'Total fiches',          value:totalSE,                              sub:`${b2b} B2B · ${b2c} B2C`,                    icon:Users,       color:'#3b6cf8'  },
-          { label:'Installés',             value:won,                                  sub:`Taux d'installation ${convRate}%`,             icon:CheckCircle, color:'#22c55e'  },
-          { label:'Installation en cours', value:seStatuts.installation_en_cours,      sub:`${seStatuts.installation_en_cours} en cours`, icon:AlertCircle, color:'#f97316'  },
-          { label:'Soumissions',           value:seStatuts.proposal,                   sub:`${seStatuts.proposal} fiches`,                icon:Clock,       color:'#a764f8'  },
-          { label:'Annulées',              value:seStatuts.installation_annulee||0,    sub:`installations annulées`,                      icon:XCircle,     color:'#be123c'  },
+          { label:'Nouveau',               value:seStatuts.new||0,                  sub:'nouvelles clients',      icon:Star,        color:'#3b6cf8' },
+          { label:'Contacté',              value:seStatuts.contacted||0,            sub:'clients contactés',      icon:Phone,       color:'#f79009' },
+          { label:'Soumissions',           value:seStatuts.proposal,                sub:'clients Soumissions',    icon:Clock,       color:'#a764f8' },
+          { label:'Installation en cours', value:seStatuts.installation_en_cours,   sub:'installation en cours',  icon:AlertCircle, color:'#f97316' },
+          { label:'Installés',             value:won,                               sub:'client installé',        icon:CheckCircle, color:'#22c55e' },
+          { label:'Annulées',              value:seStatuts.installation_annulee||0, sub:'installations annulées', icon:XCircle,     color:'#be123c' },
         ].map((s,i) => (
-          <div key={i} style={{ padding:'1px', borderRadius:14, background:`linear-gradient(135deg,${s.color}60,${s.color}20)`, animation:`fadeSlideUp 0.4s ${i*0.07}s ease both` }}>
+          <div key={i} style={{ padding:'1px', borderRadius:14, background:`linear-gradient(135deg,${s.color}60,${s.color}20)`, animation:`fadeSlideUp 0.4s ${(i+1)*0.07}s ease both` }}>
             <div className="stat-card" style={{ background:'rgba(2,8,16,0.97)', borderRadius:13, height:'100%', transition:'transform 0.2s,box-shadow 0.2s' }}
               onMouseEnter={e => { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow=`0 12px 32px ${s.color}25`; }}
               onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}>
