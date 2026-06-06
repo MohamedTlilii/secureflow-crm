@@ -123,6 +123,11 @@ export default function Pipeline() {
     [settings.services]
   );
 
+  const leadTypeLbl = useMemo(() =>
+    Object.fromEntries((settings.typeLead||[]).map(t => [t.key, t.label])),
+    [settings.typeLead]
+  );
+
   // ── Drag & Drop ───────────────────────────────────────────────────────
   const onDragStart = (e, id, source) => {
     e.dataTransfer.setData('itemId', id);
@@ -452,7 +457,17 @@ export default function Pipeline() {
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
                           <div className={`avatar ${AV[i%AV.length]}`} style={{ width:32, height:32, fontSize:11, flexShrink:0 }}>{ini(p)}</div>
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:13, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', color:'var(--text-primary)' }}>{p.displayName}</div>
+                            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                              <div style={{ fontSize:13, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', color:'var(--text-primary)', flex:1, minWidth:0 }}>{p.displayName}</div>
+                              {p.typeClient && (
+                                <span style={{ fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:20, flexShrink:0,
+                                  background: p.typeClient==='b2b' ? 'rgba(59,108,248,0.15)' : 'rgba(18,183,106,0.15)',
+                                  color: p.typeClient==='b2b' ? '#3b6cf8' : '#12b76a',
+                                  border:`1px solid ${p.typeClient==='b2b' ? 'rgba(59,108,248,0.3)' : 'rgba(18,183,106,0.3)'}` }}>
+                                  {p.typeClient==='b2b' ? '🏢 B2B' : '🏠 B2C'}
+                                </span>
+                              )}
+                            </div>
                             {(p.prenom||p.nom) && <div style={{ fontSize:11, color:'#ffffff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', marginTop:1 }}>{`${p.prenom||''} ${p.nom||''}`.trim()}</div>}
                           </div>
                         </div>
@@ -461,6 +476,15 @@ export default function Pipeline() {
                         {p.ville && (
                           <div style={{ fontSize:11, color:'#ffffff', marginBottom:7, display:'flex', alignItems:'center', gap:4 }}>
                             <MapPin size={9}/> {p.ville}
+                          </div>
+                        )}
+
+                        {/* Type de lead */}
+                        {p.leadType && (
+                          <div style={{ marginBottom:7 }}>
+                            <span style={{ fontSize:9, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'rgba(167,100,248,0.12)', color:'#a764f8', border:'1px solid rgba(167,100,248,0.25)' }}>
+                              🎯 {leadTypeLbl[p.leadType] || p.leadType}
+                            </span>
                           </div>
                         )}
 
