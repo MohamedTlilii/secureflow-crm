@@ -3,5 +3,6 @@ node_modules/
 .claude/
 RAPPORT_COMPLET.md
 RAPPORT_TEST.md
+PROJECT.MD
 test-api.js
 logo.jpg
