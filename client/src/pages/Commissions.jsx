@@ -335,7 +335,7 @@ export default function Commissions() {
               </div>
             )}
             {/* Année */}
-            <select value={annee} onChange={e => setAnnee(e.target.value)}
+            <select value={annee} onChange={e => { setAnnee(e.target.value); setFiltre('tout'); }}
               style={{ fontSize:12, padding:'7px 12px', borderRadius:9, border:'1px solid rgba(18,183,106,0.25)', background:'var(--bg-card)', color:'var(--text-primary)', cursor:'pointer', outline:'none', fontWeight:700 }}>
               <option value="tout">Toutes les années</option>
               {annees.map(y => <option key={y} value={String(y)}>{y}</option>)}

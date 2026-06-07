@@ -46,6 +46,7 @@ function useIsMobile() {
 // ════════════════════════════════════════════════════════════════════════════
 function NoteModal({ mois, onSave, onClose }) {
   const [txt, setTxt] = useState(mois?.note || '');
+  useEffect(() => { setTxt(mois?.note || ''); }, [mois]);
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div style={{ background:'var(--bg-card)', borderRadius:20, padding:24, width:'100%', maxWidth:400, border:'1px solid rgba(245,158,11,0.3)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)', animation:'fadeSlideUp 0.25s ease both' }}>

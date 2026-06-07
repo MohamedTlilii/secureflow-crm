@@ -156,6 +156,7 @@ export default function Pipeline() {
   };
 
   const confirmAnnulation = (motif) => {
+    if (!motifPending) return;
     const { item, targetStage } = motifPending;
     setMotifPending(null);
     updateStatus(item, targetStage, motif);

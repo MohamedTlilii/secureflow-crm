@@ -4,6 +4,9 @@ const router   = express.Router();
 const Essence  = require('../models/Essence');
 const auth     = require('../middleware/auth');
 
+// ─── Date de début du poste ──────────────────────────────────────────────────
+const DEBUT = { annee: 2025, mois: 5 }; // Juin 2025 (mois 0-indexé)
+
 // ─── Helper : calcule jours ouvrés lun→ven d'un mois ────────────────────────
 function joursOuvres(annee, mois0) {
   if (mois0 < 0 || mois0 > 11) return 0;
@@ -19,13 +22,12 @@ function joursOuvres(annee, mois0) {
 
 // ─── Helper : génère ou retrouve tous les mois d'une année ──────────────────
 async function ensureYear(annee, tauxJour = 5) {
-  const now     = new Date();
-  // Pour l'année en cours : seulement les mois passés + mois actuel
-  // Pour les années antérieures complètes : tous les 12 mois
-  const maxMois = annee < now.getFullYear() ? 11 : now.getMonth();
+  const now      = new Date();
+  const maxMois  = annee < now.getFullYear() ? 11 : now.getMonth();
+  const startMois = annee < DEBUT.annee ? 12 : annee === DEBUT.annee ? DEBUT.mois : 0;
 
   const ops = [];
-  for (let m = 0; m <= maxMois; m++) {
+  for (let m = startMois; m <= maxMois; m++) {
     const jours    = joursOuvres(annee, m);
     const attendu  = +(jours * tauxJour).toFixed(3);
     ops.push({
@@ -45,8 +47,9 @@ router.get('/', auth, async (req, res) => {
     const annee = parseInt(req.query.annee) || new Date().getFullYear();
     const realYear = new Date().getFullYear();
     if (annee < 2020 || annee > realYear + 1) return res.status(400).json({ error: 'Année invalide' });
+    const startMois = annee < DEBUT.annee ? 12 : annee === DEBUT.annee ? DEBUT.mois : 0;
     await ensureYear(annee);
-    const data = await Essence.find({ annee }).sort({ mois: 1 });
+    const data = await Essence.find({ annee, mois: { $gte: startMois } }).sort({ mois: 1 });
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -57,8 +60,7 @@ router.get('/', auth, async (req, res) => {
 router.get('/annees', auth, (req, res) => {
   const currentYear = new Date().getFullYear();
   const annees = [];
-  const startYear = 2026;
-  for (let y = startYear; y <= currentYear; y++) annees.push(y);
+  for (let y = DEBUT.annee; y <= currentYear; y++) annees.push(y);
   res.json(annees);
 });
 
@@ -66,8 +68,9 @@ router.get('/annees', auth, (req, res) => {
 router.get('/stats', auth, async (req, res) => {
   try {
     const annee   = parseInt(req.query.annee) || new Date().getFullYear();
+    const startMois = annee < DEBUT.annee ? 12 : annee === DEBUT.annee ? DEBUT.mois : 0;
     await ensureYear(annee);
-    const data    = await Essence.find({ annee });
+    const data    = await Essence.find({ annee, mois: { $gte: startMois } });
     const attendu = data.reduce((s, d) => s + d.montantAttendu, 0);
     const recu    = data.filter(d => d.recu).reduce((s, d) => s + d.montantAttendu, 0);
     const jours   = data.reduce((s, d) => s + d.joursOuvres, 0);
@@ -102,7 +105,7 @@ router.put('/:id', auth, async (req, res) => {
       doc.montantParJour = montantParJour;
       doc.montantAttendu = +(doc.joursOuvres * montantParJour).toFixed(3);
     }
-    if (montantAttendu !== undefined) doc.montantAttendu = +Number(montantAttendu).toFixed(3);
+    if (montantAttendu !== undefined && !doc.recu) doc.montantAttendu = +Number(montantAttendu).toFixed(3);
     await doc.save();
 
     // ── Si décembre reçu → supprimer toute l'année et passer à l'année suivante
