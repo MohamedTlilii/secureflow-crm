@@ -191,6 +191,7 @@ export default function Dashboard() {
   const produitMap = {};
   fiches.forEach(f => (f.produits||[]).forEach(p => { produitMap[p] = (produitMap[p]||0) + 1; }));
   const byProduit = Object.entries(produitMap).map(([_id,count]) => ({_id,count})).sort((a,b) => b.count-a.count);
+  const serviceCounts = produitMap;
 
   // Qualification
   const qualifMap = {};
@@ -331,13 +332,27 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* ScoreRings — cachés sur mobile */}
+          {/* ScoreRings + cercles services — cachés sur mobile */}
           {!isMobile && (
-            <div style={{ display:'flex', gap:28, flexShrink:0 }}>
-              <ScoreRing value={seStatuts.proposal}                max={totalSE||1} color="#a764f8" label="Soumission"  sublabel="Soumission"/>
-              <ScoreRing value={seStatuts.installation_en_cours} max={totalSE||1} color="#f97316" label="En cours"    sublabel="En cours"/>
-              <ScoreRing value={won}                             max={totalSE||1} color="#22c55e" label="Installé"    sublabel={`sur ${totalSE}`}/>
-              <ScoreRing value={seStatuts.installation_annulee||0} max={totalSE||1} color="#be123c" label="Annulée"  sublabel="Annulée"/>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:12, flexShrink:0 }}>
+              <div style={{ display:'flex', gap:28 }}>
+                <ScoreRing value={seStatuts.proposal}                max={totalSE||1} color="#a764f8" label="Soumission"  sublabel="Soumission"/>
+                <ScoreRing value={seStatuts.installation_en_cours} max={totalSE||1} color="#f97316" label="En cours"    sublabel="En cours"/>
+                <ScoreRing value={won}                             max={totalSE||1} color="#22c55e" label="Installé"    sublabel={`sur ${totalSE}`}/>
+                <ScoreRing value={seStatuts.installation_annulee||0} max={totalSE||1} color="#be123c" label="Annulée"  sublabel="Annulée"/>
+              </div>
+              {(settings.services||[]).length > 0 && (
+                <div style={{ display:'flex', gap:16 }}>
+                  {(settings.services||[]).map(svc => (
+                    <div key={svc.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+                      <div style={{ width:44, height:44, borderRadius:'50%', border:`2.5px solid ${svc.color||'#8b8b9e'}`, background:`${svc.color||'#8b8b9e'}18`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <span style={{ fontSize:15, fontWeight:800, color:svc.color||'#8b8b9e' }}>{serviceCounts[svc.id]||0}</span>
+                      </div>
+                      <span style={{ fontSize:9, color:'rgba(255,255,255,0.7)', fontWeight:600, textTransform:'uppercase', textAlign:'center', maxWidth:44, lineHeight:1.2 }}>{svc.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

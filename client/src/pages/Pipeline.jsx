@@ -206,6 +206,11 @@ export default function Pipeline() {
   const nouveaux     = filteredItems.filter(i => i.stage === 'new').length;
   const contactes    = filteredItems.filter(i => i.stage === 'contacted').length;
   const convRate     = totalItems > 0 ? Math.round((totalGagnes / totalItems) * 100) : 0;
+  const serviceCounts = useMemo(() => {
+    const map = {};
+    filteredItems.forEach(f => (f.produits||[]).forEach(p => { map[p] = (map[p]||0) + 1; }));
+    return map;
+  }, [filteredItems]);
 
   // ════════════════════════════════════════════════════════════════════════
   // RENDER
@@ -327,11 +332,25 @@ export default function Pipeline() {
             </div>
           </div>
           {!isMobile && (
-            <div style={{ display:'flex', gap:28, flexShrink:0 }}>
-              <ScoreRing value={proposals}   max={totalItems||1} color="#a764f8" label="Soumission"  sublabel="Soumission"/>
-              <ScoreRing value={inCours}     max={totalItems||1} color="#f97316" label="En cours"    sublabel="En cours"/>
-              <ScoreRing value={totalGagnes} max={totalItems||1} color="#22c55e" label="Installé"    sublabel={`sur ${totalItems}`}/>
-              <ScoreRing value={annulees}    max={totalItems||1} color="#be123c" label="Annulée"     sublabel="Annulée"/>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:12, flexShrink:0 }}>
+              <div style={{ display:'flex', gap:28 }}>
+                <ScoreRing value={proposals}   max={totalItems||1} color="#a764f8" label="Soumission"  sublabel="Soumission"/>
+                <ScoreRing value={inCours}     max={totalItems||1} color="#f97316" label="En cours"    sublabel="En cours"/>
+                <ScoreRing value={totalGagnes} max={totalItems||1} color="#22c55e" label="Installé"    sublabel={`sur ${totalItems}`}/>
+                <ScoreRing value={annulees}    max={totalItems||1} color="#be123c" label="Annulée"     sublabel="Annulée"/>
+              </div>
+              {(settings.services||[]).length > 0 && (
+                <div style={{ display:'flex', gap:16 }}>
+                  {(settings.services||[]).map(svc => (
+                    <div key={svc.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+                      <div style={{ width:44, height:44, borderRadius:'50%', border:`2.5px solid ${svc.color||'#8b8b9e'}`, background:`${svc.color||'#8b8b9e'}18`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <span style={{ fontSize:15, fontWeight:800, color:svc.color||'#8b8b9e' }}>{serviceCounts[svc.id]||0}</span>
+                      </div>
+                      <span style={{ fontSize:9, color:'rgba(255,255,255,0.7)', fontWeight:600, textTransform:'uppercase', textAlign:'center', maxWidth:44, lineHeight:1.2 }}>{svc.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
